@@ -56,9 +56,6 @@ def save_bounding_boxes_on_images(
     images in dst_root.
 
     """
-    if dst_root.exists():
-        dst_root.rmdir()
-    dst_root.mkdir(parents=True)
     df = pandas.read_csv(
         filepath_or_buffer=ai_file_path,
         header=None,
@@ -79,6 +76,8 @@ def save_bounding_boxes_on_images(
     )
     images_with_defects = df["Photo_Name"].unique()
     print("\nCount images with defects = ", len(images_with_defects))
+    assert dst_root.exists() is False, "Destination directory already exists"
+    dst_root.mkdir(parents=True)
 
     id_to_class_name_map = get_id_to_label_map(class_name_list_path=class_list_path)
 
