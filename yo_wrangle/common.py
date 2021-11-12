@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Dict
 
 
 YOLO_ANNOTATIONS_FOLDER_NAME = "YOLO_darknet"
@@ -23,3 +23,18 @@ def get_corrected_photo_name(photo_name: Path, expected_num_parts: int, sep: str
         photo_name = "_".join(photo_split[0 : expected_num_parts])
         photo_name = f"{photo_name}{photo_ext}"
     return photo_name
+
+
+def get_id_to_label_map(class_name_list_path: Path) -> Dict[int, str]:
+    """
+    Opens a txt file that has one class name per line and assumes
+    zero indexed class ids corresponding to the classes as they appear in
+    the provided file.
+
+    """
+    with open(str(class_name_list_path), "r") as f:
+        lines = f.readlines()
+    label_map = dict()
+    for i, line in enumerate(lines):
+        label_map[i] = line.strip()
+    return label_map
