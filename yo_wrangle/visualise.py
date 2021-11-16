@@ -2,7 +2,6 @@ import numpy as np
 import pandas
 from cv2 import cv2
 from pathlib import Path
-from sys import platform
 from typing import List, Optional, Tuple
 
 from cv2.cv2 import VideoWriter_fourcc
@@ -11,10 +10,10 @@ from yo_wrangle.common import get_all_jpg_recursive, get_id_to_label_map
 
 
 def draw_polygon_on_image(
-        image_file: str,
-        coords: List[List[float]],
-        dst_path: Path = None,
-        class_name: Optional[str] = None,
+    image_file: str,
+    coords: List[List[float]],
+    dst_path: Path = None,
+    class_name: Optional[str] = None,
 ):
     """
     This function takes a copy of an image and draws a bounding box
@@ -45,10 +44,10 @@ def draw_polygon_on_image(
 
 
 def save_bounding_boxes_on_images(
-        images_root: Path,
-        dst_root: Path,
-        ai_file_path: Path,
-        class_list_path: Path,
+    images_root: Path,
+    dst_root: Path,
+    ai_file_path: Path,
+    class_list_path: Path,
 ):
     """
     Save a copy of all images from images_root to dst_root with bounding boxes applied.
