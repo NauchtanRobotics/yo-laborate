@@ -114,12 +114,12 @@ def save_bounding_boxes_on_images(
             ]
             dst_path = dst_root / f"{img_path.stem}_{img_path.suffix}"
             if index == 0:
-                image_file = str(img_path)
+                image_filename = str(img_path)
             else:
-                image_file = str(dst_path)
+                image_filename = str(dst_path)
 
             draw_polygon_on_image(
-                image_file=image_file,
+                image_file=image_filename,
                 coords=bounding_box_coords,
                 dst_path=dst_path,
                 class_name=class_name
