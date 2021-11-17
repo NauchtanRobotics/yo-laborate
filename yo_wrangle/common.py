@@ -3,6 +3,9 @@ from typing import Iterable, Dict
 
 
 YOLO_ANNOTATIONS_FOLDER_NAME = "YOLO_darknet"
+ORANGE = "orange"
+GREEN = "green"
+RED = "red"
 
 
 def get_all_jpg_recursive(img_root: Path) -> Iterable[Path]:

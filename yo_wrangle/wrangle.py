@@ -128,6 +128,8 @@ def copy_images_recursive_inc_yolo_annotations_by_reference_dir(
             shutil.copy(src=original_image_path, dst=dst_image_path)
 
         src_annotations_path = src_annotations_dir / f"{original_image_path.stem}.txt"
+        if not src_annotations_path.exists():
+            continue
         dst_annotations_path = (
             # dst_sample_dir
             # / YOLO_ANNOTATIONS_FOLDER_NAME
