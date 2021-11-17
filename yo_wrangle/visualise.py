@@ -5,18 +5,31 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from cv2.cv2 import VideoWriter_fourcc
 
-from yo_wrangle.common import get_all_jpg_recursive, get_id_to_label_map
+from yo_wrangle.common import get_all_jpg_recursive, get_id_to_label_map, ORANGE, GREEN, RED
+
+COLOUR_MAPPING = {
+    GREEN: (0, 255, 0),
+    RED: (0, 0, 255),
+    ORANGE: (0, 165, 255),
+}
+TEXT_POSITION_MAPPING = {
+    GREEN: [0.1, 0.1],
+    ORANGE: [0.1, 0.2],
+    RED: [0.1, 0.3],
+}
+LINE_THICKNESS = 2
 
 
 def draw_polygon_on_image(
     image_file: str,
-    coords: List[List[float]],
+    yolo_box: List[List[float]],
     dst_path: Path = None,
-    class_name: Optional[str] = None,
+    label: Optional[str] = None,
+    colour: str = "green",
 ):
     """
     This function takes a copy of an image and draws a bounding box
-    (polygon) according to the provided `coords` parameter.
+    (polygon) according to the provided `yolo_box` parameter.
 
     If a `dst_path` is provided, the resulting image will be saved.
     Otherwise, the image will be displayed in a pop up window.
@@ -25,21 +38,58 @@ def draw_polygon_on_image(
     image = cv2.imread(image_file)
     height, width, channels = image.shape
 
-    polygon_1 = [[x * width, y * height] for x, y in coords]
+    polygon_1 = [[x * width, y * height] for x, y in yolo_box]
     polygon_1 = np.array(polygon_1, np.int32).reshape((-1, 1, 2))
     is_closed = True
-    thickness = 2
-    cv2.polylines(image, [polygon_1], is_closed, (0, 255, 0), thickness)
-    if class_name:
+
+    bgr_tuple = COLOUR_MAPPING[colour]
+    text_position = int(TEXT_POSITION_MAPPING[colour][0]*width), int(TEXT_POSITION_MAPPING[colour][1]*height)
+    cv2.polylines(image, [polygon_1], is_closed, bgr_tuple, LINE_THICKNESS)
+    if label:
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, class_name, (200, 500), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(image, class_name, (203, 503), font, 4, (0, 0, 0), 2, cv2.LINE_AA)
+        cv2.putText(image, label, text_position, font, 4, bgr_tuple, LINE_THICKNESS, cv2.LINE_AA)
     if dst_path:
         cv2.imwrite(str(dst_path), image)
     else:
         cv2.imshow("Un-transformed Bounding Box", image)
         cv2.waitKey()
         cv2.destroyAllWindows()
+
+
+LABEL_MAPPING = {
+    "3": {
+        "colour": RED,
+        "label": "Risk Defect",
+    },
+    "4": {
+        "colour": RED,
+        "label": "Risk Defect",
+    },
+    "0": {
+        "colour": ORANGE,
+        "label": "Surface Defect",
+    },
+    "1": {
+        "colour": ORANGE,
+        "label": "Surface Defect",
+    },
+    "2": {
+        "colour": ORANGE,
+        "label": "Surface Defect",
+    },
+    "12": {
+        "colour": ORANGE,
+        "label": "Surface Defect",
+    },
+    "16": {
+        "colour": ORANGE,
+        "label": "Surface Defect",
+    },
+    "5": {
+        "colour": GREEN,
+        "label": "",
+    },
+}
 
 
 def save_bounding_boxes_on_images(
@@ -80,18 +130,13 @@ def save_bounding_boxes_on_images(
     assert dst_root.exists() is False, "Destination directory already exists"
     dst_root.mkdir(parents=True)
 
-    id_to_class_name_map = get_id_to_label_map(class_name_list_path=class_list_path)
-
     for img_path in get_all_jpg_recursive(img_root=images_root):
         photo_name = img_path.name
         image_data = df.loc[df["Photo_Name"] == photo_name].reset_index()
         if len(image_data) == 0:
             continue
         for index, row in image_data.iterrows():
-            class_id = row["Class_ID"]
-            # if int(class_id) in [7, 10]:
-            #     continue
-            class_name = id_to_class_name_map[class_id]
+            class_id = str(int(float(row["Class_ID"])))
             series = row[
                 [
                     "x1",
@@ -110,17 +155,19 @@ def save_bounding_boxes_on_images(
                 [series["x3"], series["y3"]],
                 [series["x4"], series["y4"]],
             ]
-            dst_path = dst_root / f"{img_path.stem}_{img_path.suffix}"
+            dst_path = dst_root / f"{img_path.stem}{img_path.suffix}"
             if index == 0:
                 image_filename = str(img_path)
             else:
                 image_filename = str(dst_path)
-
+            label = LABEL_MAPPING[class_id].get("label", "")
+            colour = LABEL_MAPPING[class_id].get("colour", GREEN)
             draw_polygon_on_image(
                 image_file=image_filename,
-                coords=bounding_box_coords,
+                yolo_box=bounding_box_coords,
                 dst_path=dst_path,
-                class_name=class_name
+                label=label,
+                colour=colour,
             )
 
 
@@ -197,10 +244,11 @@ def zoom_image(
     return image
 
 
-def make_movie_adding_intermediate_progressive_zooms(
+def make_mp4_movie_from_images_in_dir(
     img_root: Path,
     y_centre: float = 0.5,
     scale: float = 0.35,
+    zoom_transition: bool = True,
 ):
     """
     For each of the images in a directory, 2 additional images that can help
@@ -210,8 +258,12 @@ def make_movie_adding_intermediate_progressive_zooms(
     road at the x = 0.5, y = 0.5.  This works great if the horizon of the image
     is at the centre of the image.
 
+    If zoom_transition is set to True, extra frames are added based on progressive
+    zooming. May look good.
+
     """
     done_once = False
+    fps = 52 if zoom_transition else 1
     for img_path in sorted(get_all_jpg_recursive(img_root=img_root)):
 
         image = cv2.imread(filename=str(img_path))
@@ -219,10 +271,12 @@ def make_movie_adding_intermediate_progressive_zooms(
         if not done_once:
             frame_size = (image_small.shape[1], image_small.shape[0])
             dst_file = img_root / "an_output_video.mp4"
-            out = cv2.VideoWriter(str(dst_file), VideoWriter_fourcc(*'mp4v'), 52, frame_size)
+            out = cv2.VideoWriter(str(dst_file), VideoWriter_fourcc(*'mp4v'), fps, frame_size)
             done_once = True
 
         out.write(image=image_small)
+        if not zoom_transition:
+            continue
         for i in range(20):
             image = zoom_image(zoom_pcnt=99.5, image=image, y_centre=y_centre)
             image_small = _scale_image(img=image, factor=scale)
@@ -230,8 +284,8 @@ def make_movie_adding_intermediate_progressive_zooms(
 
 
 def test_make_mp4_movie():
-    make_movie_adding_intermediate_progressive_zooms(
-        img_root=Path("C:\\test"),
-        y_centre=0.49,
+    make_mp4_movie_from_images_in_dir(
+        img_root=Path("/media/david/Samsung_T8/Hobart_3_roads_risk_labels"),
+        y_centre=0.45,
         scale=1.0,
     )
