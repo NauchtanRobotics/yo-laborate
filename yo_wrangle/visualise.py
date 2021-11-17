@@ -3,7 +3,6 @@ import pandas
 from cv2 import cv2
 from pathlib import Path
 from typing import List, Optional, Tuple
-
 from cv2.cv2 import VideoWriter_fourcc
 
 from yo_wrangle.common import get_all_jpg_recursive, get_id_to_label_map
@@ -201,6 +200,7 @@ def zoom_image(
 def make_movie_adding_intermediate_progressive_zooms(
     img_root: Path,
     y_centre: float = 0.5,
+    scale: float = 0.35,
 ):
     """
     For each of the images in a directory, 2 additional images that can help
@@ -212,10 +212,10 @@ def make_movie_adding_intermediate_progressive_zooms(
 
     """
     done_once = False
-    for img_path in get_all_jpg_recursive(img_root=img_root):
+    for img_path in sorted(get_all_jpg_recursive(img_root=img_root)):
 
         image = cv2.imread(filename=str(img_path))
-        image_small = _scale_image(img=image, factor=0.3)
+        image_small = _scale_image(img=image, factor=scale)
         if not done_once:
             frame_size = (image_small.shape[1], image_small.shape[0])
             dst_file = img_root / "an_output_video.mp4"
@@ -225,11 +225,13 @@ def make_movie_adding_intermediate_progressive_zooms(
         out.write(image=image_small)
         for i in range(20):
             image = zoom_image(zoom_pcnt=99.5, image=image, y_centre=y_centre)
-            image_small = _scale_image(img=image, factor=0.3)
+            image_small = _scale_image(img=image, factor=scale)
             out.write(image=image_small)
 
 
-def test_make_avi_movie():
+def test_make_mp4_movie():
     make_movie_adding_intermediate_progressive_zooms(
-        img_root=Path("C:\\test", y_centre=0.49)
+        img_root=Path("C:\\test"),
+        y_centre=0.49,
+        scale=1.0,
     )
