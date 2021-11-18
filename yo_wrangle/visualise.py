@@ -13,11 +13,56 @@ COLOUR_MAPPING = {
     ORANGE: (0, 165, 255),
 }
 TEXT_POSITION_MAPPING = {
-    GREEN: [0.1, 0.1],
-    ORANGE: [0.1, 0.2],
-    RED: [0.1, 0.3],
+    "top_left": {
+        GREEN: [0.05, 0.05],
+        ORANGE: [0.05, 0.1],
+        RED: [0.05, 0.15],
+    },
+    "top_centre": {
+        GREEN: [0.45, 0.05],
+        ORANGE: [0.45, 0.1],
+        RED: [0.45, 0.15],
+    },
 }
 LINE_THICKNESS = 2
+MARGINAL_PROB_THRESH = 0.35
+
+# CLIENT SPECIFIC DATA
+LEGEND_POSITION = "top_left"
+LABEL_MAPPING = {
+    "3": {
+        "colour": RED,
+        "label": "",
+    },
+    "4": {
+        "colour": RED,
+        "label": "",
+    },
+    "0": {
+        "colour": ORANGE,
+        "label": "",
+    },
+    "1": {
+        "colour": ORANGE,
+        "label": "",
+    },
+    "2": {
+        "colour": ORANGE,
+        "label": "",
+    },
+    "12": {
+        "colour": ORANGE,
+        "label": "",
+    },
+    "16": {
+        "colour": ORANGE,
+        "label": "",
+    },
+    "5": {
+        "colour": GREEN,
+        "label": "",
+    },
+}
 
 
 def draw_polygon_on_image(
@@ -47,7 +92,7 @@ def draw_polygon_on_image(
     is_closed = True
 
     bgr_tuple = COLOUR_MAPPING[colour]
-    text_position = int(TEXT_POSITION_MAPPING[colour][0]*width), int(TEXT_POSITION_MAPPING[colour][1]*height)
+    text_position = int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][0]*width), int(TEXT_POSITION_MAPPING[colour][1]*height)
     cv2.polylines(image, [polygon_1], is_closed, bgr_tuple, LINE_THICKNESS)
     if label:
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -61,40 +106,48 @@ def draw_polygon_on_image(
     return image
 
 
-LABEL_MAPPING = {
-    "3": {
-        "colour": RED,
-        "label": "",
-    },
-    "4": {
-        "colour": RED,
-        "label": "",
-    },
-    "0": {
-        "colour": ORANGE,
-        "label": "",
-    },
-    "1": {
-        "colour": ORANGE,
-        "label": "",
-    },
-    "2": {
-        "colour": ORANGE,
-        "label": "",
-    },
-    "12": {
-        "colour": ORANGE,
-        "label": "Surface Defect",
-    },
-    "16": {
-        "colour": ORANGE,
-        "label": "",
-    },
-    "5": {
-        "colour": GREEN,
-        "label": "",
-    },
-}
+def get_dataframe_from_ai_file(ai_file_path):
+    try:
+        df = pandas.read_csv(
+            filepath_or_buffer=ai_file_path,
+            header=None,
+            sep=" ",
+            usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            names=[
+                "Photo_Name",
+                "Class_ID",
+                "x1",
+                "y1",
+                "x2",
+                "y2",
+                "x3",
+                "y3",
+                "x4",
+                "y4",
+                "prob",
+            ],
+        )
+        return True, df
+    except Exception:
+        df = pandas.read_csv(
+            filepath_or_buffer=ai_file_path,
+            header=None,
+            sep=" ",
+            usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            names=[
+                "Photo_Name",
+                "Class_ID",
+                "x1",
+                "y1",
+                "x2",
+                "y2",
+                "x3",
+                "y3",
+                "x4",
+                "y4",
+            ],
+        )
+        return False, df
 
 
 def save_bounding_boxes_on_images(
@@ -120,24 +173,7 @@ def save_bounding_boxes_on_images(
         foot_banner = None
         banner_height = 0
 
-    df = pandas.read_csv(
-        filepath_or_buffer=ai_file_path,
-        header=None,
-        sep=" ",
-        usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        names=[
-            "Photo_Name",
-            "Class_ID",
-            "x1",
-            "y1",
-            "x2",
-            "y2",
-            "x3",
-            "y3",
-            "x4",
-            "y4",
-        ],
-    )
+    df_has_probabilities, df = get_dataframe_from_ai_file(ai_file_path=ai_file_path)
     images_with_defects = df["Photo_Name"].unique()
     print("\nCount images with defects = ", len(images_with_defects))
     assert dst_root.exists() is False, "Destination directory already exists"
@@ -174,19 +210,22 @@ def save_bounding_boxes_on_images(
                 [series["x4"], series["y4"]],
             ]
             dst_path = dst_root / f"{img_path.stem}{img_path.suffix}"
-            if index == 0:
-                image_filename = str(img_path)
-            else:
-                image_filename = str(dst_path)
             label = LABEL_MAPPING[class_id].get("label", "")
             colour = LABEL_MAPPING[class_id].get("colour", GREEN)
+            if df_has_probabilities:
+                probability = row["prob"]
+                if probability < MARGINAL_PROB_THRESH:
+                    colour = GREEN
+                else:
+                    pass
+            else:
+                pass
             image = draw_polygon_on_image(
                 image=image,
                 yolo_box=bounding_box_coords,
                 dst_path=dst_path,
                 label=label,
                 colour=colour,
-                foot_banner=foot_banner,
                 banner_height=banner_height,
             )
 
