@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from cv2.cv2 import VideoWriter_fourcc
 
-from yo_wrangle.common import get_all_jpg_recursive, get_id_to_label_map, ORANGE, GREEN, RED
+from yo_wrangle.common import get_all_jpg_recursive, ORANGE, GREEN, RED
 
 COLOUR_MAPPING = {
     GREEN: (0, 255, 0),
@@ -21,11 +21,12 @@ LINE_THICKNESS = 2
 
 
 def draw_polygon_on_image(
-    image_file: str,
+    image: np.ndarray,
     yolo_box: List[List[float]],
     dst_path: Path = None,
     label: Optional[str] = None,
     colour: str = "green",
+    banner_height: Optional[int] = None,
 ):
     """
     This function takes a copy of an image and draws a bounding box
@@ -35,8 +36,11 @@ def draw_polygon_on_image(
     Otherwise, the image will be displayed in a pop up window.
 
     """
-    image = cv2.imread(image_file)
-    height, width, channels = image.shape
+    height, width, _ = image.shape
+    if banner_height:
+        height = height - banner_height
+    else:
+        pass
 
     polygon_1 = [[x * width, y * height] for x, y in yolo_box]
     polygon_1 = np.array(polygon_1, np.int32).reshape((-1, 1, 2))
@@ -54,28 +58,29 @@ def draw_polygon_on_image(
         cv2.imshow("Un-transformed Bounding Box", image)
         cv2.waitKey()
         cv2.destroyAllWindows()
+    return image
 
 
 LABEL_MAPPING = {
     "3": {
         "colour": RED,
-        "label": "Risk Defect",
+        "label": "",
     },
     "4": {
         "colour": RED,
-        "label": "Risk Defect",
+        "label": "",
     },
     "0": {
         "colour": ORANGE,
-        "label": "Surface Defect",
+        "label": "",
     },
     "1": {
         "colour": ORANGE,
-        "label": "Surface Defect",
+        "label": "",
     },
     "2": {
         "colour": ORANGE,
-        "label": "Surface Defect",
+        "label": "",
     },
     "12": {
         "colour": ORANGE,
@@ -83,7 +88,7 @@ LABEL_MAPPING = {
     },
     "16": {
         "colour": ORANGE,
-        "label": "Surface Defect",
+        "label": "",
     },
     "5": {
         "colour": GREEN,
@@ -96,7 +101,7 @@ def save_bounding_boxes_on_images(
     images_root: Path,
     dst_root: Path,
     ai_file_path: Path,
-    class_list_path: Path,
+    foot_banner_path: Optional[Path] = None,
 ):
     """
     Save a copy of all images from images_root to dst_root with bounding boxes applied.
@@ -107,6 +112,14 @@ def save_bounding_boxes_on_images(
     images in dst_root.
 
     """
+    if foot_banner_path:
+        foot_banner = cv2.imread(str(foot_banner_path))
+        banner_height, banner_width, _ = foot_banner.shape
+        foot_banner = cv2.resize(foot_banner, (1920, int(1920*banner_height/1904)))
+    else:
+        foot_banner = None
+        banner_height = 0
+
     df = pandas.read_csv(
         filepath_or_buffer=ai_file_path,
         header=None,
@@ -135,6 +148,11 @@ def save_bounding_boxes_on_images(
         image_data = df.loc[df["Photo_Name"] == photo_name].reset_index()
         if len(image_data) == 0:
             continue
+        image = cv2.imread(str(img_path))
+        if hasattr(foot_banner, "shape"):
+            image = np.concatenate((image, foot_banner), axis=0)
+        else:
+            pass
         for index, row in image_data.iterrows():
             class_id = str(int(float(row["Class_ID"])))
             series = row[
@@ -162,12 +180,14 @@ def save_bounding_boxes_on_images(
                 image_filename = str(dst_path)
             label = LABEL_MAPPING[class_id].get("label", "")
             colour = LABEL_MAPPING[class_id].get("colour", GREEN)
-            draw_polygon_on_image(
-                image_file=image_filename,
+            image = draw_polygon_on_image(
+                image=image,
                 yolo_box=bounding_box_coords,
                 dst_path=dst_path,
                 label=label,
                 colour=colour,
+                foot_banner=foot_banner,
+                banner_height=banner_height,
             )
 
 
@@ -249,6 +269,7 @@ def make_mp4_movie_from_images_in_dir(
     y_centre: float = 0.5,
     scale: float = 0.35,
     zoom_transition: bool = True,
+    fps: float = 1.5,  # frames per second
 ):
     """
     For each of the images in a directory, 2 additional images that can help
@@ -263,7 +284,7 @@ def make_mp4_movie_from_images_in_dir(
 
     """
     done_once = False
-    fps = 52 if zoom_transition else 1
+    fps = fps*52 if zoom_transition else fps
     for img_path in sorted(get_all_jpg_recursive(img_root=img_root)):
 
         image = cv2.imread(filename=str(img_path))
