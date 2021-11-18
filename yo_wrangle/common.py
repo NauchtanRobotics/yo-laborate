@@ -6,6 +6,7 @@ YOLO_ANNOTATIONS_FOLDER_NAME = "YOLO_darknet"
 ORANGE = "orange"
 GREEN = "green"
 RED = "red"
+PURPLE = "purple"
 
 
 def get_all_jpg_recursive(img_root: Path) -> Iterable[Path]:

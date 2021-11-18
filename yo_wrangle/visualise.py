@@ -5,27 +5,30 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from cv2.cv2 import VideoWriter_fourcc
 
-from yo_wrangle.common import get_all_jpg_recursive, ORANGE, GREEN, RED
+from yo_wrangle.common import get_all_jpg_recursive, ORANGE, GREEN, RED, PURPLE
 
 COLOUR_MAPPING = {
     GREEN: (0, 255, 0),
     RED: (0, 0, 255),
     ORANGE: (0, 165, 255),
+    PURPLE: (255, 0, 255)
 }
 TEXT_POSITION_MAPPING = {
     "top_left": {
         GREEN: [0.05, 0.05],
         ORANGE: [0.05, 0.1],
         RED: [0.05, 0.15],
+        PURPLE: [0.05, 0.2]
     },
     "top_centre": {
         GREEN: [0.45, 0.05],
         ORANGE: [0.45, 0.1],
         RED: [0.45, 0.15],
+        PURPLE: [0.05, 0.2]
     },
 }
 LINE_THICKNESS = 2
-MARGINAL_PROB_THRESH = 0.35
+MARGINAL_PROB_THRESH = 0.24
 
 # CLIENT SPECIFIC DATA
 LEGEND_POSITION = "top_left"
@@ -48,6 +51,10 @@ LABEL_MAPPING = {
     },
     "2": {
         "colour": ORANGE,
+        "label": "",
+    },
+    "10": {
+        "colour": GREEN,
         "label": "",
     },
     "12": {
@@ -92,7 +99,10 @@ def draw_polygon_on_image(
     is_closed = True
 
     bgr_tuple = COLOUR_MAPPING[colour]
-    text_position = int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][0]*width), int(TEXT_POSITION_MAPPING[colour][1]*height)
+    text_position = (
+        int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][0]*width),
+        int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][1]*height)
+    )
     cv2.polylines(image, [polygon_1], is_closed, bgr_tuple, LINE_THICKNESS)
     if label:
         font = cv2.FONT_HERSHEY_SIMPLEX
