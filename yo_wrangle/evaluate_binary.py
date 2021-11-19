@@ -1,7 +1,7 @@
 import numpy
 import pandas
 from tabulate import tabulate
-from typing import Optional, List
+from typing import Optional, List, Dict
 from sklearn import metrics as skm
 from pathlib import Path
 
@@ -164,9 +164,48 @@ def analyse_model_binary_metrics(
     print_first_n = num_classes if print_first_n is None else print_first_n
     for class_id in range(print_first_n):
         class_name = classes_map.get(class_id, "Unknown")
-        precision, recall, f1, _ = get_binary_classification_metrics_for_idx(df=df, idx=class_id)
-        # precision, recall, f1, _ = get_classification_metrics_for_group(df=df, idxs=class_id)
+        precision, recall, f1, _ = get_classification_metrics_for_group(df=df, idxs=[class_id])
         results[class_name] = {
+            "P": "{:.2f}".format(precision),
+            "R": "{:.2f}".format(recall),
+            "F1": "{:.2f}".format(f1),
+        }
+
+    print("\n")
+    print(
+        tabulate(
+            pandas.DataFrame(results).transpose(),
+            headers="keys",
+            showindex="always",
+            tablefmt="pretty",
+        )
+    )
+
+
+def analyse_model_binary_metrics_for_groups(
+    images_root: Path,
+    root_ground_truths: Path,
+    root_inferred_bounding_boxes: Path,
+    class_names_path: Path,
+    groupings: Dict[str, List[int]],
+):
+    """
+
+    """
+    classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
+    num_classes = len(classes_map)
+
+    df = get_truth_vs_inferred_dict_by_photo(
+        images_root=images_root,
+        root_ground_truths=root_ground_truths,
+        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
+        num_classes=num_classes,
+    )
+
+    results = {}
+    for group_name, group_members in groupings.items():
+        precision, recall, f1, _ = get_classification_metrics_for_group(df=df, idxs=group_members)
+        results[group_name] = {
             "P": "{:.2f}".format(precision),
             "R": "{:.2f}".format(recall),
             "F1": "{:.2f}".format(f1),
