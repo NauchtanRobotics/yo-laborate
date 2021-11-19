@@ -20,12 +20,12 @@ Standard dataset building steps::
 
     4. Collate multiple samples from one project into a common directory. Use::
 
-        -> collation_additional_sample(), adding new dataset to the list.
+        -> collate_additional_sample()
 
-    4. Collate samples taken from various projects and split into train and validation
+    5. Collate samples taken from various projects and split into train and validation
        data sets. Use::
 
-          -> collate_image_and_annotation_subsets()
+        -> collate_image_and_annotation_subsets()
 
 """
 import shutil
@@ -34,7 +34,6 @@ from pathlib import Path
 from typing import Optional, List, Tuple
 
 from yo_wrangle.common import (
-    get_corrected_photo_name,
     get_all_jpg_recursive,
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
@@ -425,19 +424,16 @@ def delete_redundant_samples(
     reference_image_paths = []
     for sample_folder in other_sample_folders:
         for image_path in get_all_jpg_recursive(sample_folder):
-            image_name_corrected = get_corrected_photo_name(photo_name=image_path)
-            reference_image_paths.append(image_name_corrected)
+            reference_image_paths.append(image_path.name)
     unique_images = []
     for image_path in get_all_jpg_recursive(sample_folder_to_clean):
-        image_name_corrected = get_corrected_photo_name(photo_name=image_path.name)
-        # if image_name_corrected in reference_image_paths or image_name_corrected in unique_images:
-        #     print(image_name_corrected)
-        if image_name_corrected in reference_image_paths:
+        image_name = image_path.name
+        if image_name in reference_image_paths:
             image_path.unlink()
-        if image_name_corrected in unique_images:
+        if image_name in unique_images:
             image_path.unlink()
         else:
-            unique_images.append(image_name_corrected)
+            unique_images.append(image_name)
 
 
 def prepare_unique_dataset_from_detections(
@@ -512,3 +508,24 @@ def filter_dataset_for_classes(
 
         with open(str(annotations_path), "w") as file:
             file.writelines(new_lines)
+
+
+def collate_additional_sample(
+    existing_sample_dir: Path,
+    additional_sample_dir: Path,
+    dst_folder: Path,
+):
+    """
+    Cannot be done within prepare_unique_dataset_from_detections() as the bounding
+    boxes need to be manually established.
+
+    """
+    sample_folders = [
+        (existing_sample_dir, None),
+        (additional_sample_dir, None),
+    ]
+    collate_image_and_annotation_subsets(
+        samples_required=sample_folders,
+        dst_folder=dst_folder,
+        keep_class_ids=None,
+    )
