@@ -30,3 +30,19 @@ def get_list_misclassified_image_names(
         with open(truth_path, "r") as truth_file:
             truth_lines = truth_file.readlines()
 
+
+# def get_yolo_mis_classifications(
+#     detected_annotations_path: Path,
+#     truth_annotations: Path,
+# ) -> List[Path]:
+#     """
+#     Idea is to collect the most valuable data for adding to training datasets.
+#     Finds images that are predicted wrongly by a model, both false positives and
+#     false negatives.
+#
+#     Could also be used to do quality control on existing training data.
+#
+#     Returns a list of paths to the misclassified images.
+#     """
+#     for detected_annotation_path in get_all_txt_recursive(detected_annotations_path):
+#         pass  # (detected_annotations):
