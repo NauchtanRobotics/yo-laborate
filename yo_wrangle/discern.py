@@ -29,6 +29,7 @@ def get_list_misclassified_image_names(
     for truth_path in get_all_txt_recursive(root_dir=ground_truths_dir):
         with open(truth_path, "r") as truth_file:
             truth_lines = truth_file.readlines()
+            # CLAS-85 - Use the fiftyOne repo to achieve this purpose.
 
 
 # def get_yolo_mis_classifications(
