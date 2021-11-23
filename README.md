@@ -1,4 +1,5 @@
-# `yo-wrangle` - helping computer vision engineers on a schedule
+# `yo-wrangle` 
+_"helping computer vision engineers on a schedule"_
 
 An app to efficiently wrangle images and labels (YOLO bounding box format) with special support for maintaining sample subsets.
 
