@@ -1,10 +1,12 @@
 # `yo-wrangle` - helping computer vision engineers on a schedule
 
-An app to efficiently wrangle images and labels (with YOLO bounding box format) with special support for maintaining sample subsets.
+An app to efficiently wrangle images and labels (YOLO bounding box format) with special support for maintaining sample subsets.
+
+![Editing short listed "most mistaken annotations"](yo-wrangle-55.png)
 
 ## Context and Purpose
 
-Maintaining a dataset as a collection of independent subsets may be appropriate where there is some form of stratified sampling. For example, by geographical location, source camera/image quality/resolution, illumination conditions, or some other contextual grouping. Subgroups can be added as you bootstrap your dataset.  If model performance decreases after addition of any subset, the subset can easily be removed for a time in order to expedite building a high performing model for a specialised context.
+Maintaining a dataset as a collection of independent subsets may be appropriate where there is some form of stratified sampling. For example, by geographical location, source camera/image quality/resolution, illumination conditions, or some other contextual grouping. Subgroups can be added as you bootstrap your dataset.  If model performance decreases after addition of any subset, the subset can easily be removed for a time in order to expedite training of a high performance model for a retricted context. `yo-wrangle` supports basic and advanced data wrangling with the option of maintaining subsets that can be selectively collated and split intro train-val sets.
 
 `yo-wrangle` is particularly useful when working with the output from YOLOv5, in a Debian (linux) environment.
 
@@ -31,16 +33,16 @@ Also, `yo-wrangle` provides dataset wrangling and bootstrapping basics, featurin
 It would be great to get this working on Windows but I ran into trouble with running evaluations in `fiftyone`. Everything else seemed fine.
 
 
-There is no graphical interface yet, so edit the hard coded paths in yo_wrangle.external_tool.test_find_errors(), then open a python console and type:
+There is no graphical interface yet, so edit the hard coded paths in `yo_wrangle.external_tool.test_find_errors()` then open a python console and type:
 ```
 from yo_wrangle.external_tool import test_find_errors
-find_errors()
+test_find_errors()
 ```
 ## Installation
 
 * Poetry virtual environment yet to be configured.
 
-## Contributors
+## Contributing
 
 ### In-Scope
 * TODO: GUI interface
