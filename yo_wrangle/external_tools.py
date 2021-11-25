@@ -254,7 +254,7 @@ def edit_labels(root_folder: Path, filenames: List[str], open_labeling_path: Pat
 
     """
     open_labeling_env_python = open_labeling_path / "venv/bin/python"
-    open_labeling_script = open_labeling_path / "main/main.py"
+    open_labeling_script = open_labeling_path / "open_labeling/run_app.py"
     cmd = [
         f"{str(open_labeling_env_python)}",
         f"{str(open_labeling_script)}",
@@ -294,7 +294,7 @@ def find_errors(
 
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
-        name="Downloader",
+        name="OpenLabeling",
         args=[root_folder, filenames, open_labeling_dir],
     )
     open_labeling_thread.start()
@@ -315,7 +315,7 @@ def test_find_errors():
     find_errors(
         dataset_label="Collation_7",
         open_labeling_dir=Path("/home/david/addn_repos/OpenLabeling"),
-        tag="eval_fn",
+        tag="eval_fp",
         conf_thresh=0.5,
         limit=25,
     )
