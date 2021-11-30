@@ -3,6 +3,8 @@ from typing import Iterable, Dict
 
 
 YOLO_ANNOTATIONS_FOLDER_NAME = "YOLO_darknet"
+LABELS_FOLDER_NAME = "labels"
+PASCAL_VOC_FOLDER_NAME = "PASCAL_VOC"
 ORANGE = "orange"
 GREEN = "green"
 RED = "red"
@@ -24,7 +26,7 @@ def get_corrected_photo_name(photo_name: Path, expected_num_parts: int, sep: str
     photo_split = photo_name.name.split(sep)
     len_photo_split = len(photo_split)
     if len_photo_split > expected_num_parts:
-        photo_name = "_".join(photo_split[0 : expected_num_parts])
+        photo_name = "_".join(photo_split[0:expected_num_parts])
         photo_name = f"{photo_name}{photo_ext}"
     return photo_name
 
