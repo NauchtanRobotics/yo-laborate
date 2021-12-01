@@ -46,7 +46,9 @@ def _get_bounding_box(yolo_box: List[float]) -> List[float]:
     return bounding_box
 
 
-def _get_subset_folders(dataset_root: Path = None, images_root: Path = None) -> List[Path]:
+def _get_subset_folders(
+    dataset_root: Path = None, images_root: Path = None
+) -> List[Path]:
     """Assumes all folders in the dataset_root are subset (subsample) folders with
     the exception of folders reserved for annotations (including "YOLO_darknet",
     "PASCAL_VOC", and "labels".
@@ -66,7 +68,9 @@ def _get_subset_folders(dataset_root: Path = None, images_root: Path = None) -> 
         subset_folders = [images_root]
     elif dataset_root and images_root is None:
         if not dataset_root.exists() or not dataset_root.is_dir():
-            raise Exception("The dataset_root provided is not a path to an existing folder.")
+            raise Exception(
+                "The dataset_root provided is not a path to an existing folder."
+            )
         else:
             pass
         subset_folders = [
@@ -121,9 +125,7 @@ def init_fifty_one_dataset(
     ground_truths_root: Optional[Path] = None,
     inferences_root: Optional[Path] = None,
 ):
-    """ Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations.
-
-    """
+    """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
     if dataset_label in fo.list_datasets():
         fo.delete_dataset(name=dataset_label)
     else:
@@ -198,9 +200,7 @@ def init_fifty_one_dataset(
 
 
 def init_ds_col6e():
-    """Creates a fiftyone dataset. Currently relies on hard coded local variables.
-
-    """
+    """Creates a fiftyone dataset. Currently relies on hard coded local variables."""
     dataset_label = "col6e"
     class_name_list_path = Path(
         # "C:\\Users\\61419\\OpenLabeling\\main\\class_list.txt"
@@ -208,8 +208,12 @@ def init_ds_col6e():
     )
     label_mapping = get_id_to_label_map(class_name_list_path)
     dataset_root = None  # Path("/home/david/RACAS/sealed_roads_dataset")
-    images_root = Path("/home/david/RACAS/sealed_roads_dataset/Train_Isaac_2021_sample_1")
-    ground_truths_root = Path("/home/david/RACAS/sealed_roads_dataset/Train_Isaac_2021_sample_1/YOLO_darknet")
+    images_root = Path(
+        "/home/david/RACAS/sealed_roads_dataset/Train_Isaac_2021_sample_1"
+    )
+    ground_truths_root = Path(
+        "/home/david/RACAS/sealed_roads_dataset/Train_Isaac_2021_sample_1/YOLO_darknet"
+    )
     YOLO_ROOT = Path("/home/david/addn_repos/yolov5")
     if dataset_label in fo.list_datasets():
         fo.delete_dataset(name=dataset_label)
@@ -228,9 +232,7 @@ def init_ds_col6e():
 
 
 def clean_start(dataset_label: str):
-    """Currently relies on hard coded local variable in init_ds_col6e().
-
-    """
+    """Currently relies on hard coded local variable in init_ds_col6e()."""
     if dataset_label in fo.list_datasets():
         init_ds_col6e()
     else:
@@ -243,9 +245,7 @@ def test_init_ds_col6e():
 
 
 def start(dataset_label: str):
-    """Currently relies on hard coded local variable in init_ds_col6e().
-
-    """
+    """Currently relies on hard coded local variable in init_ds_col6e()."""
     if dataset_label not in fo.list_datasets():
         init_ds_col6e()
     else:

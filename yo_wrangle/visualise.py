@@ -11,20 +11,20 @@ COLOUR_MAPPING = {
     GREEN: (0, 255, 0),
     RED: (0, 0, 255),
     ORANGE: (0, 165, 255),
-    PURPLE: (255, 0, 255)
+    PURPLE: (255, 0, 255),
 }
 TEXT_POSITION_MAPPING = {
     "top_left": {
         GREEN: [0.05, 0.05],
         ORANGE: [0.05, 0.1],
         RED: [0.05, 0.15],
-        PURPLE: [0.05, 0.2]
+        PURPLE: [0.05, 0.2],
     },
     "top_centre": {
         GREEN: [0.45, 0.05],
         ORANGE: [0.45, 0.1],
         RED: [0.45, 0.15],
-        PURPLE: [0.05, 0.2]
+        PURPLE: [0.05, 0.2],
     },
 }
 LINE_THICKNESS = 2
@@ -100,13 +100,15 @@ def draw_polygon_on_image(
 
     bgr_tuple = COLOUR_MAPPING[colour]
     text_position = (
-        int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][0]*width),
-        int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][1]*height)
+        int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][0] * width),
+        int(TEXT_POSITION_MAPPING[LEGEND_POSITION][colour][1] * height),
     )
     cv2.polylines(image, [polygon_1], is_closed, bgr_tuple, LINE_THICKNESS)
     if label:
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, label, text_position, font, 4, bgr_tuple, LINE_THICKNESS, cv2.LINE_AA)
+        cv2.putText(
+            image, label, text_position, font, 4, bgr_tuple, LINE_THICKNESS, cv2.LINE_AA
+        )
     if dst_path:
         cv2.imwrite(str(dst_path), image)
     else:
@@ -178,7 +180,7 @@ def save_bounding_boxes_on_images(
     if foot_banner_path:
         foot_banner = cv2.imread(str(foot_banner_path))
         banner_height, banner_width, _ = foot_banner.shape
-        foot_banner = cv2.resize(foot_banner, (1920, int(1920*banner_height/1904)))
+        foot_banner = cv2.resize(foot_banner, (1920, int(1920 * banner_height / 1904)))
     else:
         foot_banner = None
         banner_height = 0
@@ -309,7 +311,9 @@ def zoom_image(
     factor = 100 / zoom_pcnt
     image = _scale_image(img=image, factor=factor)
 
-    image = _crop_image_for_given_centre(img=image, dim=(width, height), y_centre=y_centre)
+    image = _crop_image_for_given_centre(
+        img=image, dim=(width, height), y_centre=y_centre
+    )
     return image
 
 
@@ -333,7 +337,7 @@ def make_mp4_movie_from_images_in_dir(
 
     """
     done_once = False
-    fps = fps*52 if zoom_transition else fps
+    fps = fps * 52 if zoom_transition else fps
     for img_path in sorted(get_all_jpg_recursive(img_root=img_root)):
 
         image = cv2.imread(filename=str(img_path))
@@ -341,7 +345,9 @@ def make_mp4_movie_from_images_in_dir(
         if not done_once:
             frame_size = (image_small.shape[1], image_small.shape[0])
             dst_file = img_root / "an_output_video.mp4"
-            out = cv2.VideoWriter(str(dst_file), VideoWriter_fourcc(*'mp4v'), fps, frame_size)
+            out = cv2.VideoWriter(
+                str(dst_file), VideoWriter_fourcc(*"mp4v"), fps, frame_size
+            )
             done_once = True
 
         out.write(image=image_small)
