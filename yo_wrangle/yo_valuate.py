@@ -15,6 +15,16 @@ def get_truth_vs_inferred_dict_by_photo(
     num_classes: int,
 ) -> pandas.DataFrame:
     """
+    A function for converting object detection data to classification.
+
+    Achieves this by finding a unique list (set) of class memberships an
+    image can claim based on YOLO annotation file.
+
+    Simply provide the root directories for the annotations corresponding
+    to ground truths and inferences (detections).
+
+    Returns a dataframe that contains a list of actual classifications, and
+    a list of inferred classification for each image index.
 
     """
     results_dict = {}
@@ -30,7 +40,9 @@ def get_truth_vs_inferred_dict_by_photo(
         else:
             pass  # ground_truth_classification already initialized to False
 
-        inferred_annotations_path = root_inferred_bounding_boxes / f"{image_path.stem}.txt"
+        inferred_annotations_path = (
+            root_inferred_bounding_boxes / f"{image_path.stem}.txt"
+        )
         inferred_classifications = [False for i in range(num_classes)]
         if inferred_annotations_path.exists():
             with open(str(inferred_annotations_path), "r") as annotations_file:
@@ -51,12 +63,15 @@ def get_truth_vs_inferred_dict_by_photo(
     return df
 
 
-def get_classification_metrics_for_group(
+def _get_classification_metrics_for_group(
     df: pandas.DataFrame,
     idxs: List[int],
     to_console: bool = False,
 ):
     """
+    Given a dataframe that contains a list of actual classifications, and
+    a list of inferred classification for each image, returns
+    precision, recall, f1-score and accuracy CLASSIFICATION metrics.
 
     """
     if isinstance(idxs, int):
@@ -71,8 +86,12 @@ def get_classification_metrics_for_group(
     group_truths = numpy.array([False for i in range(count)])
     group_inferences = numpy.array([False for i in range(count)])
     for i, idx in enumerate(idxs):
-        group_truths = numpy.logical_or(group_truths, numpy.array([y[idx] for y in y_truths]))
-        group_inferences = numpy.logical_or(group_inferences, numpy.array([y[idx] for y in y_inferences]))
+        group_truths = numpy.logical_or(
+            group_truths, numpy.array([y[idx] for y in y_truths])
+        )
+        group_inferences = numpy.logical_or(
+            group_inferences, numpy.array([y[idx] for y in y_inferences])
+        )
 
     labels = None
     precision = skm.precision_score(
@@ -117,7 +136,7 @@ def get_classification_metrics_for_group(
     return precision, recall, f1, accuracy
 
 
-def get_binary_classification_metrics_for_idx(
+def _get_binary_classification_metrics_for_idx(
     df: pandas.DataFrame,
     idx: int,
     to_console: bool = False,
@@ -133,7 +152,7 @@ def get_binary_classification_metrics_for_idx(
         pass  # This is okay too
     else:
         raise Exception("idx should be an int")
-    return get_classification_metrics_for_group(df=df, idxs=idx, to_console=to_console)
+    return _get_classification_metrics_for_group(df=df, idxs=idx, to_console=to_console)
 
 
 def analyse_model_binary_metrics(
@@ -145,6 +164,11 @@ def analyse_model_binary_metrics(
     dst_csv: Optional[Path] = None,
 ):
     """
+    Prints (and optionally saves) results for CLASSIFICATION performance from
+    object detection ground truths and predictions.
+
+    This approach is appropriate when you don't care for object detection
+    and just want classification performance per image, not per bounding box.
 
     """
     classes_map = get_id_to_label_map(class_name_list_path=class_name_list_path)
@@ -164,7 +188,9 @@ def analyse_model_binary_metrics(
     print_first_n = num_classes if print_first_n is None else print_first_n
     for class_id in range(print_first_n):
         class_name = classes_map.get(class_id, "Unknown")
-        precision, recall, f1, _ = get_classification_metrics_for_group(df=df, idxs=[class_id])
+        precision, recall, f1, _ = _get_classification_metrics_for_group(
+            df=df, idxs=[class_id]
+        )
         results[class_name] = {
             "P": "{:.2f}".format(precision),
             "R": "{:.2f}".format(recall),
@@ -187,9 +213,23 @@ def analyse_model_binary_metrics_for_groups(
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
     class_names_path: Path,
-    groupings: Dict[str, List[int]],
+    groupings: Dict[
+        str, List[int]
+    ],  # E.g. {"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 11, 16]}
+    dst_csv: Optional[Path] = None,
 ):
     """
+    Prints (and optionally saves) results for CLASSIFICATION performance
+    (per image, not per bounding box) for groups of classes, according
+    ti the groupings parameter::
+        {
+          <group_1_label>: [<one or more integer ids of classes that conform to group_1>],
+          <group_2_label>: [<one or more integer ids of classes that conform to group_2>],
+        }
+
+    For an image if there is any bounding box ground truth from any of the class ids
+    corresponding to a group, and there is any bounding box prediction for a class id
+    for the said group, then this counts as a true positive.
 
     """
     classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
@@ -201,10 +241,14 @@ def analyse_model_binary_metrics_for_groups(
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
         num_classes=num_classes,
     )
+    if dst_csv:
+        df.to_csv(dst_csv, index=False)
 
     results = {}
     for group_name, group_members in groupings.items():
-        precision, recall, f1, _ = get_classification_metrics_for_group(df=df, idxs=group_members)
+        precision, recall, f1, _ = _get_classification_metrics_for_group(
+            df=df, idxs=group_members
+        )
         results[group_name] = {
             "P": "{:.2f}".format(precision),
             "R": "{:.2f}".format(recall),
