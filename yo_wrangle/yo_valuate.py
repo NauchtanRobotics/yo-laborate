@@ -264,3 +264,30 @@ def analyse_model_binary_metrics_for_groups(
             tablefmt="pretty",
         )
     )
+
+
+def binary_and_group_classification_performance(
+    images_root: Path,
+    root_ground_truths: Path,
+    root_inferred_bounding_boxes: Path,
+    class_names_path: Path,
+    print_first_n: Optional[int] = None,
+    groupings: Dict[str, List[int]] = None,
+):
+    analyse_model_binary_metrics(
+        images_root=images_root,
+        root_ground_truths=root_ground_truths,
+        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
+        class_names_path=class_names_path,
+        print_first_n=print_first_n,
+        dst_csv=Path(__file__).parent / "binary_results.csv",
+    )
+
+    analyse_model_binary_metrics_for_groups(
+        images_root=images_root,
+        root_ground_truths=root_ground_truths,
+        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
+        class_names_path=class_names_path,
+        groupings=groupings,
+        dst_csv=Path(__file__).parent / "grouped_results.csv",
+    )
