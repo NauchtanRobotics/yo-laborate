@@ -3,7 +3,11 @@ from tabulate import tabulate
 
 from pathlib import Path
 from typing import List, Tuple
-from yo_wrangle.common import get_id_to_label_map, YOLO_ANNOTATIONS_FOLDER_NAME, get_all_txt_recursive
+from yo_wrangle.common import (
+    get_id_to_label_map,
+    YOLO_ANNOTATIONS_FOLDER_NAME,
+    get_all_txt_recursive,
+)
 
 
 def count_class_instances_in_datasets(
