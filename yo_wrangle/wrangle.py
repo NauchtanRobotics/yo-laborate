@@ -236,12 +236,13 @@ def collate_image_and_annotation_subsets(
     """
     dst_folder.mkdir(exist_ok=True)
     for original_images_dir, sample_size in samples_required:
+        assert original_images_dir.exists()
         src_annotations_dir = original_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder = dst_folder / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder.mkdir(exist_ok=True)
-        for i, original_image_path in enumerate(
-            sorted(get_all_jpg_recursive(img_root=original_images_dir))
-        ):
+        original_image_paths = sorted(get_all_jpg_recursive(img_root=original_images_dir))
+        assert len(original_image_paths) > 0
+        for i, original_image_path in enumerate(original_image_paths):
             if sample_size and i >= sample_size:
                 break
             dst_image_path = dst_folder / original_image_path.name
