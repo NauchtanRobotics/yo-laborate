@@ -45,13 +45,19 @@ def count_class_instances_in_datasets(
                         dataset_dict[class_name] += 1
 
         results_dict[dataset_name] = dataset_dict
+
+    df = pandas.DataFrame(results_dict).fillna(value=0)
+    df['TOTAL'] = df.sum(axis=1)
+    df = df[list(df.columns)] = df[list(df.columns)].astype(int)
+    df = df.transpose().astype(int)
     print("\n")
-    # print(json.dumps(results_dict, indent=4))
     print(
         tabulate(
-            pandas.DataFrame(results_dict).transpose(),
+            df,
             headers="keys",
             showindex="always",
             tablefmt="pretty",
+            stralign="left",
+            numalign="right",
         )
     )
