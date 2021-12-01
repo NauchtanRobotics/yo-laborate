@@ -159,7 +159,7 @@ def analyse_model_binary_metrics(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
-    class_name_list_path: Path,
+    class_names_path: Path,
     print_first_n: Optional[int] = None,
     dst_csv: Optional[Path] = None,
 ):
@@ -171,7 +171,7 @@ def analyse_model_binary_metrics(
     and just want classification performance per image, not per bounding box.
 
     """
-    classes_map = get_id_to_label_map(class_name_list_path=class_name_list_path)
+    classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
     num_classes = len(classes_map)
 
     df = get_truth_vs_inferred_dict_by_photo(

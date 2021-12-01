@@ -13,7 +13,7 @@ from yo_wrangle.common import (
 def count_class_instances_in_datasets(
     data_samples: List[Tuple[Path, int]],
     class_ids: List[int],
-    classes_list: Path,
+    class_names_path: Path,
 ):
     """
     Prints a table of instance counts of defect class
@@ -24,7 +24,7 @@ def count_class_instances_in_datasets(
     Dataset names form the rows.
 
     """
-    classes_map = get_id_to_label_map(class_name_list_path=classes_list)
+    classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
     results_dict = {}
     for sample in data_samples:
         dataset_path = sample[0]
