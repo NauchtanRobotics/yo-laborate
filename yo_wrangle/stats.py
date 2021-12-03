@@ -32,7 +32,7 @@ def count_class_instances_in_datasets(
         dataset_annotations = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
         if not dataset_annotations.exists():
             dataset_annotations = dataset_path  # Will search recursively anyway
-        assert dataset_annotations.exists()
+        assert dataset_annotations.exists(), f"{str(dataset_annotations)} does not exist"
         dataset_dict = {}
         for annotations_file in get_all_txt_recursive(root_dir=dataset_annotations):
             with open(annotations_file, "r") as f:
