@@ -324,6 +324,37 @@ def split_yolo_train_dataset_every_nth(
             shutil.copy(src=str(src_annotations_file), dst=str(dst_annotations_file))
 
 
+def check_train_val_are_unique(dataset_path: Path):
+    train_path = dataset_path / "train"
+    val_path = dataset_path / "val"
+    train_image_names = [x.name for x in get_all_jpg_recursive(img_root=train_path)]
+    val_image_names = [x.name for x in get_all_jpg_recursive(img_root=val_path)]
+    assert len(set(val_image_names) & set(train_image_names)) == 0
+
+
+def collate_and_split(
+        subsets_included: List[Tuple[Path, Optional[int]]],
+        dst_root: Path,
+        every_n_th: int = 1,  # for the validation subset.
+        keep_class_ids: Optional[List] = None,  # None actually means keep all classes
+        skip_class_ids: Optional[List] = None,
+):
+    temp_dir = tempfile.mkdtemp()
+    collate_image_and_annotation_subsets(
+        samples_required=subsets_included,
+        dst_folder=Path(temp_dir),
+        skip_class_ids=skip_class_ids,
+        keep_class_ids=keep_class_ids,
+    )
+    split_yolo_train_dataset_every_nth(
+        src_images_root=Path(temp_dir),
+        dst_dataset_root=dst_root,
+        every_n_th=every_n_th,
+    )
+    check_train_val_are_unique(dataset_path=dst_root)
+    shutil.rmtree(temp_dir)
+
+
 def test_split_yolo_train_dataset_every_nth():
     """
     Can also be used simply to split data into images and labels folders
