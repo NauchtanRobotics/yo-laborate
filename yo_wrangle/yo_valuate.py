@@ -171,7 +171,7 @@ def analyse_model_binary_metrics(
     and just want classification performance per image, not per bounding box.
 
     """
-    classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
+    classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     num_classes = len(classes_map)
 
     df = get_truth_vs_inferred_dict_by_photo(
@@ -232,7 +232,7 @@ def analyse_model_binary_metrics_for_groups(
     for the said group, then this counts as a true positive.
 
     """
-    classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
+    classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     num_classes = len(classes_map)
 
     df = get_truth_vs_inferred_dict_by_photo(

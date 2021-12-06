@@ -24,7 +24,7 @@ def count_class_instances_in_datasets(
     Dataset names form the rows.
 
     """
-    classes_map = get_id_to_label_map(class_name_list_path=class_names_path)
+    classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     results_dict = {}
     for sample in data_samples:
         dataset_path = sample[0]
@@ -32,7 +32,9 @@ def count_class_instances_in_datasets(
         dataset_annotations = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
         if not dataset_annotations.exists():
             dataset_annotations = dataset_path  # Will search recursively anyway
-        assert dataset_annotations.exists(), f"{str(dataset_annotations)} does not exist"
+        assert (
+            dataset_annotations.exists()
+        ), f"{str(dataset_annotations)} does not exist"
         dataset_dict = {}
         for annotations_file in get_all_txt_recursive(root_dir=dataset_annotations):
             with open(annotations_file, "r") as f:
@@ -50,17 +52,17 @@ def count_class_instances_in_datasets(
         results_dict[dataset_name] = dataset_dict
 
     df = pandas.DataFrame(results_dict).fillna(value=0)
-    df['TOTAL'] = df.sum(axis=1)
+    df["TOTAL"] = df.sum(axis=1)
     df = df[list(df.columns)] = df[list(df.columns)].astype(int)
     df = df.transpose().astype(int)
-    print("\n")
-    print(
-        tabulate(
-            df,
-            headers="keys",
-            showindex="always",
-            tablefmt="pretty",
-            stralign="left",
-            numalign="right",
-        )
+    output_str = tabulate(
+        df,
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
+        stralign="left",
+        numalign="right",
     )
+    print("\n")
+    print(output_str)
+    return output_str

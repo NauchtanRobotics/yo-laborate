@@ -240,7 +240,9 @@ def collate_image_and_annotation_subsets(
         src_annotations_dir = original_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder = dst_folder / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder.mkdir(exist_ok=True)
-        original_image_paths = sorted(get_all_jpg_recursive(img_root=original_images_dir))
+        original_image_paths = sorted(
+            get_all_jpg_recursive(img_root=original_images_dir)
+        )
         assert len(original_image_paths) > 0
         for i, original_image_path in enumerate(original_image_paths):
             if sample_size and i >= sample_size:
@@ -333,11 +335,11 @@ def check_train_val_are_unique(dataset_path: Path):
 
 
 def collate_and_split(
-        subsets_included: List[Tuple[Path, Optional[int]]],
-        dst_root: Path,
-        every_n_th: int = 1,  # for the validation subset.
-        keep_class_ids: Optional[List] = None,  # None actually means keep all classes
-        skip_class_ids: Optional[List] = None,
+    subsets_included: List[Tuple[Path, Optional[int]]],
+    dst_root: Path,
+    every_n_th: int = 1,  # for the validation subset.
+    keep_class_ids: Optional[List] = None,  # None actually means keep all classes
+    skip_class_ids: Optional[List] = None,
 ):
     temp_dir = tempfile.mkdtemp()
     collate_image_and_annotation_subsets(
