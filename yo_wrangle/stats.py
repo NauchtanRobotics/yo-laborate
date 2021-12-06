@@ -2,7 +2,7 @@ import pandas
 from tabulate import tabulate
 
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from yo_wrangle.common import (
     get_id_to_label_map,
     YOLO_ANNOTATIONS_FOLDER_NAME,
@@ -11,7 +11,7 @@ from yo_wrangle.common import (
 
 
 def count_class_instances_in_datasets(
-    data_samples: List[Tuple[Path, int]],
+    data_samples: List[Tuple[Path, Optional[int]]],
     class_ids: List[int],
     class_names_path: Path,
 ):
