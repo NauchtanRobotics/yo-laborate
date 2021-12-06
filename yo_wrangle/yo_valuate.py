@@ -280,7 +280,7 @@ def binary_and_group_classification_performance(
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
         class_names_path=class_names_path,
         print_first_n=print_first_n,
-        dst_csv=Path(__file__).parent / "binary_results.csv",
+        dst_csv=None,
     )
 
     analyse_model_binary_metrics_for_groups(
@@ -289,5 +289,5 @@ def binary_and_group_classification_performance(
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
         class_names_path=class_names_path,
         groupings=groupings,
-        dst_csv=Path(__file__).parent / "grouped_results.csv",
+        dst_csv=None,
     )
