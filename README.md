@@ -29,19 +29,41 @@ Also, `yo-wrangle` provides dataset wrangling and bootstrapping basics, featurin
 * Fewer “high value” training images leads to a compact dataset that performs well and is quicker to train. 
 * Bootstrap a COCO dataset for segmentation modelling by converting bounding boxes to segmentation polygons.
 
+## Installation
+
+1. Install python-poetry then reboot. See https://python-poetry.org/docs/#installation
+2. Clone this repository:  `git clone git@github.com:NauchtanRobotics/yo-wrangle.git`
+3. Change working directory to newly cloned repo: `cd yo-wrangle`
+4. Create virtual environment:  `poetry install` See https://python-poetry.org/docs/basic-usage/#installing-dependencies
+
+For finding possible annotation errors with the help of `fiftyone-brain`, install python `torch` and `torchvision`
+via instructions at https://pytorch.org/get-started/locally/
+
+Installation of torch libraries will depend on the needs of your system. Having an RTX3090, I found
+it best not to install CUDA / cuDNN on my system, but rather install python packages which contain
+the necessary drivers for RTX3090, e.g. activate the poetry virtual env then run command in bash
+```
+pip3 install torch==1.10.0+cu113 torchvision==0.11.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+```
+
+### Troubleshooting tips for Linux Platform
+
+* You need to reboot once between installing poetry and running `poetry install`
+* I installed a package by lambda labs to help with driver dependencies for the GPU, but this may not be necessary. 
+* To check GPU drivers are installed `sudo lshw -C display` or `hwinfo --gfxcard --short`
+* Check you have tools for troubleshooting GPU operation by running this command `watch nvidia-smi`
+
 ## Getting Started
 
-It would be great to get this working on Windows but I ran into trouble with running evaluations in `fiftyone`. Everything else seemed fine.
-
+It would be great to get this working on Windows, however, I ran into trouble with running evaluations in `fiftyone`. 
+Wrangling scripts will work fine on Windows.
 
 There is no graphical interface yet, so edit the hard coded paths in `yo_wrangle.external_tool.test_find_errors()` then open a python console and type:
 ```
 from yo_wrangle.external_tool import test_find_errors
 test_find_errors()
 ```
-## Installation
 
-* Poetry virtual environment yet to be configured.
 
 ## Contributing
 
