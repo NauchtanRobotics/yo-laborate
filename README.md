@@ -60,7 +60,7 @@ Wrangling scripts will work fine on Windows.
 
 There is no graphical interface yet, so edit the hard coded paths in `yo_wrangle.external_tool.test_find_errors()` then open a python console and type:
 ```
-from yo_wrangle.external_tool import test_find_errors
+from yo_wrangle.external_tools import test_find_errors
 test_find_errors()
 ```
 
