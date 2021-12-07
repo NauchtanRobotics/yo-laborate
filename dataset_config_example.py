@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from wrangle import prepare_dataset_and_train, run_detections
+from wrangle import prepare_dataset_and_train, run_detections, reverse_train
 
 SUBSETS_INCLUDED = [
     (
@@ -106,7 +106,7 @@ CLASSES_LIST_PATH = Path(
 )
 
 
-def test_prepare_dataset_and_train():
+def run_prepare_dataset_and_train():
     print(__file__, __name__)
     prepare_dataset_and_train(
         class_list_path=CLASSES_LIST_PATH,
@@ -122,11 +122,35 @@ def test_prepare_dataset_and_train():
 
 def test_run_detections():
     print(__file__, __name__)
+    model_name = DST_ROOT.name
     run_detections(
-        images_path=(DST_ROOT / "train" / "images"),
-        dataset_version=f"{DST_ROOT.name}_train",
-        model_path=Path("/home/david/addn_repos/yolov5/runs/train/v8a/weights/best.pt"),
+        images_path=(DST_ROOT / "val" / "images"),
+        dataset_version=f"{DST_ROOT.name}_val",
+        model_path=Path(f"/home/david/addn_repos/yolov5/runs/train/{model_name}/weights/best.pt"),
         model_version=DST_ROOT.name,
         base_dir=Path(__file__).parent,
         conf_thres=0.1,
+        device=0,
+    )
+
+
+def run_reverse_train():
+    reverse_train(
+        class_list_path=CLASSES_LIST_PATH,
+        dst_root=DST_ROOT,
+        base_dir=Path(__file__).parent,
+    )
+
+
+def test_run_reverse_detections():
+    print(__file__, __name__)
+    model_name = f"{DST_ROOT.name}_reverse"
+    run_detections(
+        images_path=(DST_ROOT / "train" / "images"),
+        dataset_version=f"{DST_ROOT.name}_train",
+        model_path=Path(f"/home/david/addn_repos/yolov5/runs/train/{model_name}/weights/best.pt"),
+        model_version=model_name,
+        base_dir=Path(__file__).parent,
+        conf_thres=0.1,
+        device=1,
     )

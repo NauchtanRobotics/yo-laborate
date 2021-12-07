@@ -566,7 +566,7 @@ def prepare_dataset_and_train(
         python_path,
         train_path,
         "--img=640",
-        "--batch=54",
+        "--batch=50",
         "--workers=4",
         "--device=0,1",
         f"--cfg={cfg_path}",
@@ -587,6 +587,54 @@ def prepare_dataset_and_train(
         subprocess.check_call(pytorch_cmd, cwd=str(Path(train_path).parent))
 
 
+def reverse_train(
+    class_list_path: Path,
+    base_dir: Path,
+    dst_root: Path,
+):
+    classes_map = get_id_to_label_map(classes_list_path=class_list_path)
+    class_ids = list(classes_map.keys())
+    class_names = [classes_map[class_id] for class_id in class_ids]
+    yaml_text = f"""train: {str(dst_root)}/val/images/
+val: {str(dst_root)}/train/images/
+nc: {len(class_ids)}
+names: {class_names}"""
+
+    """ Write dataset.yaml in DST folder."""
+    dst_dataset_path = dst_root / "reverse_dataset.yaml"
+    with open(f"{str(dst_dataset_path)}", "w") as f_out:
+        f_out.write(yaml_text)
+
+    python_path, train_path, cfg_path, weights_path, hyp_path, _ = get_config_params(
+        base_dir
+    )
+    model_instance = f"{dst_root.name}_reverse"
+    pytorch_cmd = [
+        python_path,
+        train_path,
+        "--img=640",
+        "--batch=50",
+        "--workers=4",
+        "--device=0,1",
+        f"--cfg={cfg_path}",
+        "--epochs=300",
+        f"--data={str(dst_dataset_path)}",
+        f"--weights={weights_path}",
+        f"--hyp={hyp_path}",
+        f"--name={model_instance}",
+        "--patience=50",
+        "--cache",
+    ]
+    print("\n")
+    print(" ".join(pytorch_cmd))
+    subprocess.check_call(
+        pytorch_cmd,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        cwd=str(Path(train_path).parent),
+    )
+
+
 def run_detections(
     images_path: Path,
     dataset_version: str,
@@ -594,6 +642,7 @@ def run_detections(
     model_version: str,
     base_dir: Path,
     conf_thres: float = 0.1,
+    device: int = 0,
 ):
     results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
     python_path, _, _, _, _, detect_path = get_config_params(base_dir)
@@ -603,7 +652,7 @@ def run_detections(
         f"--source={str(images_path)}",
         f"--weights={model_path}",
         "--img=640",
-        "--device=0",
+        f"--device={device}",
         f"--name={results_name}",
         "--save-txt",
         "--save-conf",
