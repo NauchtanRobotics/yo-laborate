@@ -1,26 +1,27 @@
-import configparser
-import threading
+import sys
 
 import fiftyone as fo
 import fiftyone.brain as fob
 import fiftyone.zoo as foz
 import subprocess
+import threading
+
 from fiftyone import ViewField, DatasetView
 from typing import List, Dict, Tuple, Optional
 from pathlib import Path
-
 from yo_wrangle.common import (
     get_all_jpg_recursive,
-    get_id_to_label_map,
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
     PASCAL_VOC_FOLDER_NAME,
+    get_open_labeling_dir,
 )
 
 ACCEPTABLE_ANNOTATION_FOLDERS = [
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
 ]
+OPEN_LABELING_PATH = Path(get_open_labeling_dir())
 
 
 def _extract_annotation(line: str, label_mapping: Dict[int, str]):
@@ -257,10 +258,13 @@ def evaluate(dataset_label: str = "Collation_7"):
 
 
 def _extract_filenames_by_tag(
-    dataset_label: str = "col6e",
+    dataset_label: str,
     tag: str = "error",  # Alternatively, can use "eval_fp", "mistakenness" or "eval_fn"
     limit: int = 100,
     conf_threshold: float = 0.2,
+    processed: bool = True,
+    reverse: bool = True,
+    label_filter: Optional[str] = "WS",  # e.g. 'CD'
 ) -> Tuple[List[str], DatasetView]:
     """Loops through a FiftyOne dataset (corresponding to the dataset_label param) and
     finds all of the images tagged "error". Alternatively, can filters for the top
@@ -275,36 +279,46 @@ def _extract_filenames_by_tag(
         dataset = fo.load_dataset(name=dataset_label)
     else:
         raise Exception(f"Dataset not found: {dataset_label} ")
-    print_dataset_info(dataset)
-    dataset = dataset.match_tags("processed")
-    dataset = dataset.sort_by("mistakenness", reverse=True)
+
+    if label_filter:
+        dataset = dataset.filter_labels("ground_truth", ViewField("label") == label_filter)
+    else:
+        pass
+
+    if processed:
+        dataset = dataset.match_tags("processed")
+    else:
+        pass
+
     if tag == "mistakenness":
+        dataset = dataset.sort_by("mistakenness", reverse=reverse)
         filtered_dataset = dataset.limit(limit)
     elif tag == "error":
         filtered_dataset = dataset.match_tags("error").limit(limit)
     else:
-        filtered_dataset = dataset.filter_labels(
-            "prediction", ViewField("confidence") > conf_threshold
-        )
+        filtered_dataset = dataset
+        # filtered_dataset = dataset.filter_labels(
+        #     "prediction", ViewField("confidence") > conf_threshold
+        # )
         split_tag = tag.split("_")
         if len(split_tag) == 2 and split_tag[0] == "eval":
             filter_val = split_tag[1]
             if filter_val == "fp":
                 filtered_dataset = filtered_dataset.filter_labels(
                     "prediction", ViewField("eval") == filter_val
-                ).limit(limit)
+                ).sort_by("uniqueness", reverse=reverse).limit(limit)
             elif filter_val == "fn":
                 filtered_dataset = filtered_dataset.filter_labels(
                     "ground_truth", ViewField("eval") == filter_val
-                ).limit(limit)
+                ).sort_by("uniqueness", reverse=reverse).limit(limit)
             else:
                 pass  # Do we really want to examine "tp"?
             filtered_dataset = filtered_dataset.sort_by("filepath")
-        elif len(split_tag) == 3:
-            filtered_dataset = filtered_dataset.filter_labels(
-                "ground_truth", ViewField("eval") == "fp" | ViewField("eval") == "fn"
-            ).limit(limit)
-        else:
+        # elif len(split_tag) == 3:  # Not working: length() not len()
+        #     filtered_dataset = filtered_dataset.filter_labels(
+        #         "ground_truth", (ViewField("eval") == "fp" | ViewField("eval") == "fn")
+        #     ).limit(limit)
+        else:  # e.g. tag is unknown
             pass
 
     list_files_to_edit = [x.filepath for x in filtered_dataset]
@@ -327,19 +341,7 @@ def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder:
         "-l",
         *filenames,
     ]
-    subprocess.run(cmd)
-
-
-def _get_open_labeling_dir(base_dir: Path = Path(__file__).parents[1]):
-    config = configparser.ConfigParser()
-    config_path = base_dir / "config.ini"
-    if not config_path.exists():
-        raise RuntimeError(f"{str(config_path)} does not exist.")
-    config.read(str(config_path))
-    return config.get("EDITOR", "OPEN_LABELING_ROOT")
-
-
-OPEN_LABELING_PATH = Path(_get_open_labeling_dir())
+    subprocess.run(cmd, stdout=sys.stdout)
 
 
 def find_errors(
@@ -347,6 +349,9 @@ def find_errors(
     tag: str = "eval_fn",
     conf_thresh: float = 0.25,
     limit: int = 25,
+    processed: bool = True,
+    reverse: bool = True,
+    label_filter: Optional[str] = "WS",
 ):
     """Filters a FiftyOne Dataset according to the tag and other parameters
     provided, then Simultaneously opens both OpenLabeling and FiftyOne in
@@ -362,6 +367,9 @@ def find_errors(
         tag=tag,
         conf_threshold=conf_thresh,
         limit=limit,
+        processed=processed,
+        reverse=reverse,
+        label_filter=label_filter,
     )
 
     open_labeling_thread = threading.Thread(
@@ -388,5 +396,8 @@ def test_find_errors(tag="mistakenness"):
         dataset_label="v8a",
         tag=tag,
         conf_thresh=0.1,
-        limit=16,
+        limit=32,
+        processed=True,
+        reverse=True,
+        label_filter="EB",
     )

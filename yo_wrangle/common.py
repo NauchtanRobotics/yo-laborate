@@ -61,3 +61,12 @@ def get_config_items(base_dir: Path):
     dataset_root = config.get("DATASET", "ROOT")
     classes_list_path = config.get("DATASET", "CLASSES_LIST")
     return python_path, yolo_root, cfg_path, weights_path, hyp_path, dataset_root, classes_list_path
+
+
+def get_open_labeling_dir(base_dir: Path = Path(__file__).parents[1]):
+    config = configparser.ConfigParser()
+    config_path = base_dir / "config.ini"
+    if not config_path.exists():
+        raise RuntimeError(f"{str(config_path)} does not exist.")
+    config.read(str(config_path))
+    return config.get("EDITOR", "OPEN_LABELING_ROOT")
