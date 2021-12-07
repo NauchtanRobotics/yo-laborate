@@ -260,7 +260,7 @@ def _extract_filenames_by_tag(
     tag: str = "error",  # Alternatively, can use "eval_fp", "mistakenness" or "eval_fn"
     limit: int = 100,
     conf_threshold: float = 0.2,
-) -> Tuple[Path, List[str], DatasetView]:
+) -> Tuple[List[str], DatasetView]:
     """Loops through a FiftyOne dataset (corresponding to the dataset_label param) and
     finds all of the images tagged "error". Alternatively, can filters for the top
     100 samples based on the highest value for "eval_fp" or "eval_fn" "eval_fp_fn" or
@@ -306,21 +306,8 @@ def _extract_filenames_by_tag(
         else:
             pass
 
-    folder_paths = [Path(x.filepath).parent for x in filtered_dataset]
-    consistent_folder = None
-    for folder_path in folder_paths:  # Check if multiple folders have been used.
-        if consistent_folder is None:
-            consistent_folder = folder_path
-        elif folder_path != consistent_folder:
-            raise Exception("Images come from more than one folder.")
-        else:
-            pass
-    if not (consistent_folder / YOLO_ANNOTATIONS_FOLDER_NAME).exists():
-        raise Exception(
-            f"Images folder does not contain sub-folder: {YOLO_ANNOTATIONS_FOLDER_NAME}"
-        )
     list_files_to_edit = [x.filepath for x in filtered_dataset]
-    return consistent_folder, list_files_to_edit, filtered_dataset
+    return list_files_to_edit, filtered_dataset
 
 
 def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder: Path,
@@ -362,7 +349,7 @@ def find_errors(
     whilst editing the ground truths in OpenLabeling.
 
     """
-    root_folder, filenames, filtered_dataset = _extract_filenames_by_tag(
+    filenames, filtered_dataset = _extract_filenames_by_tag(
         dataset_label=dataset_label,
         tag=tag,
         conf_threshold=conf_thresh,
@@ -372,7 +359,7 @@ def find_errors(
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[root_folder, filenames, open_labeling_dir],
+        args=[filenames, open_labeling_dir],
     )
     open_labeling_thread.start()
 
