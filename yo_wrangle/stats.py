@@ -31,16 +31,18 @@ def count_class_instances_in_datasets(
         annotations_root = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
         if not annotations_root.exists():
             annotations_root = dataset_path / "labels"
-        if not annotations_root.exists():  # Annotations may be side-by-side with images.
+        if (
+            not annotations_root.exists()
+        ):  # Annotations may be side-by-side with images.
             annotations_root = dataset_path
-        assert (
-            annotations_root.exists()
-        ), f"{str(annotations_root)} does not exist"
+        assert annotations_root.exists(), f"{str(annotations_root)} does not exist"
 
         dataset_dict = {}
         for i, image_path in enumerate(get_all_jpg_recursive(img_root=dataset_path)):
             if i == max_samples:
-                print(f"WARNING: Counting stats beyond nominated limit: {dataset_path.name}")
+                print(
+                    f"WARNING: Counting stats beyond nominated limit: {dataset_path.name}"
+                )
             annotations_file = annotations_root / f"{image_path.stem}.txt"
             with open(annotations_file, "r") as f:
                 lines = f.readlines()
@@ -62,7 +64,11 @@ def count_class_instances_in_datasets(
     df = df[list(df.columns)] = df[list(df.columns)].astype(int)
     df = df.transpose().astype(int)
     unordered_cols = list(df)
-    ordered_cols = [class_name for class_name in classes_map.values() if class_name in unordered_cols]
+    ordered_cols = [
+        class_name
+        for class_name in classes_map.values()
+        if class_name in unordered_cols
+    ]
     df = df[ordered_cols]
     df["TOTAL"] = df.sum(axis=1)
     output_str = tabulate(

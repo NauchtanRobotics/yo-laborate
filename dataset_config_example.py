@@ -1,35 +1,35 @@
 from pathlib import Path
 
-from wrangle import prepare_dataset_and_train
+from wrangle import prepare_dataset_and_train, run_detections
 
 SUBSETS_INCLUDED = [
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Caboone_10pcnt_AP_LO_LG_WS"),
-        313,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Caboone_40pcnt_D10_D20_D40_EB"),
-        415,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/CentralCoast_10pcnt_L0_LG_WS"),
-        475,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/CentralCoast_25pcnt_AP_D10_D20"),
-        626,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/CentralCoast_35pct_EB"),
-        87,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Train_Gladstone_2020_sample_1"),
-        621,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Train_Gladstone_2020_sample_2"),
-        503,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Train_Gladstone_2020_sample_3"),
@@ -100,7 +100,7 @@ SUBSETS_INCLUDED = [
 KEEP_CLASS_IDS = None  # None actually means keep all classes
 SKIP_CLASS_IDS = [10, 13, 14, 15, 22]  # AP, RK, SD, S, Sh
 EVERY_NTH_TO_VAL = 1  # for the validation subset
-DST_ROOT = Path("/home/david/addn_repos/yolov5/datasets/vvvtest")
+DST_ROOT = Path("/home/david/addn_repos/yolov5/datasets/v8a")
 CLASSES_LIST_PATH = Path(
     "/home/david/addn_repos/OpenLabeling/open_labeling/class_list.txt"
 )
@@ -117,4 +117,16 @@ def test_prepare_dataset_and_train():
         skip_class_ids=SKIP_CLASS_IDS,
         base_dir=Path(__file__).parent,
         run_training=False,
+    )
+
+
+def test_run_detections():
+    print(__file__, __name__)
+    run_detections(
+        images_path=(DST_ROOT / "train" / "images"),
+        dataset_version=f"{DST_ROOT.name}_train",
+        model_path=Path("/home/david/addn_repos/yolov5/runs/train/v8a/weights/best.pt"),
+        model_version=DST_ROOT.name,
+        base_dir=Path(__file__).parent,
+        conf_thres=0.1,
     )

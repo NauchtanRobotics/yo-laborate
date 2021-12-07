@@ -30,6 +30,7 @@ Standard dataset building steps::
 """
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple
@@ -240,14 +241,18 @@ def collate_image_and_annotation_subsets(
     """
     dst_folder.mkdir(exist_ok=True)
     for original_images_dir, sample_size in samples_required:
-        assert original_images_dir.exists()
+        assert (
+            original_images_dir.exists()
+        ), f"Subset path not found: {str(original_images_dir)}"
         src_annotations_dir = original_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder = dst_folder / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder.mkdir(exist_ok=True)
         original_image_paths = sorted(
             get_all_jpg_recursive(img_root=original_images_dir)
         )
-        assert len(original_image_paths) > 0
+        assert (
+            len(original_image_paths) > 0
+        ), f"Subset path has no jpg files: {str(original_images_dir)}"
         for i, original_image_path in enumerate(original_image_paths):
             if sample_size and i >= sample_size:
                 break
@@ -255,9 +260,7 @@ def collate_image_and_annotation_subsets(
             # if dst_image_path.exists():
             #     dst_image_path = dst_folder / f"{original_image_path.stem}zzz{original_image_path.suffix}"
             if dst_image_path.exists():
-                print(
-                    "I cannot catch a break! File name is not unique. Skip and Continue."
-                )
+                print(f"File name is not unique, skipping {str(dst_image_path.name)}")
                 continue
             shutil.copy(src=original_image_path, dst=dst_image_path)
 
@@ -555,7 +558,9 @@ def prepare_dataset_and_train(
     with open(f"{str(dst_dataset_path)}", "w") as f_out:
         f_out.write(yaml_text)
 
-    (python_path, train_path, cfg_path, weights_path, hyp_path) = get_config_params(base_dir)
+    python_path, train_path, cfg_path, weights_path, hyp_path, _ = get_config_params(
+        base_dir
+    )
 
     pytorch_cmd = [
         python_path,
@@ -580,3 +585,36 @@ def prepare_dataset_and_train(
 
     if run_training:
         subprocess.check_call(pytorch_cmd, cwd=str(Path(train_path).parent))
+
+
+def run_detections(
+    images_path: Path,
+    dataset_version: str,
+    model_path: Path,
+    model_version: str,
+    base_dir: Path,
+    conf_thres: float = 0.1,
+):
+    results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    python_path, _, _, _, _, detect_path = get_config_params(base_dir)
+    pytorch_cmd = [
+        python_path,
+        detect_path,
+        f"--source={str(images_path)}",
+        f"--weights={model_path}",
+        "--img=640",
+        "--device=0",
+        f"--name={results_name}",
+        "--save-txt",
+        "--save-conf",
+        "--nosave",
+        "--agnostic-nms",
+        f"--iou-thres=0.55",
+        f"--conf-thres={conf_thres}",
+    ]
+    subprocess.check_call(
+        pytorch_cmd,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        cwd=str(Path(detect_path).parent),
+    )

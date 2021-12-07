@@ -58,4 +58,5 @@ def get_config_params(base_dir: Path):
     cfg_path = config.get("YOLO", "CFG_PATH")
     weights_path = config.get("YOLO", "WEIGHTS_PATH")
     hyp_path = config.get("YOLO", "HYP_PATH")
-    return python_path, train_path, cfg_path, weights_path, hyp_path
+    detect_path = config.get("YOLO", "DETECT_PATH")
+    return python_path, train_path, cfg_path, weights_path, hyp_path, detect_path
