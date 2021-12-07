@@ -1,3 +1,4 @@
+import configparser
 import threading
 
 import fiftyone as fo
@@ -323,19 +324,26 @@ def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder:
     cmd = [
         f"{str(open_labeling_env_python)}",
         f"{str(open_labeling_script)}",
-        # "-i",
-        # str(root_folder),
-        # "-o",
-        # str(root_folder),
         "-l",
         *filenames,
     ]
     subprocess.run(cmd)
 
 
+def _get_open_labeling_dir(base_dir: Path = Path(__file__).parents[1]):
+    config = configparser.ConfigParser()
+    config_path = base_dir / "config.ini"
+    if not config_path.exists():
+        raise RuntimeError(f"{str(config_path)} does not exist.")
+    config.read(str(config_path))
+    return config.get("EDITOR", "OPEN_LABELING_ROOT")
+
+
+OPEN_LABELING_PATH = Path(_get_open_labeling_dir())
+
+
 def find_errors(
     dataset_label: str,
-    open_labeling_dir: Path,
     tag: str = "eval_fn",
     conf_thresh: float = 0.25,
     limit: int = 25,
@@ -359,7 +367,7 @@ def find_errors(
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[filenames, open_labeling_dir],
+        args=[filenames, OPEN_LABELING_PATH],
     )
     open_labeling_thread.start()
 
@@ -375,11 +383,10 @@ def find_errors(
         )
 
 
-def test_find_errors():
+def test_find_errors(tag="mistakenness"):
     find_errors(
         dataset_label="v8a",
-        open_labeling_dir=Path("/home/david/addn_repos/OpenLabeling"),
-        tag="eval_fp",
+        tag=tag,
         conf_thresh=0.1,
         limit=16,
     )
