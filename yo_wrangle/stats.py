@@ -52,9 +52,14 @@ def count_class_instances_in_datasets(
         results_dict[dataset_name] = dataset_dict
 
     df = pandas.DataFrame(results_dict).fillna(value=0)
+    grand_total = df.sum().sum()
     df["TOTAL"] = df.sum(axis=1)
     df = df[list(df.columns)] = df[list(df.columns)].astype(int)
     df = df.transpose().astype(int)
+    unordered_cols = list(df)
+    ordered_cols = [class_name for class_name in classes_map.values() if class_name in unordered_cols]
+    df = df[ordered_cols]
+    df["TOTAL"] = df.sum(axis=1)
     output_str = tabulate(
         df,
         headers="keys",
@@ -63,6 +68,6 @@ def count_class_instances_in_datasets(
         stralign="left",
         numalign="right",
     )
-    print("\n")
+    output_str = output_str + f"\nGrand Total: {grand_total}\n"
     print(output_str)
     return output_str
