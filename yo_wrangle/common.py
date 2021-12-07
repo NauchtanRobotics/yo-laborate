@@ -54,9 +54,8 @@ def get_config_params(base_dir: Path):
         raise RuntimeError(f"{str(config_path)} does not exist.")
     config.read(str(config_path))
     python_path = config.get("YOLO", "PYTHON_EXE")
-    train_path = config.get("YOLO", "TRAIN_PATH")
+    yolo_root = config.get("YOLO", "BASE_DIR")
     cfg_path = config.get("YOLO", "CFG_PATH")
     weights_path = config.get("YOLO", "WEIGHTS_PATH")
     hyp_path = config.get("YOLO", "HYP_PATH")
-    detect_path = config.get("YOLO", "DETECT_PATH")
-    return python_path, train_path, cfg_path, weights_path, hyp_path, detect_path
+    return python_path, yolo_root, cfg_path, weights_path, hyp_path

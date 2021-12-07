@@ -605,13 +605,14 @@ names: {class_names}"""
     with open(f"{str(dst_dataset_path)}", "w") as f_out:
         f_out.write(yaml_text)
 
-    python_path, train_path, cfg_path, weights_path, hyp_path, _ = get_config_params(
+    python_path, yolo_root, cfg_path, weights_path, hyp_path = get_config_params(
         base_dir
     )
     model_instance = f"{dst_root.name}_reverse"
+    train_script = Path(yolo_root) / "train.py"
     pytorch_cmd = [
         python_path,
-        train_path,
+        f"{str(train_script)}",
         "--img=640",
         "--batch=50",
         "--workers=4",
@@ -631,7 +632,7 @@ names: {class_names}"""
         pytorch_cmd,
         stdout=sys.stdout,
         stderr=subprocess.STDOUT,
-        cwd=str(Path(train_path).parent),
+        cwd=yolo_root,
     )
 
 
@@ -645,10 +646,11 @@ def run_detections(
     device: int = 0,
 ):
     results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
-    python_path, _, _, _, _, detect_path = get_config_params(base_dir)
+    python_path, yolo_root, _, _, _ = get_config_params(base_dir)
+    detect_script = Path(yolo_root) / "detect.py"
     pytorch_cmd = [
         python_path,
-        detect_path,
+        f"{str(detect_script)}",
         f"--source={str(images_path)}",
         f"--weights={model_path}",
         "--img=640",
@@ -665,5 +667,5 @@ def run_detections(
         pytorch_cmd,
         stdout=sys.stdout,
         stderr=subprocess.STDOUT,
-        cwd=str(Path(detect_path).parent),
+        cwd=yolo_root,
     )
