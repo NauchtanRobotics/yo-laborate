@@ -47,7 +47,7 @@ def get_id_to_label_map(classes_list_path: Path) -> Dict[int, str]:
     return label_map
 
 
-def get_config_params(base_dir: Path):
+def get_config_items(base_dir: Path):
     config = configparser.ConfigParser()
     config_path = base_dir / "config.ini"
     if not config_path.exists():
@@ -58,4 +58,6 @@ def get_config_params(base_dir: Path):
     cfg_path = config.get("YOLO", "CFG_PATH")
     weights_path = config.get("YOLO", "WEIGHTS_PATH")
     hyp_path = config.get("YOLO", "HYP_PATH")
-    return python_path, yolo_root, cfg_path, weights_path, hyp_path
+    dataset_root = config.get("DATASET", "ROOT")
+    classes_list_path = config.get("DATASET", "CLASSES_LIST")
+    return python_path, yolo_root, cfg_path, weights_path, hyp_path, dataset_root, classes_list_path

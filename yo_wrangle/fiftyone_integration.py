@@ -83,11 +83,12 @@ def _get_subset_folders(
                 LABELS_FOLDER_NAME,
                 PASCAL_VOC_FOLDER_NAME,
             ]
+            and folder.name[0] != "."
         ]
     else:
         raise Exception(
             "You need to provide a Path to either one of "
-            "dataset_root (which contains subset sample folders) or images root. "
+            "dataset_root (which contains subset sample folders) or images_root. "
             "Do not provide both."
         )
     return sorted(subset_folders)
@@ -120,29 +121,28 @@ def _get_annotations_root(subset_folder: Path) -> Path:
 def init_fifty_one_dataset(
     dataset_label: str,
     label_mapping: Dict[int, str],
+    inferences_root: Path,
+    processed_root: Path,
     dataset_root: Optional[Path] = None,
     images_root: Optional[Path] = None,
     ground_truths_root: Optional[Path] = None,
-    inferences_root: Optional[Path] = None,
 ):
     """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
-    if dataset_label in fo.list_datasets():
-        fo.delete_dataset(name=dataset_label)
-    else:
-        pass
-
+    processed_image_names = [x.name for x in get_all_jpg_recursive(img_root=processed_root)]
     subset_folders = _get_subset_folders(dataset_root, images_root)
     samples = []
     for subset_folder in subset_folders:
         if dataset_root is not None and ground_truths_root is None:
-            ground_truths_root = _get_annotations_root(subset_folder=subset_folder)
+            ground_truths_folder = _get_annotations_root(subset_folder=subset_folder)
         else:
-            pass  # just use the ground_truths_root param provided.
-        for image_path in get_all_jpg_recursive(img_root=subset_folder):
+            ground_truths_folder = ground_truths_root
+        subset_image_paths = list(get_all_jpg_recursive(img_root=subset_folder))
+        for image_path in subset_image_paths:
             sample = fo.Sample(filepath=str(image_path))
             detections = []
-            ground_truths_path = ground_truths_root / f"{image_path.stem}.txt"
+            ground_truths_path = ground_truths_folder / f"{image_path.stem}.txt"
             if not ground_truths_path.exists():
+                print(f"Ground truth not exist: {str(ground_truths_path)}")
                 pass  # no detection(s) will be added to this sample.
             else:
                 with open(str(ground_truths_path), "r") as file_obj:
@@ -180,12 +180,14 @@ def init_fifty_one_dataset(
             sample["ground_truth"] = fo.Detections(detections=detections)
             sample["prediction"] = fo.Detections(detections=predictions)
             sample["subset"] = subset_folder.name
+            if image_path.name in processed_image_names:
+                sample.tags.append("processed")
             samples.append(sample)
 
     # Create dataset
     dataset = fo.Dataset(dataset_label)
     dataset.add_samples(samples)
-
+    dataset.save()
     model = foz.load_zoo_model("wide-resnet101-2-imagenet-torch")
     embeddings = dataset.compute_embeddings(model=model)
     fob.compute_uniqueness(dataset, embeddings=embeddings)
@@ -199,64 +201,35 @@ def init_fifty_one_dataset(
     dataset.save()
 
 
-def init_ds_col6e():
-    """Creates a fiftyone dataset. Currently relies on hard coded local variables."""
-    dataset_label = "col6e"
-    class_name_list_path = Path(
-        # "C:\\Users\\61419\\OpenLabeling\\main\\class_list.txt"
-        "/home/david/Desktop/class_list.txt"
-    )
-    label_mapping = get_id_to_label_map(class_name_list_path)
-    dataset_root = None  # Path("/home/david/RACAS/sealed_roads_dataset")
-    images_root = Path(
-        "/home/david/RACAS/sealed_roads_dataset/Train_Isaac_2021_sample_1"
-    )
-    ground_truths_root = Path(
-        "/home/david/RACAS/sealed_roads_dataset/Train_Isaac_2021_sample_1/YOLO_darknet"
-    )
-    YOLO_ROOT = Path("/home/david/addn_repos/yolov5")
-    if dataset_label in fo.list_datasets():
-        fo.delete_dataset(name=dataset_label)
+def start(dataset_label: Optional[str] = None):
+    """
+    You must first run init_fifty_one_dataset.
+    """
+    if len(fo.list_datasets()) == 0:
+        raise RuntimeError("No datasets available. First run init_fiftyone_dataset().")
+    elif dataset_label is None:
+        dataset_label = sorted(fo.list_datasets())[-1]
     else:
         pass
-    init_fifty_one_dataset(
-        dataset_label=dataset_label,
-        label_mapping=label_mapping,
-        dataset_root=dataset_root,
-        images_root=images_root,
-        ground_truths_root=ground_truths_root,
-        inferences_root=(
-            YOLO_ROOT / "runs/detect/Coll_7_train_Collation_7_scale40pcnt_10conf/labels"
-        ),
-    )
 
-
-def clean_start(dataset_label: str):
-    """Currently relies on hard coded local variable in init_ds_col6e()."""
-    if dataset_label in fo.list_datasets():
-        init_ds_col6e()
-    else:
-        pass
-    start(dataset_label)
-
-
-def test_init_ds_col6e():
-    init_ds_col6e()
-
-
-def start(dataset_label: str):
-    """Currently relies on hard coded local variable in init_ds_col6e()."""
     if dataset_label not in fo.list_datasets():
-        init_ds_col6e()
-    else:
-        pass
+        raise RuntimeError(f"{dataset_label} not found.")
+
     dataset = fo.load_dataset(name=dataset_label)
+    processed_root = Path("/home/david/addn_repos/yolov5/datasets/v8a/val")
+    processed_image_names = [x.name for x in get_all_jpg_recursive(img_root=processed_root)]
+    # for sample in dataset:
+    #     filename = Path(sample["filepath"]).name
+    #     if filename in processed_image_names:
+    #         sample.tags.append("processed")
+    #         sample.save()
     print_dataset_info(dataset)
+    print(dataset.last())
     fo.launch_app(dataset)
 
 
 def test_start():
-    start(dataset_label="col6e")
+    start()
 
 
 def print_dataset_info(dataset: DatasetView):
@@ -302,7 +275,7 @@ def _extract_filenames_by_tag(
     else:
         raise Exception(f"Dataset not found: {dataset_label} ")
     print_dataset_info(dataset)
-
+    dataset = dataset.match_tags("processed")
     dataset = dataset.sort_by("mistakenness", reverse=True)
     if tag == "mistakenness":
         filtered_dataset = dataset.limit(limit)
@@ -350,7 +323,7 @@ def _extract_filenames_by_tag(
     return consistent_folder, list_files_to_edit, filtered_dataset
 
 
-def edit_labels(root_folder: Path, filenames: List[str], open_labeling_path: Path):
+def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder: Path,
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -363,10 +336,10 @@ def edit_labels(root_folder: Path, filenames: List[str], open_labeling_path: Pat
     cmd = [
         f"{str(open_labeling_env_python)}",
         f"{str(open_labeling_script)}",
-        "-i",
-        str(root_folder),
-        "-o",
-        str(root_folder),
+        # "-i",
+        # str(root_folder),
+        # "-o",
+        # str(root_folder),
         "-l",
         *filenames,
     ]
@@ -417,9 +390,9 @@ def find_errors(
 
 def test_find_errors():
     find_errors(
-        dataset_label="col6e",
+        dataset_label="v8a",
         open_labeling_dir=Path("/home/david/addn_repos/OpenLabeling"),
-        tag="mistakenness",
-        conf_thresh=0.5,
-        limit=25,
+        tag="eval_fp",
+        conf_thresh=0.1,
+        limit=16,
     )

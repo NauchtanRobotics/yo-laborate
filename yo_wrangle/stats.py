@@ -44,6 +44,8 @@ def count_class_instances_in_datasets(
                     f"WARNING: Counting stats beyond nominated limit: {dataset_path.name}"
                 )
             annotations_file = annotations_root / f"{image_path.stem}.txt"
+            if not annotations_file.exists():
+                continue
             with open(annotations_file, "r") as f:
                 lines = f.readlines()
                 for line in lines:

@@ -41,7 +41,7 @@ from yo_wrangle.common import (
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
     get_id_to_label_map,
-    get_config_params,
+    get_config_items,
 )
 
 
@@ -558,7 +558,7 @@ def prepare_dataset_and_train(
     with open(f"{str(dst_dataset_path)}", "w") as f_out:
         f_out.write(yaml_text)
 
-    python_path, train_path, cfg_path, weights_path, hyp_path, _ = get_config_params(
+    python_path, train_path, cfg_path, weights_path, hyp_path, _, _ = get_config_items(
         base_dir
     )
 
@@ -605,7 +605,7 @@ names: {class_names}"""
     with open(f"{str(dst_dataset_path)}", "w") as f_out:
         f_out.write(yaml_text)
 
-    python_path, yolo_root, cfg_path, weights_path, hyp_path = get_config_params(
+    python_path, yolo_root, cfg_path, weights_path, hyp_path, _, _ = get_config_items(
         base_dir
     )
     model_instance = f"{dst_root.name}_reverse"
@@ -646,7 +646,7 @@ def run_detections(
     device: int = 0,
 ):
     results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
-    python_path, yolo_root, _, _, _ = get_config_params(base_dir)
+    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
     detect_script = Path(yolo_root) / "detect.py"
     pytorch_cmd = [
         python_path,

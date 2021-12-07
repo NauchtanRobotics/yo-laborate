@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from common import get_id_to_label_map, get_config_items
+from fiftyone_integration import init_fifty_one_dataset
 from wrangle import prepare_dataset_and_train, run_detections, reverse_train
 
 SUBSETS_INCLUDED = [
@@ -100,10 +102,15 @@ SUBSETS_INCLUDED = [
 KEEP_CLASS_IDS = None  # None actually means keep all classes
 SKIP_CLASS_IDS = [10, 13, 14, 15, 22]  # AP, RK, SD, S, Sh
 EVERY_NTH_TO_VAL = 1  # for the validation subset
-DST_ROOT = Path("/home/david/addn_repos/yolov5/datasets/v8a")
-CLASSES_LIST_PATH = Path(
-    "/home/david/addn_repos/OpenLabeling/open_labeling/class_list.txt"
-)
+DATASET_LABEL = "v8a"
+
+
+# DERIVED CONSTANTS
+_, yolo_root, _, _, _, dataset_root, classes_list = get_config_items(base_dir=Path(__file__).parent)
+YOLO_ROOT = Path(yolo_root)
+DATASET_ROOT = Path(dataset_root)
+CLASSES_LIST_PATH = Path(classes_list)
+DST_ROOT = Path(YOLO_ROOT) / f"datasets/{DATASET_LABEL}"
 
 
 def run_prepare_dataset_and_train():
@@ -126,11 +133,44 @@ def test_run_detections():
     run_detections(
         images_path=(DST_ROOT / "val" / "images"),
         dataset_version=f"{DST_ROOT.name}_val",
-        model_path=Path(f"/home/david/addn_repos/yolov5/runs/train/{model_name}/weights/best.pt"),
+        model_path=Path(f"{YOLO_ROOT}/runs/train/{model_name}/weights/best.pt"),
         model_version=DST_ROOT.name,
         base_dir=Path(__file__).parent,
         conf_thres=0.1,
         device=0,
+    )
+
+
+def test_init_fiftyone_ds():
+    """Creates a fiftyone dataset. Currently, this initialiser
+    relies on hard coded local variables.
+
+    """
+    import fiftyone as fo
+
+    label_mapping = get_id_to_label_map(CLASSES_LIST_PATH)
+
+    images_root = None
+    ground_truths_root = None
+    inference_run_name = f"{DATASET_LABEL}_val__{DATASET_LABEL}_conf10pcnt"
+    inferences_root = (
+        YOLO_ROOT / f"runs/detect/{inference_run_name}/labels"
+    )
+
+    dataset_label = DST_ROOT.name
+    if dataset_label in fo.list_datasets():
+        fo.delete_dataset(name=dataset_label)
+    else:
+        pass
+    processed_root = DST_ROOT / "val"
+    init_fifty_one_dataset(
+        dataset_label=dataset_label,
+        label_mapping=label_mapping,
+        inferences_root=inferences_root,
+        processed_root=processed_root,
+        dataset_root=DATASET_ROOT,
+        images_root=images_root,
+        ground_truths_root=ground_truths_root,
     )
 
 
