@@ -6,7 +6,7 @@ from typing import List, Tuple, Optional
 from yo_wrangle.common import (
     get_id_to_label_map,
     YOLO_ANNOTATIONS_FOLDER_NAME,
-    get_all_txt_recursive,
+    get_all_jpg_recursive,
 )
 
 
@@ -26,17 +26,22 @@ def count_class_instances_in_datasets(
     """
     classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     results_dict = {}
-    for sample in data_samples:
-        dataset_path = sample[0]
+    for dataset_path, max_samples in data_samples:
         dataset_name = dataset_path.stem  # equally, could be dataset_path.name
-        dataset_annotations = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
-        if not dataset_annotations.exists():
-            dataset_annotations = dataset_path  # Will search recursively anyway
+        annotations_root = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
+        if not annotations_root.exists():
+            annotations_root = dataset_path / "labels"
+        if not annotations_root.exists():  # Annotations may be side-by-side with images.
+            annotations_root = dataset_path
         assert (
-            dataset_annotations.exists()
-        ), f"{str(dataset_annotations)} does not exist"
+            annotations_root.exists()
+        ), f"{str(annotations_root)} does not exist"
+
         dataset_dict = {}
-        for annotations_file in get_all_txt_recursive(root_dir=dataset_annotations):
+        for i, image_path in enumerate(get_all_jpg_recursive(img_root=dataset_path)):
+            if i == max_samples:
+                print(f"WARNING: Counting stats beyond nominated limit: {dataset_path.name}")
+            annotations_file = annotations_root / f"{image_path.stem}.txt"
             with open(annotations_file, "r") as f:
                 lines = f.readlines()
                 for line in lines:
