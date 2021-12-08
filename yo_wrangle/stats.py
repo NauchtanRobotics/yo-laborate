@@ -2,16 +2,16 @@ import pandas
 from tabulate import tabulate
 
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from yo_wrangle.common import (
     get_id_to_label_map,
     YOLO_ANNOTATIONS_FOLDER_NAME,
-    get_all_txt_recursive,
+    get_all_jpg_recursive,
 )
 
 
 def count_class_instances_in_datasets(
-    data_samples: List[Tuple[Path, int]],
+    data_samples: List[Tuple[Path, Optional[int]]],
     class_ids: List[int],
     class_names_path: Path,
 ):
@@ -26,17 +26,26 @@ def count_class_instances_in_datasets(
     """
     classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     results_dict = {}
-    for sample in data_samples:
-        dataset_path = sample[0]
+    for dataset_path, max_samples in data_samples:
         dataset_name = dataset_path.stem  # equally, could be dataset_path.name
-        dataset_annotations = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
-        if not dataset_annotations.exists():
-            dataset_annotations = dataset_path  # Will search recursively anyway
-        assert (
-            dataset_annotations.exists()
-        ), f"{str(dataset_annotations)} does not exist"
+        annotations_root = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
+        if not annotations_root.exists():
+            annotations_root = dataset_path / "labels"
+        if (
+            not annotations_root.exists()
+        ):  # Annotations may be side-by-side with images.
+            annotations_root = dataset_path
+        assert annotations_root.exists(), f"{str(annotations_root)} does not exist"
+
         dataset_dict = {}
-        for annotations_file in get_all_txt_recursive(root_dir=dataset_annotations):
+        for i, image_path in enumerate(get_all_jpg_recursive(img_root=dataset_path)):
+            if i == max_samples:
+                print(
+                    f"WARNING: Counting stats beyond nominated limit: {dataset_path.name}"
+                )
+            annotations_file = annotations_root / f"{image_path.stem}.txt"
+            if not annotations_file.exists():
+                continue
             with open(annotations_file, "r") as f:
                 lines = f.readlines()
                 for line in lines:
@@ -52,9 +61,18 @@ def count_class_instances_in_datasets(
         results_dict[dataset_name] = dataset_dict
 
     df = pandas.DataFrame(results_dict).fillna(value=0)
+    grand_total = df.sum().sum()
     df["TOTAL"] = df.sum(axis=1)
     df = df[list(df.columns)] = df[list(df.columns)].astype(int)
     df = df.transpose().astype(int)
+    unordered_cols = list(df)
+    ordered_cols = [
+        class_name
+        for class_name in classes_map.values()
+        if class_name in unordered_cols
+    ]
+    df = df[ordered_cols]
+    df["TOTAL"] = df.sum(axis=1)
     output_str = tabulate(
         df,
         headers="keys",
@@ -63,6 +81,6 @@ def count_class_instances_in_datasets(
         stralign="left",
         numalign="right",
     )
-    print("\n")
+    output_str = output_str + f"\nGrand Total: {grand_total}\n"
     print(output_str)
     return output_str

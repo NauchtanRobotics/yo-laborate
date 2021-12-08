@@ -29,14 +29,19 @@ Standard dataset building steps::
 
 """
 import shutil
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple
 
+from yo_wrangle.stats import count_class_instances_in_datasets
 from yo_wrangle.common import (
     get_all_jpg_recursive,
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
+    get_id_to_label_map,
+    get_config_items,
 )
 
 
@@ -236,14 +241,18 @@ def collate_image_and_annotation_subsets(
     """
     dst_folder.mkdir(exist_ok=True)
     for original_images_dir, sample_size in samples_required:
-        assert original_images_dir.exists()
+        assert (
+            original_images_dir.exists()
+        ), f"Subset path not found: {str(original_images_dir)}"
         src_annotations_dir = original_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder = dst_folder / YOLO_ANNOTATIONS_FOLDER_NAME
         dst_annotations_folder.mkdir(exist_ok=True)
         original_image_paths = sorted(
             get_all_jpg_recursive(img_root=original_images_dir)
         )
-        assert len(original_image_paths) > 0
+        assert (
+            len(original_image_paths) > 0
+        ), f"Subset path has no jpg files: {str(original_images_dir)}"
         for i, original_image_path in enumerate(original_image_paths):
             if sample_size and i >= sample_size:
                 break
@@ -251,9 +260,7 @@ def collate_image_and_annotation_subsets(
             # if dst_image_path.exists():
             #     dst_image_path = dst_folder / f"{original_image_path.stem}zzz{original_image_path.suffix}"
             if dst_image_path.exists():
-                print(
-                    "I cannot catch a break! File name is not unique. Skip and Continue."
-                )
+                print(f"File name is not unique, skipping {str(dst_image_path.name)}")
                 continue
             shutil.copy(src=original_image_path, dst=dst_image_path)
 
@@ -267,6 +274,8 @@ def collate_image_and_annotation_subsets(
             )
             if src_annotations_path.exists():
                 shutil.copy(src=src_annotations_path, dst=dst_annotations_path)
+            else:
+                print(f"Annotation file not found: {str(src_annotations_path)}")
 
         if keep_class_ids or skip_class_ids:
             filter_dataset_for_classes(
@@ -314,16 +323,18 @@ def split_yolo_train_dataset_every_nth(
         )
 
         if i % every_n_th != 0:
-            train_val_dst = dst_train_root
+            dst = dst_train_root
         else:
-            train_val_dst = dst_val_root
+            dst = dst_val_root
 
-        dst_image_path = train_val_dst / "images" / image_path.name
+        dst_image_path = dst / "images" / image_path.name
         shutil.copy(src=str(image_path), dst=str(dst_image_path))
 
-        dst_annotations_file = train_val_dst / "labels" / src_annotations_file.name
+        dst_annotations_file = dst / "labels" / src_annotations_file.name
         if src_annotations_file.exists():
             shutil.copy(src=str(src_annotations_file), dst=str(dst_annotations_file))
+        else:
+            print(f"Annotation file not found: {str(src_annotations_file)}")
 
 
 def check_train_val_are_unique(dataset_path: Path):
@@ -460,13 +471,9 @@ def filter_dataset_for_classes(
             class_id = int(annotation.strip().split(" ")[0])
             if skip_class_ids and class_id in skip_class_ids:
                 continue
-            if keep_class_ids:
-                if class_id in keep_class_ids:
-                    new_lines.append(annotation)
-                else:
-                    continue
-            else:
-                new_lines.append(annotation)
+            elif keep_class_ids and class_id not in keep_class_ids:
+                continue
+            new_lines.append(annotation)
 
         with open(str(annotations_path), "w") as file:
             file.writelines(new_lines)
@@ -490,4 +497,175 @@ def collate_additional_sample(
         samples_required=sample_folders,
         dst_folder=dst_folder,
         keep_class_ids=None,
+    )
+
+
+def prepare_dataset_and_train(
+    class_list_path: Path,
+    subsets_included: List,
+    dst_root: Path,
+    every_n_th: int,
+    keep_class_ids: Optional[List[int]],
+    skip_class_ids: Optional[List[int]],
+    base_dir: Path,
+    run_training: bool = True,
+):
+    classes_map = get_id_to_label_map(classes_list_path=class_list_path)
+    class_ids = list(classes_map.keys())
+    output_str = count_class_instances_in_datasets(
+        data_samples=subsets_included,
+        class_ids=class_ids,
+        class_names_path=class_list_path,
+    )
+    model_instance = dst_root.name
+
+    with open(f"{model_instance}_classes_support.txt", "w") as f_out:
+        f_out.write(output_str)
+
+    collate_and_split(
+        subsets_included=subsets_included,
+        dst_root=dst_root,
+        every_n_th=every_n_th,
+        keep_class_ids=keep_class_ids,
+        skip_class_ids=skip_class_ids,
+    )
+    """Add actual classes support after filtering"""
+    final_subsets_included = [
+        ((dst_root / "train"), None),
+        ((dst_root / "val"), None),
+    ]
+    output_str = count_class_instances_in_datasets(
+        data_samples=final_subsets_included,
+        class_ids=class_ids,
+        class_names_path=class_list_path,
+    )
+    output_str = "\n" + output_str
+    with open(f"{model_instance}_classes_support.txt", "a") as f_out:
+        f_out.write(output_str)
+
+    class_names = [classes_map[class_id] for class_id in class_ids]
+    yaml_text = f"""train: {str(dst_root)}/train/images/
+    val: {str(dst_root)}/val/images/
+    nc: {len(class_ids)}
+    names: {class_names}"""
+
+    """ Write dataset.yaml locally. """
+    with open(f"{model_instance}_dataset_yaml.yaml", "w") as f_out:
+        f_out.write(yaml_text)
+
+    """ Write dataset.yaml in DST folder."""
+    dst_dataset_path = dst_root / "dataset.yaml"
+    with open(f"{str(dst_dataset_path)}", "w") as f_out:
+        f_out.write(yaml_text)
+
+    python_path, train_path, cfg_path, weights_path, hyp_path, _, _ = get_config_items(
+        base_dir
+    )
+
+    pytorch_cmd = [
+        python_path,
+        train_path,
+        "--img=640",
+        "--batch=50",
+        "--workers=4",
+        "--device=0,1",
+        f"--cfg={cfg_path}",
+        "--epochs=300",
+        f"--data={str(dst_dataset_path)}",
+        f"--weights={weights_path}",
+        f"--hyp={hyp_path}",
+        f"--name={model_instance}",
+        "--patience=50",
+        "--cache",
+    ]
+
+    train_cmd_str = " ".join(pytorch_cmd)
+    with open(f"{model_instance}_train_cmd.txt", "w") as f_out:
+        f_out.write(train_cmd_str)
+
+    if run_training:
+        subprocess.check_call(pytorch_cmd, cwd=str(Path(train_path).parent))
+
+
+def reverse_train(
+    class_list_path: Path,
+    base_dir: Path,
+    dst_root: Path,
+):
+    classes_map = get_id_to_label_map(classes_list_path=class_list_path)
+    class_ids = list(classes_map.keys())
+    class_names = [classes_map[class_id] for class_id in class_ids]
+    yaml_text = f"""train: {str(dst_root)}/val/images/
+val: {str(dst_root)}/train/images/
+nc: {len(class_ids)}
+names: {class_names}"""
+
+    """ Write dataset.yaml in DST folder."""
+    dst_dataset_path = dst_root / "reverse_dataset.yaml"
+    with open(f"{str(dst_dataset_path)}", "w") as f_out:
+        f_out.write(yaml_text)
+
+    python_path, yolo_root, cfg_path, weights_path, hyp_path, _, _ = get_config_items(
+        base_dir
+    )
+    model_instance = f"{dst_root.name}_reverse"
+    train_script = Path(yolo_root) / "train.py"
+    pytorch_cmd = [
+        python_path,
+        f"{str(train_script)}",
+        "--img=640",
+        "--batch=50",
+        "--workers=4",
+        "--device=0,1",
+        f"--cfg={cfg_path}",
+        "--epochs=300",
+        f"--data={str(dst_dataset_path)}",
+        f"--weights={weights_path}",
+        f"--hyp={hyp_path}",
+        f"--name={model_instance}",
+        "--patience=50",
+        "--cache",
+    ]
+    print("\n")
+    print(" ".join(pytorch_cmd))
+    subprocess.check_call(
+        pytorch_cmd,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        cwd=yolo_root,
+    )
+
+
+def run_detections(
+    images_path: Path,
+    dataset_version: str,
+    model_path: Path,
+    model_version: str,
+    base_dir: Path,
+    conf_thres: float = 0.1,
+    device: int = 0,
+):
+    results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
+    detect_script = Path(yolo_root) / "detect.py"
+    pytorch_cmd = [
+        python_path,
+        f"{str(detect_script)}",
+        f"--source={str(images_path)}",
+        f"--weights={model_path}",
+        "--img=640",
+        f"--device={device}",
+        f"--name={results_name}",
+        "--save-txt",
+        "--save-conf",
+        "--nosave",
+        "--agnostic-nms",
+        f"--iou-thres=0.55",
+        f"--conf-thres={conf_thres}",
+    ]
+    subprocess.check_call(
+        pytorch_cmd,
+        stdout=sys.stdout,
+        stderr=subprocess.STDOUT,
+        cwd=yolo_root,
     )
