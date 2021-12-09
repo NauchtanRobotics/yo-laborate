@@ -1,0 +1,6 @@
+{
+    "0": {"label": "D00", "description": "Longitudinal Cracking", "group": "Cracking", "min_prob": 0.15},
+    "1": {"label": "D10", "description": "Transverse Cracking", "group": "Cracking", "min_prob": 0.15},
+    "2": {"label": "D20", "description": "Crocodile Cracking", "group": "Cracking", "min_prob": 0.15},
+    "3": {"label": "D40", "description": "Pothole", "group": "Pavement", "min_prob": 0.3, "min_width_to_box": 0.03}
+}
