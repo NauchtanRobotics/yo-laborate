@@ -545,9 +545,9 @@ def prepare_dataset_and_train(
 
     class_names = [classes_map[class_id] for class_id in class_ids]
     yaml_text = f"""train: {str(dst_root)}/train/images/
-    val: {str(dst_root)}/val/images/
-    nc: {len(class_ids)}
-    names: {class_names}"""
+val: {str(dst_root)}/val/images/
+nc: {len(class_ids)}
+names: {class_names}"""
 
     """ Write dataset.yaml locally. """
     with open(f"{model_instance}_dataset_yaml.yaml", "w") as f_out:
@@ -558,13 +558,19 @@ def prepare_dataset_and_train(
     with open(f"{str(dst_dataset_path)}", "w") as f_out:
         f_out.write(yaml_text)
 
-    python_path, train_path, cfg_path, weights_path, hyp_path, _, _ = get_config_items(
-        base_dir
-    )
-
+    (
+        python_path,
+        yolo_base_dir,
+        cfg_path,
+        weights_path,
+        hyp_path,
+        _,
+        _,
+    ) = get_config_items(base_dir)
+    train_script = str(Path(yolo_base_dir) / "train.py")
     pytorch_cmd = [
         python_path,
-        train_path,
+        train_script,
         "--img=640",
         "--batch=50",
         "--workers=4",
@@ -588,7 +594,7 @@ def prepare_dataset_and_train(
             pytorch_cmd,
             stdout=sys.stdout,
             stderr=sys.stderr,
-            cwd=str(Path(train_path).parent)
+            cwd=str(Path(yolo_base_dir).parent),
         )
 
 
@@ -668,6 +674,7 @@ def run_detections(
         f"--iou-thres=0.55",
         f"--conf-thres={conf_thres}",
     ]
+    print(" ".join(pytorch_cmd))
     subprocess.check_call(
         pytorch_cmd,
         stdout=sys.stdout,
