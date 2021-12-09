@@ -29,15 +29,35 @@ Also, `yo-wrangle` provides dataset wrangling and bootstrapping basics, featurin
 * Fewer “high value” training images leads to a compact dataset that performs well and is quicker to train. 
 * Bootstrap a COCO dataset for segmentation modelling by converting bounding boxes to segmentation polygons.
 
+## System Requirements
+
+To fully utilise this library, you will need to be using the Linux OS (tested on Ubuntu 20.04) and a GPU.
+
+Wrangling scripts will work fine on Windows 10, however, `init_fiftyone_dataset` and `find_errors` will not work.
+It would be great to get these working on Windows, however, I ran into trouble with running evaluations via `fiftyone-brain`. 
+The problem may have been lack of a gpu, but surely it should gracefully fall back to using the CPU.
+
+Contributors are encouraged to contact me if you think you can solve this problem!
+
+Other important requirements include:
+* NauchtanRobotics/OpenLabeling repository installed
+* Ultralytics/yolov5 repository installed
+
+The NauchtanRobotics fork of OpenLabeling has been modified to accept a list of images which can be in different folders.
+
 ## Installation
+
+Open a linux terminal (or git bash) and complete the following steps:
 
 1. Install python-poetry then reboot. See https://python-poetry.org/docs/#installation
 2. Clone this repository:  `git clone git@github.com:NauchtanRobotics/yo-wrangle.git`
-3. Change working directory to newly cloned repo: `cd yo-wrangle`
+3. Change working directory to newly cloned repo: `cd yo-wrangle` (n.b. you can rename this folder to describe your dataset, e.g. `number_plates_dataset`)
 4. Create virtual environment:  `poetry install` See https://python-poetry.org/docs/basic-usage/#installing-dependencies
+5. `cd ~ && git clone git@github.com:NauchtanRobotics/OpenLabeling.git`
+6. `cd ~ && git clone git@github.com:ultralytics/yolov5.git`
 
-For finding possible annotation errors with the help of `fiftyone-brain`, install python `torch` and `torchvision`
-via instructions at https://pytorch.org/get-started/locally/
+For finding possible annotation errors with the help of `fiftyone-brain`, you will need pytorch python based libraries installed.
+To install python `torch` and `torchvision`, follow instructions at https://pytorch.org/get-started/locally/
 
 Installation of torch libraries will depend on the needs of your system. Having an RTX3090, I found
 it best not to install CUDA / cuDNN on my system, but rather install python packages which contain
@@ -54,27 +74,28 @@ pip3 install torch==1.10.0+cu113 torchvision==0.11.1+cu113 -f https://download.p
 * Check you have tools for troubleshooting GPU operation by running this command `watch nvidia-smi`
 
 ## Getting Started
+### Configuration
+1. Make a copy of `config.example.ini` and name it `config.ini`.
+2. Edit the paths in `config.ini` to line up with your system.
+3. Add your dataset (subsets) folders to the root directory
+4. Edit `wrangling_example.py` to replacing the example SUBSETS_INCLUDED with your subsets.
+5. Edit other parameters below SUBSETS_INCLUDED, including setting your version.
+6. Run the wrangling scripts in `wrangling_example`
+7. Commit your work `git add . && git commit -m 'v1.0'`
 
-It would be great to get this working on Windows, however, I ran into trouble with running evaluations in `fiftyone`. 
-Wrangling scripts will work fine on Windows.
-
-There is no graphical interface yet, so edit the hard coded paths in `yo_wrangle.external_tool.test_find_errors()` then open a python console and type:
-```
-from yo_wrangle.fiftyone_integration import test_find_errors
-test_find_errors()
-```
-
+You should retrain your model and commit your work in small increments. 
+If model performance, you can easily back track and branch off at an earlier save-point.
+Small increments allow you to analyse a series of 'experiments' to ratchet up the performance of your model.
 
 ## Contributing
 
 ### In-Scope
-* TODO: GUI interface
 * TODO: pytest unit tests
-* TODO: Poetry virtual environment and packaging
-* TODO: Continuous Integration scripts.
-* TODO: Config.ini is parsed by config parser to provide/serialise various defaults such as class list path etc.
+* TODO: GUI interface with poetry defined entry point.
+* TODO: Poetry packaging / creation of a python wheel.
+* TODO: Continuous Integration scripts to run tests on github.
 
 ### Out-of-Scope
 * ? open to discussion
-* Web interface would be lovely, but there are no full time developers on this project - a little out of reach unless someone good at React is confident in integrating makesense..
+* Web interface would be lovely, but there are no full-time developers on this project - a little out of reach unless someone good at React is confident in integrating makesense..
 * The app is not intended to be all things to all computer vision engineers. Be guided by the Context and Purpose, and Mission Statement.
