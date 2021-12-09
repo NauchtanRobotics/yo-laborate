@@ -584,7 +584,12 @@ def prepare_dataset_and_train(
         f_out.write(train_cmd_str)
 
     if run_training:
-        subprocess.check_call(pytorch_cmd, cwd=str(Path(train_path).parent))
+        subprocess.check_call(
+            pytorch_cmd,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            cwd=str(Path(train_path).parent)
+        )
 
 
 def reverse_train(
