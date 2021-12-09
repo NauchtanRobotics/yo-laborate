@@ -100,13 +100,16 @@ SUBSETS_INCLUDED = [
 ]
 
 KEEP_CLASS_IDS = None  # None actually means keep all classes
-SKIP_CLASS_IDS = [10, 13, 14, 15, 22]  # AP, RK, SD, S, Sh
+SKIP_CLASS_IDS = [10, 15, 22]  # AP, RK, SD, S, Sh
 EVERY_NTH_TO_VAL = 1  # for the validation subset
-DATASET_LABEL = "v8a"
+DATASET_LABEL = "v8c"
+REVERSE_TRAIN_VAL = False
 
 
 # DERIVED CONSTANTS
-_, yolo_root, _, _, _, dataset_root, classes_list = get_config_items(base_dir=Path(__file__).parent)
+_, yolo_root, _, _, _, dataset_root, classes_list = get_config_items(
+    base_dir=Path(__file__).parent
+)
 YOLO_ROOT = Path(yolo_root)
 DATASET_ROOT = Path(dataset_root)
 CLASSES_LIST_PATH = Path(classes_list)
@@ -141,7 +144,7 @@ def test_run_detections():
     )
 
 
-def test_init_fiftyone_ds():
+def test_init_fiftyone_ds(reverse: bool = REVERSE_TRAIN_VAL):
     """Creates a fiftyone dataset. Currently, this initialiser
     relies on hard coded local variables.
 
@@ -152,17 +155,23 @@ def test_init_fiftyone_ds():
 
     images_root = None
     ground_truths_root = None
-    inference_run_name = f"{DATASET_LABEL}_val__{DATASET_LABEL}_conf10pcnt"
-    inferences_root = (
-        YOLO_ROOT / f"runs/detect/{inference_run_name}/labels"
-    )
+    if reverse:
+        label = "train"
+        model = f"{DATASET_LABEL}_reverse"
+    else:
+        label = "val"
+        model = DATASET_LABEL
+
+    processed_root = DST_ROOT / label
+    inference_run_name = f"{DATASET_LABEL}_{label}__{model}_conf10pcnt"
+    inferences_root = YOLO_ROOT / f"runs/detect/{inference_run_name}/labels"
 
     dataset_label = DST_ROOT.name
     if dataset_label in fo.list_datasets():
         fo.delete_dataset(name=dataset_label)
     else:
         pass
-    processed_root = DST_ROOT / "val"
+
     init_fifty_one_dataset(
         dataset_label=dataset_label,
         label_mapping=label_mapping,
@@ -188,9 +197,11 @@ def test_run_reverse_detections():
     run_detections(
         images_path=(DST_ROOT / "train" / "images"),
         dataset_version=f"{DST_ROOT.name}_train",
-        model_path=Path(f"/home/david/addn_repos/yolov5/runs/train/{model_name}/weights/best.pt"),
+        model_path=Path(
+            f"/home/david/addn_repos/yolov5/runs/train/{model_name}/weights/best.pt"
+        ),
         model_version=model_name,
         base_dir=Path(__file__).parent,
-        conf_thres=0.1,
+        conf_thres=0.25,
         device=1,
     )

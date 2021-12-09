@@ -60,7 +60,15 @@ def get_config_items(base_dir: Path):
     hyp_path = config.get("YOLO", "HYP_PATH")
     dataset_root = config.get("DATASET", "ROOT")
     classes_list_path = config.get("DATASET", "CLASSES_LIST")
-    return python_path, yolo_root, cfg_path, weights_path, hyp_path, dataset_root, classes_list_path
+    return (
+        python_path,
+        yolo_root,
+        cfg_path,
+        weights_path,
+        hyp_path,
+        dataset_root,
+        classes_list_path,
+    )
 
 
 def get_open_labeling_dir(base_dir: Path = Path(__file__).parents[1]):
