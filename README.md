@@ -1,7 +1,7 @@
 # `yo-wrangle` 
 _"helping computer vision engineers on a schedule"_
 
-An app to efficiently wrangle images and labels (YOLO bounding box format) with special support for maintaining sample subsets.
+An app to efficiently visualise, edit and wrangle images and labels (YOLO bounding box format) with special support for maintaining sample subsets.
 
 ![Editing short listed "most mistaken annotations"](yo-wrangle-55.png)
 
@@ -9,7 +9,7 @@ An app to efficiently wrangle images and labels (YOLO bounding box format) with 
 
 Maintaining a dataset as a collection of independent subsets may be appropriate where there is some form of stratified sampling. For example, by geographical location, source camera/image quality/resolution, illumination conditions, or some other contextual grouping. Subgroups can be added as you bootstrap your dataset.  If model performance decreases after addition of any subset, the subset can easily be removed for a time in order to expedite training of a high performance model for a retricted context. `yo-wrangle` supports basic and advanced data wrangling with the option of maintaining subsets that can be selectively collated and split intro train-val sets.
 
-`yo-wrangle` is particularly useful when working with the output from YOLOv5, in a Debian (linux) environment.
+`yo-wrangle` is particularly useful when working with the output from `Ultralytics/yolov5`, in a Debian (linux) environment.
 
 The most compelling value of yo-wrangle is integration of `fiftyone` to shortlist likely errors in bootstrapped training data and `OpenLabeling` for editing. No need to check `N` images, just review and edit the "most mistaken" at the click of a button.
 
