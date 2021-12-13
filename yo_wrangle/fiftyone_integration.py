@@ -396,13 +396,3 @@ def find_errors(
         )
 
 
-def test_find_errors(tag="mistakenness"):
-    find_errors(
-        dataset_label="v8b",
-        tag=tag,
-        conf_thresh=0.1,
-        limit=32,
-        processed=True,
-        reverse=True,
-        label_filter="R",
-    )

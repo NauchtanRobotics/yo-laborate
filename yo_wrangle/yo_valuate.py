@@ -197,15 +197,15 @@ def analyse_model_binary_metrics(
             "F1": "{:.2f}".format(f1),
         }
 
-    print("\n")
-    print(
-        tabulate(
-            pandas.DataFrame(results).transpose(),
-            headers="keys",
-            showindex="always",
-            tablefmt="pretty",
-        )
+    table_str = tabulate(
+        pandas.DataFrame(results).transpose(),
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
     )
+    print("\n")
+    print(table_str)
+    return table_str
 
 
 def analyse_model_binary_metrics_for_groups(
@@ -255,15 +255,15 @@ def analyse_model_binary_metrics_for_groups(
             "F1": "{:.2f}".format(f1),
         }
 
-    print("\n")
-    print(
-        tabulate(
+    table_str = tabulate(
             pandas.DataFrame(results).transpose(),
             headers="keys",
             showindex="always",
             tablefmt="pretty",
         )
-    )
+    print("\n")
+    print(table_str)
+    return table_str
 
 
 def binary_and_group_classification_performance(
@@ -274,7 +274,7 @@ def binary_and_group_classification_performance(
     print_first_n: Optional[int] = None,
     groupings: Dict[str, List[int]] = None,
 ):
-    analyse_model_binary_metrics(
+    table_str = analyse_model_binary_metrics(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
@@ -282,8 +282,8 @@ def binary_and_group_classification_performance(
         print_first_n=print_first_n,
         dst_csv=None,
     )
-
-    analyse_model_binary_metrics_for_groups(
+    table_str += "\n"
+    table_str += analyse_model_binary_metrics_for_groups(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
@@ -291,3 +291,5 @@ def binary_and_group_classification_performance(
         groupings=groupings,
         dst_csv=None,
     )
+    table_str += "\n"
+    return table_str
