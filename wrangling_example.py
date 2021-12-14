@@ -1,8 +1,9 @@
 from pathlib import Path
 
 from common import get_id_to_label_map, get_config_items
-from fiftyone_integration import init_fifty_one_dataset
+from fiftyone_integration import init_fifty_one_dataset, find_errors
 from wrangle import prepare_dataset_and_train, run_detections, reverse_train
+from yo_valuate import binary_and_group_classification_performance
 
 SUBSETS_INCLUDED = [
     (
@@ -77,46 +78,72 @@ SUBSETS_INCLUDED = [
         Path(
             "/home/david/RACAS/sealed_roads_dataset/YOLO_Isaac_2021_pothole_sample_val"
         ),
-        580,
+        None,
     ),
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Train_Weddin_2019_samples"),
         None,
     ),
     (
-        Path("/home/david/RACAS/sealed_roads_dataset/Train_WDRC_2021_sample_1"),
-        504,
-    ),
-    (
         Path("/home/david/RACAS/sealed_roads_dataset/Train_Whitsunday_2018_samples"),
         None,
     ),
-    # (
-    #     Path(
-    #         "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Charters_Towers_2021_subsample"
-    #     ),
-    #     None,
-    # ),
+    (
+        Path("/home/david/RACAS/sealed_roads_dataset/Train_WDRC_2021_sample_1"),
+        None,
+    ),
+    (
+        Path(
+            "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Charters_Towers_2021_subsample"
+        ),
+        None,
+    ),
 ]
 
 KEEP_CLASS_IDS = None  # None actually means keep all classes
-SKIP_CLASS_IDS = [10, 13, 14, 15, 22]  # AP, RK, SD, S, Sh
+SKIP_CLASS_IDS = [15, 22]  # Signs, Shoving
 EVERY_NTH_TO_VAL = 1  # for the validation subset
-DATASET_LABEL = "v8a"
+DATASET_LABEL = "v8d"
+REVERSE_TRAIN_VAL = False
+GROUPINGS = {"Risk Defects": [3, 4, 14], "Cracking": [0, 1, 2, 11, 16]}
+CONF = 0.1
 
 
+##############################################################################
 # DERIVED CONSTANTS
-_, yolo_root, _, _, _, dataset_root, classes_list = get_config_items(base_dir=Path(__file__).parent)
+##############################################################################
+
+_, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
+    base_dir=Path(__file__).parent
+)
 YOLO_ROOT = Path(yolo_root)
 DATASET_ROOT = Path(dataset_root)
-CLASSES_LIST_PATH = Path(classes_list)
+CLASSES_JSON_PATH = Path(classes_json_path)
+CLASSES_MAP = get_id_to_label_map(CLASSES_JSON_PATH)
 DST_ROOT = Path(YOLO_ROOT) / f"datasets/{DATASET_LABEL}"
+CONFIDENCE = int(CONF * 100)
+
+if REVERSE_TRAIN_VAL:
+    TEST_SET_LABEL = "train"
+    MODEL_LABEL = f"{DATASET_LABEL}_reverse"
+
+else:
+    TEST_SET_LABEL = "val"
+    MODEL_LABEL = DATASET_LABEL
+
+PROCESSED_ROOT = DST_ROOT / TEST_SET_LABEL
+TEST_IMAGES_ROOT = DST_ROOT / TEST_SET_LABEL / "images"
+GROUND_TRUTHS_PATH = DST_ROOT / TEST_SET_LABEL / "labels"
+
+TEST_DATASET_PART_LABEL = f"{DATASET_LABEL}_{TEST_SET_LABEL}"
+INFERENCE_RUN_NAME = f"{TEST_DATASET_PART_LABEL}__{MODEL_LABEL}_conf{CONFIDENCE}pcnt"
+INFERENCES_PATH = YOLO_ROOT / f"runs/detect/{INFERENCE_RUN_NAME}/labels"
 
 
 def run_prepare_dataset_and_train():
     print(__file__, __name__)
     prepare_dataset_and_train(
-        class_list_path=CLASSES_LIST_PATH,
+        classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
         dst_root=DST_ROOT,
         every_n_th=EVERY_NTH_TO_VAL,
@@ -125,20 +152,26 @@ def run_prepare_dataset_and_train():
         base_dir=Path(__file__).parent,
         run_training=False,
     )
-
-
-def test_run_detections():
-    print(__file__, __name__)
-    model_name = DST_ROOT.name
     run_detections(
-        images_path=(DST_ROOT / "val" / "images"),
-        dataset_version=f"{DST_ROOT.name}_val",
-        model_path=Path(f"{YOLO_ROOT}/runs/train/{model_name}/weights/best.pt"),
-        model_version=DST_ROOT.name,
+        images_path=TEST_IMAGES_ROOT,
+        dataset_version=TEST_DATASET_PART_LABEL,
+        model_path=Path(f"{YOLO_ROOT}/runs/train/{MODEL_LABEL}/weights/best.pt"),
+        model_version=MODEL_LABEL,
         base_dir=Path(__file__).parent,
-        conf_thres=0.1,
+        conf_thres=CONF,
         device=0,
     )
+    table_str = binary_and_group_classification_performance(
+        images_root=TEST_IMAGES_ROOT,
+        root_ground_truths=GROUND_TRUTHS_PATH,
+        root_inferred_bounding_boxes=INFERENCES_PATH,
+        classes_map=CLASSES_MAP,
+        print_first_n=24,
+        groupings=GROUPINGS,
+    )
+    with open(f"{MODEL_LABEL}.txt", "w") as file_out:
+        file_out.write(table_str)
+    test_init_fiftyone_ds()
 
 
 def test_init_fiftyone_ds():
@@ -148,49 +181,59 @@ def test_init_fiftyone_ds():
     """
     import fiftyone as fo
 
-    label_mapping = get_id_to_label_map(CLASSES_LIST_PATH)
-
-    images_root = None
-    ground_truths_root = None
-    inference_run_name = f"{DATASET_LABEL}_val__{DATASET_LABEL}_conf10pcnt"
-    inferences_root = (
-        YOLO_ROOT / f"runs/detect/{inference_run_name}/labels"
-    )
-
-    dataset_label = DST_ROOT.name
-    if dataset_label in fo.list_datasets():
-        fo.delete_dataset(name=dataset_label)
+    if DATASET_LABEL in fo.list_datasets():
+        fo.delete_dataset(name=DATASET_LABEL)
     else:
         pass
-    processed_root = DST_ROOT / "val"
+
     init_fifty_one_dataset(
-        dataset_label=dataset_label,
-        label_mapping=label_mapping,
-        inferences_root=inferences_root,
-        processed_root=processed_root,
+        dataset_label=DATASET_LABEL,
+        label_mapping=CLASSES_MAP,
+        inferences_root=INFERENCES_PATH,
+        processed_root=PROCESSED_ROOT,
         dataset_root=DATASET_ROOT,
-        images_root=images_root,
-        ground_truths_root=ground_truths_root,
+        images_root=None,  # Use dataset_root approach
+        ground_truths_root=None,  # Use dataset_root approach
     )
 
 
 def run_reverse_train():
     reverse_train(
-        class_list_path=CLASSES_LIST_PATH,
+        classes_map=CLASSES_MAP,
         dst_root=DST_ROOT,
         base_dir=Path(__file__).parent,
     )
-
-
-def test_run_reverse_detections():
-    print(__file__, __name__)
-    model_name = f"{DST_ROOT.name}_reverse"
     run_detections(
-        images_path=(DST_ROOT / "train" / "images"),
-        dataset_version=f"{DST_ROOT.name}_train",
-        model_path=Path(f"/home/david/addn_repos/yolov5/runs/train/{model_name}/weights/best.pt"),
-        model_version=model_name,
+        images_path=TEST_IMAGES_ROOT,
+        dataset_version=TEST_DATASET_PART_LABEL,
+        model_path=Path(
+            f"/home/david/addn_repos/yolov5/runs/train/{MODEL_LABEL}/weights/best.pt"
+        ),
+        model_version=MODEL_LABEL,
         base_dir=Path(__file__).parent,
-        conf_thres=0.1,
+        conf_thres=CONF,
         device=1,
+    )
+    table_str = binary_and_group_classification_performance(
+        images_root=TEST_IMAGES_ROOT,
+        root_ground_truths=GROUND_TRUTHS_PATH,
+        root_inferred_bounding_boxes=INFERENCES_PATH,
+        classes_map=CLASSES_MAP,
+        print_first_n=24,
+        groupings=GROUPINGS,
+    )
+    with open(f"{MODEL_LABEL}.txt", "w") as file_out:
+        file_out.write(table_str)
+    test_init_fiftyone_ds()
+
+
+def test_find_errors(tag="mistakenness"):
+    find_errors(
+        dataset_label=DATASET_LABEL,
+        tag=tag,
+        conf_thresh=0.1,
+        limit=32,
+        processed=True,
+        reverse=True,
+        label_filter="WS",
     )

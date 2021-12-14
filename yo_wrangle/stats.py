@@ -2,9 +2,8 @@ import pandas
 from tabulate import tabulate
 
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 from yo_wrangle.common import (
-    get_id_to_label_map,
     YOLO_ANNOTATIONS_FOLDER_NAME,
     get_all_jpg_recursive,
 )
@@ -13,7 +12,7 @@ from yo_wrangle.common import (
 def count_class_instances_in_datasets(
     data_samples: List[Tuple[Path, Optional[int]]],
     class_ids: List[int],
-    class_names_path: Path,
+    class_id_to_name_map: Dict[int, str],
 ):
     """
     Prints a table of instance counts of defect class
@@ -24,7 +23,6 @@ def count_class_instances_in_datasets(
     Dataset names form the rows.
 
     """
-    classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     results_dict = {}
     for dataset_path, max_samples in data_samples:
         dataset_name = dataset_path.stem  # equally, could be dataset_path.name
@@ -52,7 +50,7 @@ def count_class_instances_in_datasets(
                     class_id = int(line.strip().split(" ")[0])
                     if class_id not in class_ids:
                         continue
-                    class_name = classes_map.get(class_id, class_id)
+                    class_name = class_id_to_name_map.get(class_id, class_id)
                     if not dataset_dict.get(class_name, None):
                         dataset_dict[class_name] = 1
                     else:
@@ -68,7 +66,7 @@ def count_class_instances_in_datasets(
     unordered_cols = list(df)
     ordered_cols = [
         class_name
-        for class_name in classes_map.values()
+        for class_name in class_id_to_name_map.values()
         if class_name in unordered_cols
     ]
     df = df[ordered_cols]

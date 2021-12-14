@@ -130,7 +130,9 @@ def init_fifty_one_dataset(
     ground_truths_root: Optional[Path] = None,
 ):
     """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
-    processed_image_names = [x.name for x in get_all_jpg_recursive(img_root=processed_root)]
+    processed_image_names = [
+        x.name for x in get_all_jpg_recursive(img_root=processed_root)
+    ]
     subset_folders = _get_subset_folders(dataset_root, images_root)
     samples = []
     for subset_folder in subset_folders:
@@ -218,13 +220,6 @@ def start(dataset_label: Optional[str] = None):
         raise RuntimeError(f"{dataset_label} not found.")
 
     dataset = fo.load_dataset(name=dataset_label)
-    processed_root = Path("/home/david/addn_repos/yolov5/datasets/v8a/val")
-    processed_image_names = [x.name for x in get_all_jpg_recursive(img_root=processed_root)]
-    # for sample in dataset:
-    #     filename = Path(sample["filepath"]).name
-    #     if filename in processed_image_names:
-    #         sample.tags.append("processed")
-    #         sample.save()
     print_dataset_info(dataset)
     print(dataset.last())
     fo.launch_app(dataset)
@@ -281,7 +276,9 @@ def _extract_filenames_by_tag(
         raise Exception(f"Dataset not found: {dataset_label} ")
 
     if label_filter:
-        dataset = dataset.filter_labels("ground_truth", ViewField("label") == label_filter)
+        dataset = dataset.filter_labels(
+            "ground_truth", ViewField("label") == label_filter
+        )
     else:
         pass
 
@@ -304,13 +301,21 @@ def _extract_filenames_by_tag(
         if len(split_tag) == 2 and split_tag[0] == "eval":
             filter_val = split_tag[1]
             if filter_val == "fp":
-                filtered_dataset = filtered_dataset.filter_labels(
-                    "prediction", ViewField("eval") == filter_val
-                ).sort_by("uniqueness", reverse=reverse).limit(limit)
+                filtered_dataset = (
+                    filtered_dataset.filter_labels(
+                        "prediction", ViewField("eval") == filter_val
+                    )
+                    .sort_by("uniqueness", reverse=reverse)
+                    .limit(limit)
+                )
             elif filter_val == "fn":
-                filtered_dataset = filtered_dataset.filter_labels(
-                    "ground_truth", ViewField("eval") == filter_val
-                ).sort_by("uniqueness", reverse=reverse).limit(limit)
+                filtered_dataset = (
+                    filtered_dataset.filter_labels(
+                        "ground_truth", ViewField("eval") == filter_val
+                    )
+                    .sort_by("uniqueness", reverse=reverse)
+                    .limit(limit)
+                )
             else:
                 pass  # Do we really want to examine "tp"?
             filtered_dataset = filtered_dataset.sort_by("filepath")
@@ -325,7 +330,7 @@ def _extract_filenames_by_tag(
     return list_files_to_edit, filtered_dataset
 
 
-def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder: Path,
+def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: List):
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -340,12 +345,15 @@ def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder:
         f"{str(open_labeling_script)}",
         "-l",
         *filenames,
+        "-c",
+        *class_names,
     ]
     subprocess.run(cmd, stdout=sys.stdout)
 
 
 def find_errors(
     dataset_label: str,
+    class_names: List[str],
     tag: str = "eval_fn",
     conf_thresh: float = 0.25,
     limit: int = 25,
@@ -375,7 +383,7 @@ def find_errors(
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[filenames, OPEN_LABELING_PATH],
+        args=[filenames, OPEN_LABELING_PATH, class_names],
     )
     open_labeling_thread.start()
 
@@ -389,15 +397,3 @@ def find_errors(
                 type(filtered_dataset)
             )
         )
-
-
-def test_find_errors(tag="mistakenness"):
-    find_errors(
-        dataset_label="v8a",
-        tag=tag,
-        conf_thresh=0.1,
-        limit=32,
-        processed=True,
-        reverse=True,
-        label_filter="EB",
-    )

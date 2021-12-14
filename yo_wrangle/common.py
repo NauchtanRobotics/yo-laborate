@@ -1,4 +1,5 @@
 import configparser
+import json
 from pathlib import Path
 from typing import Iterable, Dict
 
@@ -32,18 +33,18 @@ def get_corrected_photo_name(photo_name: Path, expected_num_parts: int, sep: str
     return photo_name
 
 
-def get_id_to_label_map(classes_list_path: Path) -> Dict[int, str]:
+def get_id_to_label_map(classes_json_path: Path) -> Dict[int, str]:
     """
     Opens a txt file that has one class name per line and assumes
     zero indexed class ids corresponding to the classes as they appear in
     the provided file.
 
     """
-    with open(str(classes_list_path), "r") as f:
-        lines = f.readlines()
+    with open(str(classes_json_path), "r") as json_file:
+        data = json.load(json_file)
     label_map = dict()
-    for i, line in enumerate(lines):
-        label_map[i] = line.strip()
+    for key, val in data.items():
+        label_map[int(key)] = val["label"]
     return label_map
 
 
@@ -59,8 +60,18 @@ def get_config_items(base_dir: Path):
     weights_path = config.get("YOLO", "WEIGHTS_PATH")
     hyp_path = config.get("YOLO", "HYP_PATH")
     dataset_root = config.get("DATASET", "ROOT")
-    classes_list_path = config.get("DATASET", "CLASSES_LIST")
-    return python_path, yolo_root, cfg_path, weights_path, hyp_path, dataset_root, classes_list_path
+    classes_json_path = config.get("DATASET", "CLASSES_JSON")
+    if classes_json_path is None or classes_json_path == "" or classes_json_path == "./":
+        classes_json_path = base_dir / "classes.json"
+    return (
+        python_path,
+        yolo_root,
+        cfg_path,
+        weights_path,
+        hyp_path,
+        dataset_root,
+        classes_json_path,
+    )
 
 
 def get_open_labeling_dir(base_dir: Path = Path(__file__).parents[1]):
