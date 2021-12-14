@@ -159,7 +159,7 @@ def analyse_model_binary_metrics(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
-    class_names_path: Path,
+    classes_map: Dict[int, str],
     print_first_n: Optional[int] = None,
     dst_csv: Optional[Path] = None,
 ):
@@ -171,16 +171,13 @@ def analyse_model_binary_metrics(
     and just want classification performance per image, not per bounding box.
 
     """
-    classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     num_classes = len(classes_map)
-
     df = get_truth_vs_inferred_dict_by_photo(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
         num_classes=num_classes,
     )
-
     if dst_csv:
         df.to_csv(dst_csv, index=False)
 
@@ -212,7 +209,7 @@ def analyse_model_binary_metrics_for_groups(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
-    class_names_path: Path,
+    classes_map: Dict[int, str],
     groupings: Dict[
         str, List[int]
     ],  # E.g. {"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 11, 16]}
@@ -232,9 +229,7 @@ def analyse_model_binary_metrics_for_groups(
     for the said group, then this counts as a true positive.
 
     """
-    classes_map = get_id_to_label_map(classes_list_path=class_names_path)
     num_classes = len(classes_map)
-
     df = get_truth_vs_inferred_dict_by_photo(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
@@ -256,11 +251,11 @@ def analyse_model_binary_metrics_for_groups(
         }
 
     table_str = tabulate(
-            pandas.DataFrame(results).transpose(),
-            headers="keys",
-            showindex="always",
-            tablefmt="pretty",
-        )
+        pandas.DataFrame(results).transpose(),
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
+    )
     print("\n")
     print(table_str)
     return table_str
@@ -270,7 +265,7 @@ def binary_and_group_classification_performance(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
-    class_names_path: Path,
+    classes_map: Dict[int, str],
     print_first_n: Optional[int] = None,
     groupings: Dict[str, List[int]] = None,
 ):
@@ -278,7 +273,7 @@ def binary_and_group_classification_performance(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
-        class_names_path=class_names_path,
+        classes_map=classes_map,
         print_first_n=print_first_n,
         dst_csv=None,
     )
@@ -287,7 +282,7 @@ def binary_and_group_classification_performance(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
-        class_names_path=class_names_path,
+        classes_map=classes_map,
         groupings=groupings,
         dst_csv=None,
     )

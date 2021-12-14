@@ -33,7 +33,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 
 from yo_wrangle.stats import count_class_instances_in_datasets
 from yo_wrangle.common import (
@@ -501,7 +501,7 @@ def collate_additional_sample(
 
 
 def prepare_dataset_and_train(
-    class_list_path: Path,
+    classes_map: Dict[int, str],
     subsets_included: List,
     dst_root: Path,
     every_n_th: int,
@@ -510,12 +510,11 @@ def prepare_dataset_and_train(
     base_dir: Path,
     run_training: bool = True,
 ):
-    classes_map = get_id_to_label_map(classes_list_path=class_list_path)
     class_ids = list(classes_map.keys())
     output_str = count_class_instances_in_datasets(
         data_samples=subsets_included,
         class_ids=class_ids,
-        class_names_path=class_list_path,
+        class_id_to_name_map=classes_map,
     )
     model_instance = dst_root.name
 
@@ -537,7 +536,7 @@ def prepare_dataset_and_train(
     output_str = count_class_instances_in_datasets(
         data_samples=final_subsets_included,
         class_ids=class_ids,
-        class_names_path=class_list_path,
+        class_id_to_name_map=classes_map,
     )
     output_str = "\n" + output_str
     with open(f"{model_instance}_classes_support.txt", "a") as f_out:
@@ -572,7 +571,7 @@ names: {class_names}"""
         python_path,
         train_script,
         "--img=640",
-        "--batch=50",
+        "--batch=56",
         "--workers=4",
         "--device=0,1",
         f"--cfg={cfg_path}",
@@ -583,6 +582,7 @@ names: {class_names}"""
         f"--name={model_instance}",
         "--patience=50",
         "--cache",
+        "--freeze=3"
     ]
 
     train_cmd_str = " ".join(pytorch_cmd)
@@ -599,11 +599,10 @@ names: {class_names}"""
 
 
 def reverse_train(
-    class_list_path: Path,
+    classes_map: Dict[int, str],
     base_dir: Path,
     dst_root: Path,
 ):
-    classes_map = get_id_to_label_map(classes_list_path=class_list_path)
     class_ids = list(classes_map.keys())
     class_names = [classes_map[class_id] for class_id in class_ids]
     yaml_text = f"""train: {str(dst_root)}/val/images/

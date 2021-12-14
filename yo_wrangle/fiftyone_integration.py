@@ -330,7 +330,7 @@ def _extract_filenames_by_tag(
     return list_files_to_edit, filtered_dataset
 
 
-def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder: Path,
+def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: List):
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -345,12 +345,15 @@ def edit_labels(filenames: List[str], open_labeling_path: Path):  # root_folder:
         f"{str(open_labeling_script)}",
         "-l",
         *filenames,
+        "-c",
+        *class_names,
     ]
     subprocess.run(cmd, stdout=sys.stdout)
 
 
 def find_errors(
     dataset_label: str,
+    class_names: List[str],
     tag: str = "eval_fn",
     conf_thresh: float = 0.25,
     limit: int = 25,
@@ -380,7 +383,7 @@ def find_errors(
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[filenames, OPEN_LABELING_PATH],
+        args=[filenames, OPEN_LABELING_PATH, class_names],
     )
     open_labeling_thread.start()
 
@@ -394,5 +397,3 @@ def find_errors(
                 type(filtered_dataset)
             )
         )
-
-

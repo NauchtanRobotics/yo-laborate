@@ -108,25 +108,29 @@ REVERSE_TRAIN_VAL = False
 GROUPINGS = {"Risk Defects": [3, 4, 14], "Cracking": [0, 1, 2, 11, 16]}
 CONF = 0.1
 
+
+##############################################################################
 # DERIVED CONSTANTS
-_, yolo_root, _, _, _, dataset_root, classes_list = get_config_items(
+##############################################################################
+
+_, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
     base_dir=Path(__file__).parent
 )
 YOLO_ROOT = Path(yolo_root)
 DATASET_ROOT = Path(dataset_root)
-CLASSES_LIST_PATH = Path(classes_list)
-CLASSES_MAPPING = get_id_to_label_map(CLASSES_LIST_PATH)
+CLASSES_JSON_PATH = Path(classes_json_path)
+CLASSES_MAP = get_id_to_label_map(CLASSES_JSON_PATH)
 DST_ROOT = Path(YOLO_ROOT) / f"datasets/{DATASET_LABEL}"
-CONFIDENCE = int(CONF*100)
+CONFIDENCE = int(CONF * 100)
 
 if REVERSE_TRAIN_VAL:
     TEST_SET_LABEL = "train"
     MODEL_LABEL = f"{DATASET_LABEL}_reverse"
-    
+
 else:
     TEST_SET_LABEL = "val"
     MODEL_LABEL = DATASET_LABEL
-    
+
 PROCESSED_ROOT = DST_ROOT / TEST_SET_LABEL
 TEST_IMAGES_ROOT = DST_ROOT / TEST_SET_LABEL / "images"
 GROUND_TRUTHS_PATH = DST_ROOT / TEST_SET_LABEL / "labels"
@@ -139,7 +143,7 @@ INFERENCES_PATH = YOLO_ROOT / f"runs/detect/{INFERENCE_RUN_NAME}/labels"
 def run_prepare_dataset_and_train():
     print(__file__, __name__)
     prepare_dataset_and_train(
-        class_list_path=CLASSES_LIST_PATH,
+        classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
         dst_root=DST_ROOT,
         every_n_th=EVERY_NTH_TO_VAL,
@@ -161,15 +165,15 @@ def run_prepare_dataset_and_train():
         images_root=TEST_IMAGES_ROOT,
         root_ground_truths=GROUND_TRUTHS_PATH,
         root_inferred_bounding_boxes=INFERENCES_PATH,
-        class_names_path=CLASSES_LIST_PATH,
+        classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
     )
     with open(f"{MODEL_LABEL}.txt", "w") as file_out:
         file_out.write(table_str)
     test_init_fiftyone_ds()
-   
-   
+
+
 def test_init_fiftyone_ds():
     """Creates a fiftyone dataset. Currently, this initialiser
     relies on hard coded local variables.
@@ -184,7 +188,7 @@ def test_init_fiftyone_ds():
 
     init_fifty_one_dataset(
         dataset_label=DATASET_LABEL,
-        label_mapping=CLASSES_MAPPING,
+        label_mapping=CLASSES_MAP,
         inferences_root=INFERENCES_PATH,
         processed_root=PROCESSED_ROOT,
         dataset_root=DATASET_ROOT,
@@ -195,7 +199,7 @@ def test_init_fiftyone_ds():
 
 def run_reverse_train():
     reverse_train(
-        class_list_path=CLASSES_LIST_PATH,
+        classes_map=CLASSES_MAP,
         dst_root=DST_ROOT,
         base_dir=Path(__file__).parent,
     )
@@ -214,7 +218,7 @@ def run_reverse_train():
         images_root=TEST_IMAGES_ROOT,
         root_ground_truths=GROUND_TRUTHS_PATH,
         root_inferred_bounding_boxes=INFERENCES_PATH,
-        class_names_path=CLASSES_LIST_PATH,
+        classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
     )
