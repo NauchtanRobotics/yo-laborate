@@ -120,9 +120,16 @@ def _get_annotations_root(subset_folder: Path) -> Path:
     return ground_truths_root
 
 
+def delete_fiftyone_dataset(dataset_label: str):
+    if dataset_label in fo.list_datasets():
+        fo.delete_dataset(name=dataset_label)
+    else:
+        pass
+
+
 def init_fifty_one_dataset(
     dataset_label: str,
-    label_mapping: Dict[int, str],
+    classes_map: Dict[int, str],
     inferences_root: Path,
     processed_root: Path,
     dataset_root: Optional[Path] = None,
@@ -154,7 +161,7 @@ def init_fifty_one_dataset(
 
                 for line in annotation_lines:
                     label, yolo_box, _ = _extract_annotation(
-                        line=line, label_mapping=label_mapping
+                        line=line, label_mapping=classes_map
                     )
                     bounding_box = _get_bounding_box(yolo_box=yolo_box)
                     detections.append(
@@ -169,7 +176,7 @@ def init_fifty_one_dataset(
                     annotation_lines = file_obj.readlines()
                 for line in annotation_lines:
                     label, yolo_box, confidence = _extract_annotation(
-                        line=line, label_mapping=label_mapping
+                        line=line, label_mapping=classes_map
                     )
                     bounding_box = _get_bounding_box(yolo_box=yolo_box)
                     predictions.append(
@@ -348,7 +355,7 @@ def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: Lis
         "-c",
         *class_names,
     ]
-    subprocess.run(cmd, stdout=sys.stdout)
+    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
 
 
 def find_errors(
