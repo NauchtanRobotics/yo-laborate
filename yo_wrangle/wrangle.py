@@ -587,7 +587,7 @@ names: {class_names}"""
         f"--name={model_instance}",
         "--patience=50",
         "--cache",
-        "--freeze=3"
+        "--freeze=3",
     ]
 
     train_cmd_str = " ".join(pytorch_cmd)
