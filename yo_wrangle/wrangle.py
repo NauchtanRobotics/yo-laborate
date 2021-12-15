@@ -35,12 +35,12 @@ import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 
+from dataset_versioning import commit_and_push
 from yo_wrangle.stats import count_class_instances_in_datasets
 from yo_wrangle.common import (
     get_all_jpg_recursive,
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
-    get_id_to_label_map,
     get_config_items,
 )
 
@@ -552,6 +552,11 @@ names: {class_names}"""
     with open(f"{model_instance}_dataset_yaml.yaml", "w") as f_out:
         f_out.write(yaml_text)
 
+    commit_and_push(
+        dataset_label=dst_root.name,
+        base_dir=base_dir,
+    )
+
     """ Write dataset.yaml in DST folder."""
     dst_dataset_path = dst_root / "dataset.yaml"
     with open(f"{str(dst_dataset_path)}", "w") as f_out:
@@ -603,6 +608,10 @@ def reverse_train(
     base_dir: Path,
     dst_root: Path,
 ):
+    commit_and_push(
+        dataset_label=dst_root.name,
+        base_dir=base_dir,
+    )
     class_ids = list(classes_map.keys())
     class_names = [classes_map[class_id] for class_id in class_ids]
     yaml_text = f"""train: {str(dst_root)}/val/images/

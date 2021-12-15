@@ -1,5 +1,7 @@
 /.idea
 /run_scripts
 /tests
+.pytest_cache/
+__pycache__/
 config.ini
 classes.json

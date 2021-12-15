@@ -355,7 +355,7 @@ def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: Lis
         "-c",
         *class_names,
     ]
-    subprocess.run(cmd, stdout=sys.stdout)
+    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
 
 
 def find_errors(
