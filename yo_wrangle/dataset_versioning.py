@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from common import get_version_control_config
+from yo_wrangle.common import get_version_control_config
 
 
 def commit_and_push(

@@ -35,7 +35,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 
-from dataset_versioning import commit_and_push
+from yo_wrangle.dataset_versioning import commit_and_push
 from yo_wrangle.stats import count_class_instances_in_datasets
 from yo_wrangle.common import (
     get_all_jpg_recursive,
