@@ -79,7 +79,7 @@ def set_globals(base_dir: Path, workbook_ptr):
     INFERENCES_PATH = YOLO_ROOT / f"runs/detect/{INFERENCE_RUN_NAME}/labels"
 
 
-def run_prepare_dataset_and_train():
+def run_prepare_dataset_and_train(run_training=True):
     prepare_dataset_and_train(
         classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
@@ -87,8 +87,8 @@ def run_prepare_dataset_and_train():
         every_n_th=EVERY_NTH_TO_VAL,
         keep_class_ids=KEEP_CLASS_IDS,
         skip_class_ids=SKIP_CLASS_IDS,
-        base_dir=Path(__file__).parent,
-        run_training=False,
+        base_dir=BASE_DIR,
+        run_training=run_training,
     )
     run_detections(
         images_path=TEST_IMAGES_ROOT,
@@ -154,7 +154,7 @@ def run_reverse_train():
     test_init_fiftyone_ds()
 
 
-def test_init_fiftyone_ds():
+def test_init_fiftyone_ds(candidate_subset: Path = None):
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
     init_fifty_one_dataset(
         dataset_label=DATASET_LABEL,
@@ -164,6 +164,7 @@ def test_init_fiftyone_ds():
         dataset_root=DATASET_ROOT,
         images_root=None,  # Use dataset_root approach
         ground_truths_root=None,  # Use dataset_root approach
+        candidate_subset=candidate_subset,
     )
 
 
@@ -172,7 +173,6 @@ def test_find_errors(tag="mistakenness"):
         dataset_label=DATASET_LABEL,
         class_names=list(CLASSES_MAP.values()),
         tag=tag,
-        conf_thresh=0.1,
         limit=32,
         processed=True,
         reverse=True,
