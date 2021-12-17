@@ -168,6 +168,7 @@ def subsample_a_directory(
     src_images_root: Path,
     dst_images_root: Path,
     every_n_th: int = 6,
+    move: bool = False,
 ):
     """
     Only intended to work on directory after annotations have been moved to "YOLO_darknet"
@@ -185,13 +186,21 @@ def subsample_a_directory(
         if i % every_n_th != 0:
             continue
         outfile = dst_images_root / image_path.name
-        shutil.copyfile(src=str(image_path), dst=str(outfile))
+        if move:  # Move the image
+            shutil.move(src=str(image_path), dst=str(outfile))
+        else:
+            shutil.copyfile(src=str(image_path), dst=str(outfile))
 
         src_annotations_file = (
             src_images_root / YOLO_ANNOTATIONS_FOLDER_NAME / f"{image_path.stem}.txt"
         )
         dst_annotations_file = dst_annotations_root / f"{image_path.stem}.txt"
-        shutil.copyfile(src=str(src_annotations_file), dst=str(dst_annotations_file))
+        if move:  # Move the annotation
+            shutil.move(src=str(src_annotations_file), dst=str(dst_annotations_file))
+        else:
+            shutil.copyfile(
+                src=str(src_annotations_file), dst=str(dst_annotations_file)
+            )
 
 
 def copy_detect_folder_recursively_as_reference_then_subsample(
@@ -352,6 +361,8 @@ def collate_and_split(
     keep_class_ids: Optional[List] = None,  # None actually means keep all classes
     skip_class_ids: Optional[List] = None,
 ):
+    if dst_root.exists():
+        shutil.rmtree(str(dst_root))
     temp_dir = tempfile.mkdtemp()
     collate_image_and_annotation_subsets(
         samples_required=subsets_included,
@@ -576,7 +587,7 @@ names: {class_names}"""
         python_path,
         train_script,
         "--img=640",
-        "--batch=56",
+        "--batch=62",
         "--workers=4",
         "--device=0,1",
         f"--cfg={cfg_path}",
