@@ -135,9 +135,10 @@ def init_fifty_one_dataset(
     dataset_root: Optional[Path] = None,
     images_root: Optional[Path] = None,
     ground_truths_root: Optional[Path] = None,
+    candidate_subset: Path = None,
 ):
     """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
-    processed_image_names = [
+    test_set_image_names = [
         x.name for x in get_all_jpg_recursive(img_root=processed_root)
     ]
     subset_folders = _get_subset_folders(dataset_root, images_root)
@@ -191,8 +192,15 @@ def init_fifty_one_dataset(
             sample["ground_truth"] = fo.Detections(detections=detections)
             sample["prediction"] = fo.Detections(detections=predictions)
             sample["subset"] = subset_folder.name
-            if image_path.name in processed_image_names:
-                sample.tags.append("processed")
+            if image_path.name in test_set_image_names:
+                sample.tags.append("val")
+            else:
+                sample.tags.append("train")
+
+            if candidate_subset and subset_folder.name == candidate_subset.name:
+                sample.tags.append("candidate")
+            else:
+                pass
             samples.append(sample)
 
     # Create dataset
@@ -263,7 +271,6 @@ def _extract_filenames_by_tag(
     dataset_label: str,
     tag: str = "error",  # Alternatively, can use "eval_fp", "mistakenness" or "eval_fn"
     limit: int = 100,
-    conf_threshold: float = 0.2,
     processed: bool = True,
     reverse: bool = True,
     label_filter: Optional[str] = "WS",  # e.g. 'CD'
@@ -290,7 +297,7 @@ def _extract_filenames_by_tag(
         pass
 
     if processed:
-        dataset = dataset.match_tags("processed")
+        dataset = dataset.match_tags("val")
     else:
         pass
 
@@ -362,7 +369,6 @@ def find_errors(
     dataset_label: str,
     class_names: List[str],
     tag: str = "eval_fn",
-    conf_thresh: float = 0.25,
     limit: int = 25,
     processed: bool = True,
     reverse: bool = True,
@@ -380,7 +386,6 @@ def find_errors(
     filenames, filtered_dataset = _extract_filenames_by_tag(
         dataset_label=dataset_label,
         tag=tag,
-        conf_threshold=conf_thresh,
         limit=limit,
         processed=processed,
         reverse=reverse,
