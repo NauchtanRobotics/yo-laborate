@@ -4,6 +4,9 @@ version = "0.2.0"
 description = "YOLO dataset improvement and wrangling tool."
 authors = ["David MacNaughton <davidmacnaugh@gmail.com>"]
 license = "MIT"
+packages = [
+    { include = "yo_wrangle" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
