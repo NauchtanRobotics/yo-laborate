@@ -130,17 +130,15 @@ def delete_fiftyone_dataset(dataset_label: str):
 def init_fifty_one_dataset(
     dataset_label: str,
     classes_map: Dict[int, str],
-    inferences_root: Path,
-    processed_root: Path,
+    val_inferences_root: Optional[Path],
+    train_inferences_root: Optional[Path],
     dataset_root: Optional[Path] = None,
     images_root: Optional[Path] = None,
     ground_truths_root: Optional[Path] = None,
     candidate_subset: Path = None,
 ):
     """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
-    test_set_image_names = [
-        x.name for x in get_all_jpg_recursive(img_root=processed_root)
-    ]
+
     subset_folders = _get_subset_folders(dataset_root, images_root)
     samples = []
     for subset_folder in subset_folders:
@@ -169,10 +167,17 @@ def init_fifty_one_dataset(
                         fo.Detection(label=label, bounding_box=bounding_box)
                     )
             predictions = []
-            inferences_path = inferences_root / f"{image_path.stem}.txt"
-            if not inferences_path.exists():
-                pass  # no prediction(s) will be added to this sample.
+            inferences_path = None
+            if (val_inferences_root / f"{image_path.stem}.txt").exists():
+                inferences_path = val_inferences_root / f"{image_path.stem}.txt"
+                sample.tags.append("val")
+            elif (train_inferences_root / f"{image_path.stem}.txt").exists():
+                inferences_path = train_inferences_root / f"{image_path.stem}.txt"
+                sample.tags.append("train")
             else:
+                pass  # No 'predictions' to populate
+
+            if inferences_path and inferences_path.exists():
                 with open(str(inferences_path), "r") as file_obj:
                     annotation_lines = file_obj.readlines()
                 for line in annotation_lines:
@@ -187,15 +192,12 @@ def init_fifty_one_dataset(
                             confidence=confidence,
                         )
                     )
+                sample.tags.append("processed")
 
             # Store detections in a field name of your choice
             sample["ground_truth"] = fo.Detections(detections=detections)
-            sample["prediction"] = fo.Detections(detections=predictions)
+            sample["prediction"] = fo.Detections(detections=predictions)  # Should we do this if predictions is empty?
             sample["subset"] = subset_folder.name
-            if image_path.name in test_set_image_names:
-                sample.tags.append("val")
-            else:
-                sample.tags.append("train")
 
             if candidate_subset and subset_folder.name == candidate_subset.name:
                 sample.tags.append("candidate")
@@ -297,7 +299,7 @@ def _extract_filenames_by_tag(
         pass
 
     if processed:
-        dataset = dataset.match_tags("val")
+        dataset = dataset.match_tags("processed")
     else:
         pass
 

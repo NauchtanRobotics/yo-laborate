@@ -1,8 +1,7 @@
 import configparser
 import json
 from pathlib import Path
-from typing import Iterable, Dict
-
+from typing import Iterable, Dict, Optional
 
 YOLO_ANNOTATIONS_FOLDER_NAME = "YOLO_darknet"
 LABELS_FOLDER_NAME = "labels"
@@ -13,8 +12,13 @@ RED = "red"
 PURPLE = "purple"
 
 
-def get_all_jpg_recursive(img_root: Path) -> Iterable[Path]:
-    for item in img_root.rglob("*.jpg"):
+def get_all_jpg_recursive(img_root: Optional[Path]) -> Iterable[Path]:
+    if img_root.exists():
+        items = img_root.rglob("*.jpg")
+    else:
+        print(f"WARNING. root_dir does not exist: {img_root}")
+        items = []
+    for item in items:
         yield item
 
 

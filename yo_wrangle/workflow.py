@@ -16,13 +16,12 @@ CLASSES_MAP = {}
 DST_ROOT = Path()
 CONFIDENCE = 0.1
 TEST_SET_LABEL = ""
-MODEL_LABEL = ""
-PROCESSED_ROOT = Path()
-TEST_IMAGES_ROOT = Path()
-GROUND_TRUTHS_PATH = Path()
-TEST_DATASET_PART_LABEL = ""
-INFERENCE_RUN_NAME = ""
-INFERENCES_PATH = Path()
+# MODEL_LABEL = ""
+# # PROCESSED_ROOT = Path()
+# GROUND_TRUTHS_PATH = Path()
+# TEST_DATASET_PART_LABEL = ""
+# INFERENCE_RUN_NAME = ""
+# INFERENCES_PATH = Path()
 BASE_DIR = Path()
 CONF = 0.05
 GROUPINGS = {}
@@ -32,15 +31,17 @@ EVERY_NTH_TO_VAL = 0
 KEEP_CLASS_IDS = []
 SKIP_CLASS_IDS = []
 DATASET_LABEL = ""
+REVERSE_TRAIN_VAL = False
 
 
 def set_globals(base_dir: Path, workbook_ptr):
     global YOLO_ROOT, DATASET_ROOT, CLASSES_JSON_PATH, CLASSES_MAP
-    global DST_ROOT, CONFIDENCE, TEST_SET_LABEL, MODEL_LABEL
-    global PROCESSED_ROOT, TEST_IMAGES_ROOT, GROUND_TRUTHS_PATH
-    global TEST_DATASET_PART_LABEL, INFERENCE_RUN_NAME, INFERENCES_PATH
+    global DST_ROOT, CONFIDENCE
+    # global GROUND_TRUTHS_PATH, TEST_SET_LABEL, MODEL_LABEL
+    # global TEST_DATASET_PART_LABEL, INFERENCE_RUN_NAME, INFERENCES_PATH
     global BASE_DIR, CONF, GROUPINGS, SUBSETS_INCLUDED, EVERY_NTH_TO_VAL
-    global KEEP_CLASS_IDS, SKIP_CLASS_IDS, DATASET_LABEL
+    global KEEP_CLASS_IDS, SKIP_CLASS_IDS, DATASET_LABEL, REVERSE_TRAIN_VAL
+    REVERSE_TRAIN_VAL = workbook_ptr.REVERSE_TRAIN_VAL
     CONF = workbook_ptr.CONF
     SUBSETS_INCLUDED = workbook_ptr.SUBSETS_INCLUDED
     EVERY_NTH_TO_VAL = workbook_ptr.EVERY_NTH_TO_VAL
@@ -60,26 +61,39 @@ def set_globals(base_dir: Path, workbook_ptr):
     DST_ROOT = Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
     CONFIDENCE = int(workbook_ptr.CONF * 100)
 
-    if workbook_ptr.REVERSE_TRAIN_VAL:
-        TEST_SET_LABEL = "train"
-        MODEL_LABEL = f"{workbook_ptr.DATASET_LABEL}_reverse"
+    # if workbook_ptr.REVERSE_TRAIN_VAL:
+    #     TEST_SET_LABEL = "train"
+    #     MODEL_LABEL = f"{workbook_ptr.DATASET_LABEL}_reverse"
+    #
+    # else:
+    #     TEST_SET_LABEL = "val"
+    #     MODEL_LABEL = workbook_ptr.DATASET_LABEL
+
+    # GROUND_TRUTHS_PATH = DST_ROOT / TEST_SET_LABEL / "labels"
+
+    # TEST_DATASET_PART_LABEL = f"{workbook_ptr.DATASET_LABEL}_{TEST_SET_LABEL}"
+    # INFERENCE_RUN_NAME = (
+    #     f"{TEST_DATASET_PART_LABEL}__{MODEL_LABEL}_conf{CONFIDENCE}pcnt"
+    # )
+    # INFERENCES_PATH = YOLO_ROOT / f"runs/detect/{INFERENCE_RUN_NAME}/labels"
+
+
+def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):
+    if reverse_it:
+        test_set_str = "train"
+        model_label = f"{dataset_label}_reverse"
 
     else:
-        TEST_SET_LABEL = "val"
-        MODEL_LABEL = workbook_ptr.DATASET_LABEL
-
-    PROCESSED_ROOT = DST_ROOT / TEST_SET_LABEL
-    TEST_IMAGES_ROOT = DST_ROOT / TEST_SET_LABEL / "images"
-    GROUND_TRUTHS_PATH = DST_ROOT / TEST_SET_LABEL / "labels"
-
-    TEST_DATASET_PART_LABEL = f"{workbook_ptr.DATASET_LABEL}_{TEST_SET_LABEL}"
-    INFERENCE_RUN_NAME = (
-        f"{TEST_DATASET_PART_LABEL}__{MODEL_LABEL}_conf{CONFIDENCE}pcnt"
-    )
-    INFERENCES_PATH = YOLO_ROOT / f"runs/detect/{INFERENCE_RUN_NAME}/labels"
+        test_set_str = "val"
+        model_label = dataset_label
+    test_set_part_label = f"{dataset_label}_{test_set_str}"
+    ground_truth_path = DST_ROOT / test_set_str / "labels"
+    run_name = f"{test_set_part_label}__{model_label}_conf{CONFIDENCE}pcnt"
+    inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
+    return model_label, test_set_part_label, ground_truth_path, inferences_path
 
 
-def run_prepare_dataset_and_train(run_training=True):
+def run_prepare_dataset_and_train(run_training=True, init_fiftyone=True):
     prepare_dataset_and_train(
         classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
@@ -90,77 +104,131 @@ def run_prepare_dataset_and_train(run_training=True):
         base_dir=BASE_DIR,
         run_training=run_training,
     )
+    detect_images_root = DST_ROOT / "val" / "images"
+    (
+        model_label,
+        test_set_part_label,
+        ground_truth_path,
+        inferences_path,
+    ) = get_labels_and_paths_tuple(dataset_label=DATASET_LABEL, reverse_it=False)
     run_detections(
-        images_path=TEST_IMAGES_ROOT,
-        dataset_version=TEST_DATASET_PART_LABEL,
-        model_path=Path(f"{YOLO_ROOT}/runs/train/{MODEL_LABEL}/weights/best.pt"),
-        model_version=MODEL_LABEL,
+        images_path=detect_images_root,
+        dataset_version=test_set_part_label,
+        model_path=Path(f"{YOLO_ROOT}/runs/train/{model_label}/weights/best.pt"),
+        model_version=model_label,
         base_dir=BASE_DIR,
         conf_thres=CONF,
         device=0,
     )
     table_str = binary_and_group_classification_performance(
-        images_root=TEST_IMAGES_ROOT,
-        root_ground_truths=GROUND_TRUTHS_PATH,
-        root_inferred_bounding_boxes=INFERENCES_PATH,
+        images_root=detect_images_root,
+        root_ground_truths=ground_truth_path,
+        root_inferred_bounding_boxes=inferences_path,
         classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
     )
-    output_filename = (
-        f"{MODEL_LABEL}_classification_performance_conf{CONFIDENCE}pcnt.txt"
-    )
+    output_filename = f"{model_label}_forward_performance_conf{CONFIDENCE}pcnt.txt"
     with open(output_filename, "w") as file_out:
         file_out.write(table_str)
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
+    if init_fiftyone:
+        init_fifty_one_dataset(
+            dataset_label=DATASET_LABEL,
+            classes_map=CLASSES_MAP,
+            train_inferences_root=None,
+            val_inferences_root=inferences_path,
+            dataset_root=DATASET_ROOT,
+            images_root=None,  # Use dataset_root approach
+            ground_truths_root=None,  # Use dataset_root approach
+        )
+
+
+def run_reverse_train(init_fiftyone: bool = True):
+    reverse_train(
+        classes_map=CLASSES_MAP,
+        dst_root=DST_ROOT,
+        base_dir=BASE_DIR,
+    )
+    detect_images_root = DST_ROOT / "train" / "images"
+    (
+        model_label,
+        test_set_part_label,
+        ground_truth_path,
+        inferences_path,
+    ) = get_labels_and_paths_tuple(dataset_label=DATASET_LABEL, reverse_it=True)
+    run_detections(
+        images_path=detect_images_root,
+        dataset_version=test_set_part_label,
+        model_path=Path(
+            f"/home/david/addn_repos/yolov5/runs/train/{model_label}/weights/best.pt"
+        ),
+        model_version=model_label,
+        base_dir=BASE_DIR,
+        conf_thres=CONF,
+        device=1,
+    )
+    table_str = binary_and_group_classification_performance(
+        images_root=detect_images_root,
+        root_ground_truths=ground_truth_path,
+        root_inferred_bounding_boxes=inferences_path,
+        classes_map=CLASSES_MAP,
+        print_first_n=24,
+        groupings=GROUPINGS,
+    )
+    output_filename = f"{model_label}_reverse_performance_conf{CONFIDENCE}pcnt.txt"
+    with open(output_filename, "w") as file_out:
+        file_out.write(table_str)
+    delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
+    if init_fiftyone:
+        init_fifty_one_dataset(
+            dataset_label=DATASET_LABEL,
+            classes_map=CLASSES_MAP,
+            train_inferences_root=inferences_path,
+            val_inferences_root=None,
+            dataset_root=DATASET_ROOT,
+            images_root=None,  # Use dataset_root approach
+            ground_truths_root=None,  # Use dataset_root approach
+        )
+
+
+def run_full_training():
+    """
+    Runs forward and reverse training, where forward means train=train and val=val;
+    and reverse means train=val, val=train.
+
+    """
+    # run_prepare_dataset_and_train(init_fiftyone=False)
+    # run_reverse_train(init_fiftyone=False)
+    delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
+    (_, _, _, val_inferences_root) = get_labels_and_paths_tuple(
+        dataset_label=DATASET_LABEL, reverse_it=False
+    )
+    (_, _, _, train_inferences_root) = get_labels_and_paths_tuple(
+        dataset_label=DATASET_LABEL, reverse_it=True
+    )
     init_fifty_one_dataset(
         dataset_label=DATASET_LABEL,
         classes_map=CLASSES_MAP,
-        inferences_root=INFERENCES_PATH,
-        processed_root=PROCESSED_ROOT,
+        train_inferences_root=train_inferences_root,
+        val_inferences_root=val_inferences_root,
         dataset_root=DATASET_ROOT,
         images_root=None,  # Use dataset_root approach
         ground_truths_root=None,  # Use dataset_root approach
     )
 
 
-def run_reverse_train():
-    reverse_train(
-        classes_map=CLASSES_MAP,
-        dst_root=DST_ROOT,
-        base_dir=Path(__file__).parent,
-    )
-    run_detections(
-        images_path=TEST_IMAGES_ROOT,
-        dataset_version=TEST_DATASET_PART_LABEL,
-        model_path=Path(
-            f"/home/david/addn_repos/yolov5/runs/train/{MODEL_LABEL}/weights/best.pt"
-        ),
-        model_version=MODEL_LABEL,
-        base_dir=Path(__file__).parent,
-        conf_thres=CONF,
-        device=1,
-    )
-    table_str = binary_and_group_classification_performance(
-        images_root=TEST_IMAGES_ROOT,
-        root_ground_truths=GROUND_TRUTHS_PATH,
-        root_inferred_bounding_boxes=INFERENCES_PATH,
-        classes_map=CLASSES_MAP,
-        print_first_n=24,
-        groupings=GROUPINGS,
-    )
-    with open(f"{MODEL_LABEL}.txt", "w") as file_out:
-        file_out.write(table_str)
-    test_init_fiftyone_ds()
-
-
 def test_init_fiftyone_ds(candidate_subset: Path = None):
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
+    delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
+    (_, _, _, val_inferences_root) = get_labels_and_paths_tuple(
+        dataset_label=DATASET_LABEL, reverse_it=False
+    )
     init_fifty_one_dataset(
         dataset_label=DATASET_LABEL,
         classes_map=CLASSES_MAP,
-        inferences_root=INFERENCES_PATH,
-        processed_root=PROCESSED_ROOT,
+        val_inferences_root=val_inferences_root,
+        train_inferences_root=None,
         dataset_root=DATASET_ROOT,
         images_root=None,  # Use dataset_root approach
         ground_truths_root=None,  # Use dataset_root approach
@@ -168,13 +236,17 @@ def test_init_fiftyone_ds(candidate_subset: Path = None):
     )
 
 
-def test_find_errors(tag="mistakenness"):
+def run_find_errors(
+    tag: str = "mistakenness",
+    label_filter: str = "WS",
+    limit: int = 64,
+):
     find_errors(
         dataset_label=DATASET_LABEL,
         class_names=list(CLASSES_MAP.values()),
         tag=tag,
-        limit=32,
+        limit=limit,
         processed=True,
         reverse=True,
-        label_filter="WS",
+        label_filter=label_filter,
     )
