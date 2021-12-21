@@ -1,0 +1,3 @@
+[submodule "OpenLabeling"]
+	path = OpenLabeling
+	url = git@github.com:shepherd-racas/OpenLabeling.git
