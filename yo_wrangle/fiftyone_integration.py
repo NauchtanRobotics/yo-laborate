@@ -14,14 +14,12 @@ from yo_wrangle.common import (
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
     PASCAL_VOC_FOLDER_NAME,
-    get_open_labeling_dir,
 )
 
 ACCEPTABLE_ANNOTATION_FOLDERS = [
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
 ]
-OPEN_LABELING_PATH = Path(get_open_labeling_dir())
 
 
 def _extract_annotation(line: str, label_mapping: Dict[int, str]):
@@ -354,7 +352,7 @@ def _extract_filenames_by_tag(
     return list_files_to_edit, filtered_dataset
 
 
-def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: List):
+def edit_labels(filenames: List[str], class_names: List):
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -362,19 +360,17 @@ def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: Lis
     then having to manually search for these and edit in another application.
 
     """
-    open_labeling_env_python = open_labeling_path / "venv/bin/python"
-    open_labeling_script = open_labeling_path / "run.py"
-    cmd = [
-        f"{str(open_labeling_env_python)}",
-        f"{str(open_labeling_script)}",
-        "-l",
-        *filenames,
-        "-c",
-        *class_names,
-    ]
-    subprocess.run(
-        cmd, stdout=sys.stdout, stderr=sys.stderr, cwd=str(open_labeling_path)
-    )
+    from open_labeling.run_app import main
+
+    class Args:
+        thickness = 1
+        tracker = "KCF"
+        n_frames = 200
+        files_list = *filenames,
+        draw_from_PASCAL_files = False
+        class_list = *class_names,
+
+    main(args=Args())
 
 
 def find_errors(
@@ -407,7 +403,7 @@ def find_errors(
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[filenames, OPEN_LABELING_PATH, class_names],
+        args=[filenames, class_names],
     )
     open_labeling_thread.start()
 

@@ -82,15 +82,6 @@ def get_config_items(base_dir: Path):
     )
 
 
-def get_open_labeling_dir(base_dir: Path = Path(__file__).parents[1]):
-    config = configparser.ConfigParser()
-    config_path = base_dir / "config.ini"
-    if not config_path.exists():
-        raise RuntimeError(f"{str(config_path)} does not exist.")
-    config.read(str(config_path))
-    return config.get("EDITOR", "OPEN_LABELING_ROOT")
-
-
 def get_version_control_config(base_dir: Path = Path(__file__).parents[1]):
     config = configparser.ConfigParser()
     config_path = base_dir / "config.ini"

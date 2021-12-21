@@ -56,3 +56,12 @@ def test_import():
         limit=64,
         dataset_label=name,
     )
+
+
+def test_errors():
+    set_globals(base_dir=Path(__file__).parent, workbook_ptr=dataset_workbook)
+    run_find_errors(
+        tag="mistakenness",
+        label_filter="WS",
+        limit=64,
+    )
