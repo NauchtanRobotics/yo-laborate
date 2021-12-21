@@ -14,14 +14,13 @@ from yo_wrangle.common import (
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
     PASCAL_VOC_FOLDER_NAME,
-    get_open_labeling_dir,
 )
 
 ACCEPTABLE_ANNOTATION_FOLDERS = [
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
 ]
-OPEN_LABELING_PATH = Path(get_open_labeling_dir())
+OPEN_LABELING_PATH = Path(__file__).parents[1] / "OpenLabeling"
 
 
 def _extract_annotation(line: str, label_mapping: Dict[int, str]):
@@ -354,10 +353,13 @@ def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: Lis
     then having to manually search for these and edit in another application.
 
     """
-    open_labeling_env_python = open_labeling_path / "venv/bin/python"
+    open_labeling_env_python = open_labeling_path / ".venv/bin/python"
     open_labeling_script = open_labeling_path / "run.py"
     cmd = [
-        f"{str(open_labeling_env_python)}",
+        # f"{str(open_labeling_env_python)}",
+        "poetry",
+        "run",
+        "python",
         f"{str(open_labeling_script)}",
         "-l",
         *filenames,

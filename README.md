@@ -53,8 +53,11 @@ Open a linux terminal (or git bash) and complete the following steps:
 2. Clone this repository:  `git clone git@github.com:NauchtanRobotics/yo-wrangle.git`
 3. Change working directory to newly cloned repo: `cd yo-wrangle` (n.b. you can rename this folder to describe your dataset, e.g. `number_plates_dataset`)
 4. Create virtual environment:  `poetry install` See https://python-poetry.org/docs/basic-usage/#installing-dependencies
-5. `cd ~ && git clone git@github.com:NauchtanRobotics/OpenLabeling.git`
-6. `cd ~ && git clone git@github.com:ultralytics/yolov5.git`
+5. `git submodule init`
+6. `cd OpenLabeling`
+7. `poetry install`
+8. `cd ~ && git clone git@github.com:ultralytics/yolov5.git` (Only if you have a suitable GPU installed.)
+9. Add path for yolo repository etc into config.ini (see Getting Started below). 
 
 For finding possible annotation errors with the help of `fiftyone-brain`, you will need pytorch python based libraries installed.
 To install python `torch` and `torchvision`, follow instructions at https://pytorch.org/get-started/locally/
