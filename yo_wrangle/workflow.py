@@ -16,12 +16,6 @@ CLASSES_MAP = {}
 DST_ROOT = Path()
 CONFIDENCE = 0.1
 TEST_SET_LABEL = ""
-# MODEL_LABEL = ""
-# # PROCESSED_ROOT = Path()
-# GROUND_TRUTHS_PATH = Path()
-# TEST_DATASET_PART_LABEL = ""
-# INFERENCE_RUN_NAME = ""
-# INFERENCES_PATH = Path()
 BASE_DIR = Path()
 CONF = 0.05
 GROUPINGS = {}
@@ -31,17 +25,14 @@ EVERY_NTH_TO_VAL = 0
 KEEP_CLASS_IDS = []
 SKIP_CLASS_IDS = []
 DATASET_LABEL = ""
-REVERSE_TRAIN_VAL = False
 
 
 def set_globals(base_dir: Path, workbook_ptr):
     global YOLO_ROOT, DATASET_ROOT, CLASSES_JSON_PATH, CLASSES_MAP
     global DST_ROOT, CONFIDENCE
-    # global GROUND_TRUTHS_PATH, TEST_SET_LABEL, MODEL_LABEL
-    # global TEST_DATASET_PART_LABEL, INFERENCE_RUN_NAME, INFERENCES_PATH
     global BASE_DIR, CONF, GROUPINGS, SUBSETS_INCLUDED, EVERY_NTH_TO_VAL
-    global KEEP_CLASS_IDS, SKIP_CLASS_IDS, DATASET_LABEL, REVERSE_TRAIN_VAL
-    REVERSE_TRAIN_VAL = workbook_ptr.REVERSE_TRAIN_VAL
+    global KEEP_CLASS_IDS, SKIP_CLASS_IDS, DATASET_LABEL
+
     CONF = workbook_ptr.CONF
     SUBSETS_INCLUDED = workbook_ptr.SUBSETS_INCLUDED
     EVERY_NTH_TO_VAL = workbook_ptr.EVERY_NTH_TO_VAL
@@ -60,22 +51,6 @@ def set_globals(base_dir: Path, workbook_ptr):
     CLASSES_MAP = get_id_to_label_map(CLASSES_JSON_PATH)
     DST_ROOT = Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
     CONFIDENCE = int(workbook_ptr.CONF * 100)
-
-    # if workbook_ptr.REVERSE_TRAIN_VAL:
-    #     TEST_SET_LABEL = "train"
-    #     MODEL_LABEL = f"{workbook_ptr.DATASET_LABEL}_reverse"
-    #
-    # else:
-    #     TEST_SET_LABEL = "val"
-    #     MODEL_LABEL = workbook_ptr.DATASET_LABEL
-
-    # GROUND_TRUTHS_PATH = DST_ROOT / TEST_SET_LABEL / "labels"
-
-    # TEST_DATASET_PART_LABEL = f"{workbook_ptr.DATASET_LABEL}_{TEST_SET_LABEL}"
-    # INFERENCE_RUN_NAME = (
-    #     f"{TEST_DATASET_PART_LABEL}__{MODEL_LABEL}_conf{CONFIDENCE}pcnt"
-    # )
-    # INFERENCES_PATH = YOLO_ROOT / f"runs/detect/{INFERENCE_RUN_NAME}/labels"
 
 
 def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):
@@ -240,9 +215,14 @@ def run_find_errors(
     tag: str = "mistakenness",
     label_filter: str = "WS",
     limit: int = 64,
+    dataset_label: str = None,
 ):
+    if dataset_label is None:
+        dataset_label = DATASET_LABEL
+    else:
+        pass
     find_errors(
-        dataset_label=DATASET_LABEL,
+        dataset_label=dataset_label,
         class_names=list(CLASSES_MAP.values()),
         tag=tag,
         limit=limit,
