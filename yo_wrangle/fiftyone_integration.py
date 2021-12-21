@@ -136,6 +136,7 @@ def init_fifty_one_dataset(
     images_root: Optional[Path] = None,
     ground_truths_root: Optional[Path] = None,
     candidate_subset: Path = None,
+    export_to_json: bool = True,
 ):
     """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
 
@@ -168,10 +169,16 @@ def init_fifty_one_dataset(
                     )
             predictions = []
             inferences_path = None
-            if (val_inferences_root / f"{image_path.stem}.txt").exists():
+            if (
+                val_inferences_root
+                and (val_inferences_root / f"{image_path.stem}.txt").exists()
+            ):
                 inferences_path = val_inferences_root / f"{image_path.stem}.txt"
                 sample.tags.append("val")
-            elif (train_inferences_root / f"{image_path.stem}.txt").exists():
+            elif (
+                train_inferences_root
+                and (train_inferences_root / f"{image_path.stem}.txt").exists()
+            ):
                 inferences_path = train_inferences_root / f"{image_path.stem}.txt"
                 sample.tags.append("train")
             else:
@@ -196,7 +203,9 @@ def init_fifty_one_dataset(
 
             # Store detections in a field name of your choice
             sample["ground_truth"] = fo.Detections(detections=detections)
-            sample["prediction"] = fo.Detections(detections=predictions)  # Should we do this if predictions is empty?
+            sample["prediction"] = fo.Detections(
+                detections=predictions
+            )  # Should we do this if predictions is empty?
             sample["subset"] = subset_folder.name
 
             if candidate_subset and subset_folder.name == candidate_subset.name:
@@ -220,6 +229,12 @@ def init_fifty_one_dataset(
     evaluate(dataset_label=dataset_label)
     dataset.persistent = True
     dataset.save()
+    if export_to_json:
+        dataset.export(
+            export_dir="./.export",
+            dataset_type=fo.types.FiftyOneDataset,
+            export_media=False,
+        )
 
 
 def start(dataset_label: Optional[str] = None):
@@ -310,9 +325,6 @@ def _extract_filenames_by_tag(
         filtered_dataset = dataset.match_tags("error").limit(limit)
     else:
         filtered_dataset = dataset
-        # filtered_dataset = dataset.filter_labels(
-        #     "prediction", ViewField("confidence") > conf_threshold
-        # )
         split_tag = tag.split("_")
         if len(split_tag) == 2 and split_tag[0] == "eval":
             filter_val = split_tag[1]
@@ -335,10 +347,6 @@ def _extract_filenames_by_tag(
             else:
                 pass  # Do we really want to examine "tp"?
             filtered_dataset = filtered_dataset.sort_by("filepath")
-        # elif len(split_tag) == 3:  # Not working: length() not len()
-        #     filtered_dataset = filtered_dataset.filter_labels(
-        #         "ground_truth", (ViewField("eval") == "fp" | ViewField("eval") == "fn")
-        #     ).limit(limit)
         else:  # e.g. tag is unknown
             pass
 
@@ -364,7 +372,9 @@ def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: Lis
         "-c",
         *class_names,
     ]
-    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
+    subprocess.run(
+        cmd, stdout=sys.stdout, stderr=sys.stderr, cwd=str(open_labeling_path)
+    )
 
 
 def find_errors(
