@@ -1,3 +1,8 @@
+## v0.2.1
+## Minor Changes
+* OpenLabeling is a git submodule (with poetry virtual env manager)
+* Workflow function to run full training (forward+backwards)
+
 ## v0.2:
 ### Breaking Changes
 * Classes information is now stored in classes.json (previously was in class_list.txt)
