@@ -1,14 +1,13 @@
 import sys
-
+import threading
 import fiftyone as fo
 import fiftyone.brain as fob
 import fiftyone.zoo as foz
-import subprocess
-import threading
 
 from fiftyone import ViewField, DatasetView
 from typing import List, Dict, Tuple, Optional
 from pathlib import Path
+import open_labeling.run_app as open_labeling_app
 from yo_wrangle.common import (
     get_all_jpg_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
@@ -352,7 +351,7 @@ def _extract_filenames_by_tag(
     return list_files_to_edit, filtered_dataset
 
 
-def edit_labels(filenames: List[str], class_names: List):
+def edit_labels(filenames: List[str], class_names: List[str]):
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -360,17 +359,23 @@ def edit_labels(filenames: List[str], class_names: List):
     then having to manually search for these and edit in another application.
 
     """
-    from open_labeling.run_app import main
+    script_path = open_labeling_app.__file__
 
-    class Args:
-        thickness = 1
-        tracker = "KCF"
-        n_frames = 200
-        files_list = *filenames,
-        draw_from_PASCAL_files = False
-        class_list = *class_names,
-
-    main(args=Args())
+    import subprocess
+    subprocess.check_call(
+        args=[
+            "poetry",
+            "run",
+            "python",
+            f"{str(script_path)}",
+            "--class-list",
+            *class_names,
+            "--files-list",
+            *filenames
+        ],
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+    )
 
 
 def find_errors(
