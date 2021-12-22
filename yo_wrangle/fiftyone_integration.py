@@ -1,27 +1,24 @@
 import sys
-
+import threading
 import fiftyone as fo
 import fiftyone.brain as fob
 import fiftyone.zoo as foz
-import subprocess
-import threading
 
 from fiftyone import ViewField, DatasetView
 from typing import List, Dict, Tuple, Optional
 from pathlib import Path
+import open_labeling.run_app as open_labeling_app
 from yo_wrangle.common import (
     get_all_jpg_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
     PASCAL_VOC_FOLDER_NAME,
-    get_open_labeling_dir,
 )
 
 ACCEPTABLE_ANNOTATION_FOLDERS = [
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
 ]
-OPEN_LABELING_PATH = Path(get_open_labeling_dir())
 
 
 def _extract_annotation(line: str, label_mapping: Dict[int, str]):
@@ -130,16 +127,16 @@ def delete_fiftyone_dataset(dataset_label: str):
 def init_fifty_one_dataset(
     dataset_label: str,
     classes_map: Dict[int, str],
-    inferences_root: Path,
-    processed_root: Path,
+    val_inferences_root: Optional[Path],
+    train_inferences_root: Optional[Path],
     dataset_root: Optional[Path] = None,
     images_root: Optional[Path] = None,
     ground_truths_root: Optional[Path] = None,
+    candidate_subset: Path = None,
+    export_to_json: bool = True,
 ):
     """Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations."""
-    processed_image_names = [
-        x.name for x in get_all_jpg_recursive(img_root=processed_root)
-    ]
+
     subset_folders = _get_subset_folders(dataset_root, images_root)
     samples = []
     for subset_folder in subset_folders:
@@ -168,10 +165,23 @@ def init_fifty_one_dataset(
                         fo.Detection(label=label, bounding_box=bounding_box)
                     )
             predictions = []
-            inferences_path = inferences_root / f"{image_path.stem}.txt"
-            if not inferences_path.exists():
-                pass  # no prediction(s) will be added to this sample.
+            inferences_path = None
+            if (
+                val_inferences_root
+                and (val_inferences_root / f"{image_path.stem}.txt").exists()
+            ):
+                inferences_path = val_inferences_root / f"{image_path.stem}.txt"
+                sample.tags.append("val")
+            elif (
+                train_inferences_root
+                and (train_inferences_root / f"{image_path.stem}.txt").exists()
+            ):
+                inferences_path = train_inferences_root / f"{image_path.stem}.txt"
+                sample.tags.append("train")
             else:
+                pass  # No 'predictions' to populate
+
+            if inferences_path and inferences_path.exists():
                 with open(str(inferences_path), "r") as file_obj:
                     annotation_lines = file_obj.readlines()
                 for line in annotation_lines:
@@ -186,13 +196,19 @@ def init_fifty_one_dataset(
                             confidence=confidence,
                         )
                     )
+                sample.tags.append("processed")
 
             # Store detections in a field name of your choice
             sample["ground_truth"] = fo.Detections(detections=detections)
-            sample["prediction"] = fo.Detections(detections=predictions)
+            sample["prediction"] = fo.Detections(
+                detections=predictions
+            )  # Should we do this if predictions is empty?
             sample["subset"] = subset_folder.name
-            if image_path.name in processed_image_names:
-                sample.tags.append("processed")
+
+            if candidate_subset and subset_folder.name == candidate_subset.name:
+                sample.tags.append("candidate")
+            else:
+                pass
             samples.append(sample)
 
     # Create dataset
@@ -210,6 +226,12 @@ def init_fifty_one_dataset(
     evaluate(dataset_label=dataset_label)
     dataset.persistent = True
     dataset.save()
+    if export_to_json:
+        dataset.export(
+            export_dir="./.export",
+            dataset_type=fo.types.FiftyOneDataset,
+            export_media=False,
+        )
 
 
 def start(dataset_label: Optional[str] = None):
@@ -263,7 +285,6 @@ def _extract_filenames_by_tag(
     dataset_label: str,
     tag: str = "error",  # Alternatively, can use "eval_fp", "mistakenness" or "eval_fn"
     limit: int = 100,
-    conf_threshold: float = 0.2,
     processed: bool = True,
     reverse: bool = True,
     label_filter: Optional[str] = "WS",  # e.g. 'CD'
@@ -301,9 +322,6 @@ def _extract_filenames_by_tag(
         filtered_dataset = dataset.match_tags("error").limit(limit)
     else:
         filtered_dataset = dataset
-        # filtered_dataset = dataset.filter_labels(
-        #     "prediction", ViewField("confidence") > conf_threshold
-        # )
         split_tag = tag.split("_")
         if len(split_tag) == 2 and split_tag[0] == "eval":
             filter_val = split_tag[1]
@@ -326,10 +344,6 @@ def _extract_filenames_by_tag(
             else:
                 pass  # Do we really want to examine "tp"?
             filtered_dataset = filtered_dataset.sort_by("filepath")
-        # elif len(split_tag) == 3:  # Not working: length() not len()
-        #     filtered_dataset = filtered_dataset.filter_labels(
-        #         "ground_truth", (ViewField("eval") == "fp" | ViewField("eval") == "fn")
-        #     ).limit(limit)
         else:  # e.g. tag is unknown
             pass
 
@@ -337,7 +351,7 @@ def _extract_filenames_by_tag(
     return list_files_to_edit, filtered_dataset
 
 
-def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: List):
+def edit_labels(filenames: List[str], class_names: List[str]):
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -345,24 +359,29 @@ def edit_labels(filenames: List[str], open_labeling_path: Path, class_names: Lis
     then having to manually search for these and edit in another application.
 
     """
-    open_labeling_env_python = open_labeling_path / "venv/bin/python"
-    open_labeling_script = open_labeling_path / "run.py"
-    cmd = [
-        f"{str(open_labeling_env_python)}",
-        f"{str(open_labeling_script)}",
-        "-l",
-        *filenames,
-        "-c",
-        *class_names,
-    ]
-    subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
+    script_path = open_labeling_app.__file__
+
+    import subprocess
+    subprocess.check_call(
+        args=[
+            "poetry",
+            "run",
+            "python",
+            f"{str(script_path)}",
+            "--class-list",
+            *class_names,
+            "--files-list",
+            *filenames
+        ],
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+    )
 
 
 def find_errors(
     dataset_label: str,
     class_names: List[str],
     tag: str = "eval_fn",
-    conf_thresh: float = 0.25,
     limit: int = 25,
     processed: bool = True,
     reverse: bool = True,
@@ -380,7 +399,6 @@ def find_errors(
     filenames, filtered_dataset = _extract_filenames_by_tag(
         dataset_label=dataset_label,
         tag=tag,
-        conf_threshold=conf_thresh,
         limit=limit,
         processed=processed,
         reverse=reverse,
@@ -390,7 +408,7 @@ def find_errors(
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[filenames, OPEN_LABELING_PATH, class_names],
+        args=[filenames, class_names],
     )
     open_labeling_thread.start()
 
