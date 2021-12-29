@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 from open_labeling import launcher
@@ -17,7 +18,7 @@ CLASSES_MAP = {}
 DST_ROOT = Path()
 CONFIDENCE = 0.1
 TEST_SET_LABEL = ""
-BASE_DIR = Path()
+BASE_DIR = None
 CONF = 0.05
 GROUPINGS = {}
 
@@ -29,7 +30,11 @@ DATASET_LABEL = ""
 
 
 def edit_all_bounding_boxes_in_a_folder():
-    base_dir = Path(__file__).parents[1]
+    calling_script = Path(sys.argv[0])
+    if calling_script.name == "label_folder":  # For manually testing yo-wrangle in-situ.
+        base_dir = calling_script.parents[2]
+    else:
+        base_dir = Path(__file__).parents[1]
     _, _, _, _, _, _, classes_json_path = get_config_items(
         base_dir=base_dir
     )
