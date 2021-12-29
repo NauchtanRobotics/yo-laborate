@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from open_labeling import launcher
 from yo_wrangle.common import get_config_items, get_id_to_label_map
 from yo_wrangle.fiftyone_integration import (
     init_fifty_one_dataset,
@@ -25,6 +26,22 @@ EVERY_NTH_TO_VAL = 0
 KEEP_CLASS_IDS = []
 SKIP_CLASS_IDS = []
 DATASET_LABEL = ""
+
+
+def edit_all_bounding_boxes_in_a_folder():
+    base_dir = Path(__file__).parents[1]
+    _, _, _, _, _, _, classes_json_path = get_config_items(
+        base_dir=base_dir
+    )
+    classes_json_path = Path(classes_json_path)
+    classes_dict = get_id_to_label_map(classes_json_path)
+    classes_list = list(classes_dict.values())
+
+    class Args:
+        class_list = classes_list
+
+    args = Args()
+    launcher.main(args=args)
 
 
 def set_globals(base_dir: Path, workbook_ptr):
