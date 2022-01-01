@@ -1,60 +1,13 @@
 import PySimpleGUI as sg
 
+from yo_wrangle.common import get_classes_list, inferred_base_dir
+from yo_wrangle.user_interface.vcs_gui import backup_train_window
+from open_labeling.launcher import main as open_labeling_launcher
 
 BACKUP_TRAIN_VCS = "Backup/Train"
 LABEL_FOLDER = "Label Folder"
 EXPLORE_DS = "Explore Dataset"
 FIND_ERRORS = "Find/Edit Errors"
-
-
-def backup_train_window():
-    message_1 = "Backup to cloud. "
-    message_2 = "EFT: Request 'enhance' training (full). "
-    message_3 = "PMT: Submit for 'performance measurement' training. "
-    supplementary_text = "Changes primarily to class: "
-    message = message_1
-    radio_group = [
-                      [sg.Radio(message_1, 1, enable_events=True, key='R1', default=True)],
-                      [sg.Radio(message_2, 1, enable_events=True, key='R2')],
-                      [sg.Radio(message_3, 1, enable_events=True, key='R3')],
-                  ]
-    middle_column = [
-        [
-            sg.Text("Commit Description"),
-            sg.In(default_text=message_1+supplementary_text, size=(100, 1), enable_events=True, key="input"),
-            sg.Button("Push", key="commit"),
-        ],
-    ]
-    # ----- Full layout -----
-    layout = [
-        radio_group,
-        [
-            sg.Column(middle_column),
-        ],
-    ]
-    window = sg.Window("Dataset Version Control", layout, modal=True, margins=(50, 20))
-    nominal_class = ""
-    while True:
-        event, values = window.read()
-        if event == "Exit" or event == sg.WIN_CLOSED:
-            break
-        elif event == "input":
-            message = values["input"]
-            nominal_class = message.split(":")[-1].strip()
-        elif event == "R1":
-            message = message_1 + supplementary_text + nominal_class
-        elif event == "R2":
-            message = message_2 + supplementary_text + nominal_class
-        elif event == "R3":
-            message = message_3 + supplementary_text + nominal_class
-        elif event == "commit":
-            print(message)
-            break
-        else:
-            print("Unknown event: ", event)
-        window["input"].update(value=message)
-    window.close()
-    return message
 
 
 def main():
@@ -99,7 +52,13 @@ def main():
         if event == BACKUP_TRAIN_VCS:
             backup_train_window()
         elif event == LABEL_FOLDER:
-            pass
+            base_dir = inferred_base_dir()
+            class_labels_list = get_classes_list(base_dir)
+
+            class Args:
+                class_list = *class_labels_list,
+
+            open_labeling_launcher(args=Args())
         elif event == FIND_ERRORS:
             pass
 
@@ -108,3 +67,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# def test_inferred_base_dir():
+#     base_dir = inferred_base_dir()
+#     print(str(base_dir))
+
