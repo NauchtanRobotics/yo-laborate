@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yo-wrangle"
-version = "0.2.3"
+version = "0.2.4"
 description = "YOLO dataset improvement and wrangling tool."
 authors = ["David MacNaughton"]
 license = "MIT"
