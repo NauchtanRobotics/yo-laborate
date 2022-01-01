@@ -2,7 +2,7 @@ import configparser
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Dict, Optional
+from typing import Iterable, Dict, Optional, List
 
 YOLO_ANNOTATIONS_FOLDER_NAME = "YOLO_darknet"
 LABELS_FOLDER_NAME = "labels"
@@ -81,6 +81,33 @@ def get_config_items(base_dir: Path):
         dataset_root,
         classes_json_path,
     )
+
+
+def get_classes_list(base_dir: Path) -> List[str]:
+    """
+    Returns a list of class labels based on the "label" field in
+    the classes.json file found in the base_dir.
+
+    """
+    config = configparser.ConfigParser()
+    config_path = base_dir / "config.ini"
+    if not config_path.exists():
+        raise RuntimeError(f"{str(config_path)} does not exist.")
+    config.read(str(config_path))
+    classes_json_path = config.get("DATASET", "CLASSES_JSON")
+    if (
+            classes_json_path is None
+            or classes_json_path == ""
+            or classes_json_path == "./"
+    ):
+        classes_json_path = base_dir / "classes.json"
+    else:
+        classes_json_path = Path(classes_json_path).resolve()
+    if not classes_json_path.exists():
+        raise RuntimeError(f"CLASSES_JSON path does not exist at {str(classes_json_path)}")
+    classes_id_to_label_map = get_id_to_label_map(classes_json_path=classes_json_path)
+    class_labels_list = classes_id_to_label_map.values()
+    return class_labels_list
 
 
 def get_version_control_config(base_dir: Path = Path(__file__).parents[1]):
