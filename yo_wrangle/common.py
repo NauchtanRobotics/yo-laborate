@@ -88,7 +88,7 @@ def get_version_control_config(base_dir: Path = Path(__file__).parents[1]):
     if not config_path.exists():
         raise RuntimeError(f"{str(config_path)} does not exist.")
     config.read(str(config_path))
-    git_exe_path = config.get("GIT", "EXE_PATH")
+    git_exe_path = str(Path(config.get("GIT", "EXE_PATH")).resolve())
     remote_name = config.get("GIT", "REMOTE_NAME")
     branch_name = config.get("GIT", "BRANCH_NAME")
     return git_exe_path, remote_name, branch_name
