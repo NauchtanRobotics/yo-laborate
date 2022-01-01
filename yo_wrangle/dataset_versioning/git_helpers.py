@@ -34,18 +34,19 @@ def commit_and_push(
             "add",
             ".",
         ]
-        subprocess.check_call(
+        subprocess.run(
             args=cmd,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
             cwd=str(base_dir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
         )
-        cmd = [git_exe_path, "commit", "-m", f"{dataset_label} {description}"]
-        subprocess.check_call(
+        full_message = f"{dataset_label} {description}" if len(dataset_label) > 0 else description
+        cmd = [git_exe_path, "commit", "-m", full_message]
+        subprocess.run(
             args=cmd,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
             cwd=str(base_dir),
+            check=True,
         )
         cmd = [
             git_exe_path,
@@ -53,19 +54,19 @@ def commit_and_push(
             f"{remote_name}",
             f"{remote_branch}",
         ]
-        subprocess.check_call(
+        subprocess.run(
             args=cmd,
-            stdout=sys.stdout,
-            stderr=subprocess.STDOUT,
             cwd=str(base_dir),
+            check=True,
         )
     except subprocess.CalledProcessError:
-        print("Git error (probably no changes to commit), continuing...")
+        print("Git Error. Probably no changes to commit. Continuing...")
 
 
 def test_git_commit_and_push():
     commit_and_push(
-        dataset_label="CLAS-119",
-        base_dir=Path(__file__).parents[1],
-        description="Formatting",
+        dataset_label="",
+        base_dir=Path(__file__).parents[2],
+        description="TEST",
+        remote_branch="CLAS-127"
     )
