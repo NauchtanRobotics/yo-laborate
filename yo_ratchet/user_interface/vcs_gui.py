@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 
-from yo_wrangle.common import inferred_base_dir
-from yo_wrangle.dataset_versioning import commit_and_push
+from yo_ratchet.yo_wrangle.common import inferred_base_dir
+from yo_ratchet.dataset_versioning import commit_and_push
 
 RB_GROUP_1 = "Radio_1"
 RB1 = "R1"

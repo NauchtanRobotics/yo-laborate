@@ -4,13 +4,13 @@ import fiftyone.zoo as foz
 from typing import List, Dict, Optional
 from pathlib import Path
 
-from yo_wrangle.common import (
+from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
     LABELS_FOLDER_NAME,
     PASCAL_VOC_FOLDER_NAME,
 )
-from yo_wrangle.fiftyone_integration.helpers import print_dataset_info
+from yo_ratchet.fiftyone_integration.helpers import print_dataset_info
 
 ACCEPTABLE_ANNOTATION_FOLDERS = [
     YOLO_ANNOTATIONS_FOLDER_NAME,

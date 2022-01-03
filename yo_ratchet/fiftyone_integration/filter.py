@@ -6,7 +6,7 @@ from typing import List, Tuple, Optional
 
 import open_labeling.run_app as open_labeling_app
 
-from yo_wrangle.fiftyone_integration.helpers import print_dataset_info
+from yo_ratchet.fiftyone_integration.helpers import print_dataset_info
 
 
 def _extract_filenames_by_tag(

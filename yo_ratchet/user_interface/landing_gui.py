@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 
-from yo_wrangle.common import get_classes_list, inferred_base_dir
-from yo_wrangle.user_interface.vcs_gui import backup_train_window
+from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
+from yo_ratchet.user_interface.vcs_gui import backup_train_window
 from open_labeling.launcher import main as open_labeling_launcher
 
 BACKUP_TRAIN_VCS = "Backup/Train"

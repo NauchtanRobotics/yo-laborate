@@ -1,7 +1,7 @@
 import fiftyone as fo
 from pathlib import Path
 
-from yo_wrangle.workflow import (
+from yo_ratchet.workflow import (
     run_prepare_dataset_and_train,
     set_globals,
     run_find_errors,

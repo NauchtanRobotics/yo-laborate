@@ -35,9 +35,9 @@ import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 
-from yo_wrangle.dataset_versioning import commit_and_push
-from yo_wrangle.stats import count_class_instances_in_datasets
-from yo_wrangle.common import (
+from yo_ratchet.dataset_versioning import commit_and_push
+from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
+from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
