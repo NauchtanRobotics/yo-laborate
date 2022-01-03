@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import PySimpleGUI as sg
 
+from yo_ratchet.user_interface.find_errors_gui import launch_find_errors_config_window
 from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
 from yo_ratchet.user_interface.vcs_gui import backup_train_window
 from open_labeling.launcher import main as open_labeling_launcher
@@ -10,7 +13,11 @@ EXPLORE_DS = "Explore Dataset"
 FIND_ERRORS = "Find/Edit Errors"
 
 
-def main():
+def launch_main_gui(base_dir: Path = None):
+    if base_dir is None:
+        base_dir = inferred_base_dir()
+    else:
+        pass
     sg.ChangeLookAndFeel('LightGreen')
 
     # ------ Menu Definition ------ #
@@ -48,11 +55,9 @@ def main():
         elif event is not None:
             print(event)
             window.refresh()
-
         if event == BACKUP_TRAIN_VCS:
             backup_train_window()
         elif event == LABEL_FOLDER:
-            base_dir = inferred_base_dir()
             class_labels_list = get_classes_list(base_dir)
 
             class Args:
@@ -60,16 +65,18 @@ def main():
 
             open_labeling_launcher(args=Args())
         elif event == FIND_ERRORS:
-            pass
+            launch_find_errors_config_window(base_dir=base_dir)
 
     window.close()
 
 
 if __name__ == "__main__":
-    main()
+    launch_main_gui()
 
 
 # def test_inferred_base_dir():
 #     base_dir = inferred_base_dir()
 #     print(str(base_dir))
 
+# def test_main():
+#     launch_main_gui(base_dir=Path("C:\\sealed_roads_dataset"))
