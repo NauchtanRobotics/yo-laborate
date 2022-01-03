@@ -99,6 +99,5 @@ KEEP_CLASS_IDS = None  # None actually means keep all classes
 SKIP_CLASS_IDS = [15, 22]  # Signs, Shoving
 EVERY_NTH_TO_VAL = 1  # for the validation subset
 DATASET_LABEL = "v8e"
-REVERSE_TRAIN_VAL = False
 GROUPINGS = {"Risk Defects": [3, 4, 14], "Cracking": [0, 1, 2, 11, 16]}
 CONF = 0.1

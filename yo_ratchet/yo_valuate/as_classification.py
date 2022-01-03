@@ -5,7 +5,7 @@ from typing import Optional, List, Dict
 from sklearn import metrics as skm
 from pathlib import Path
 
-from yo_wrangle.common import get_all_jpg_recursive, get_id_to_label_map
+from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive
 
 
 def get_truth_vs_inferred_dict_by_photo(

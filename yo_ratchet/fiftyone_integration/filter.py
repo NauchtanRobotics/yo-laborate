@@ -1,12 +1,15 @@
+from pathlib import Path
+
 import fiftyone as fo
-import sys
+import subprocess
 import threading
 from fiftyone import ViewField, DatasetView
 from typing import List, Tuple, Optional
 
-import open_labeling.run_app as open_labeling_app
+from open_labeling.launcher import POETRY_APP
 
-from yo_wrangle.fiftyone_integration.helpers import print_dataset_info
+from yo_ratchet.fiftyone_integration.helpers import print_dataset_info
+from yo_ratchet.yo_wrangle.common import inferred_base_dir
 
 
 def _extract_filenames_by_tag(
@@ -43,8 +46,9 @@ def _extract_filenames_by_tag(
     else:
         pass
 
-    if tag == "mistakenness":
+    if tag.lower() == "mistakenness":
         dataset = dataset.sort_by("mistakenness", reverse=reverse)
+        print("came here", len(dataset))
         filtered_dataset = dataset.limit(limit)
     elif tag == "error":
         filtered_dataset = dataset.match_tags("error").limit(limit)
@@ -79,7 +83,7 @@ def _extract_filenames_by_tag(
     return list_files_to_edit, filtered_dataset
 
 
-def edit_labels(filenames: List[str], class_names: List[str]):
+def edit_labels(filenames: List[str], class_names: List[str], base_dir: Path):
     """Opens OpenLabeling with this list of images filenames found in root_folder
     as per provided parameters.
 
@@ -87,23 +91,42 @@ def edit_labels(filenames: List[str], class_names: List[str]):
     then having to manually search for these and edit in another application.
 
     """
-    script_path = open_labeling_app.__file__
-
-    import subprocess
-    subprocess.check_call(
-        args=[
-            "poetry",
+    print("base_dir: ")
+    print(str(base_dir))
+    cmd = [
+        str(POETRY_APP),
+        "env",
+        "info",
+        "--path",
+    ]
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, cwd=str(base_dir))
+    open_labeling_app = res.stdout.decode("utf8").splitlines()[0]
+    open_labeling_app = Path(open_labeling_app)
+    open_labeling_app = (open_labeling_app / "Lib" / "site-packages" / "open_labeling" / "run_app.py").resolve()
+    assert open_labeling_app.exists(), f"Path does not exist: {str(open_labeling_app)}"
+    print(str(open_labeling_app))
+    if len(res.stderr) > 0:
+        print(str(res.stderr))
+    cmd = [
+            str(POETRY_APP),
             "run",
             "python",
-            f"{str(script_path)}",
-            "--class-list",
+            f"{str(open_labeling_app)}",
+            "-c",
             *class_names,
             "--files-list",
-            *filenames
-        ],
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-    )
+            *filenames,
+        ]
+    try:
+        res = subprocess.run(
+            args=cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+            cwd=str(base_dir)
+        )
+    except subprocess.CalledProcessError as error:
+        print(error)
 
 
 def find_errors(
@@ -114,6 +137,7 @@ def find_errors(
     processed: bool = True,
     reverse: bool = True,
     label_filter: Optional[str] = "WS",
+    base_dir: Path = None,
 ):
     """Filters a FiftyOne Dataset according to the tag and other parameters
     provided, then Simultaneously opens both OpenLabeling and FiftyOne in
@@ -124,7 +148,10 @@ def find_errors(
     whilst editing the ground truths in OpenLabeling.
 
     """
-    filenames, filtered_dataset = _extract_filenames_by_tag(
+    if base_dir is None:
+        base_dir = inferred_base_dir()
+    print("B A S E  D I R: ", str(base_dir))
+    file_names, filtered_dataset = _extract_filenames_by_tag(
         dataset_label=dataset_label,
         tag=tag,
         limit=limit,
@@ -132,11 +159,13 @@ def find_errors(
         reverse=reverse,
         label_filter=label_filter,
     )
+    file_names = [Path(file_name).resolve() for file_name in file_names]
+    file_names = [str(file_name) for file_name in file_names if file_name.exists()]
 
     open_labeling_thread = threading.Thread(
         target=edit_labels,  # Pointer to function that will launch OpenLabeling.
         name="OpenLabeling",
-        args=[filenames, class_names],
+        args=[file_names, class_names, base_dir],
     )
     open_labeling_thread.start()
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict
 
-from yo_wrangle.common import get_all_txt_recursive
+from yo_ratchet.yo_wrangle.common import get_all_txt_recursive
 
 
 def recode_and_filter(

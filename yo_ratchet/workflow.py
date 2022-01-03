@@ -1,15 +1,16 @@
 import sys
 from pathlib import Path
+from typing import List
 
 from open_labeling import launcher
-from yo_wrangle.common import get_config_items, get_id_to_label_map
-from yo_wrangle.fiftyone_integration import (
+from yo_ratchet.yo_wrangle.common import get_config_items, get_id_to_label_map, inferred_base_dir, get_classes_list
+from yo_ratchet.fiftyone_integration import (
     init_fifty_one_dataset,
     delete_fiftyone_dataset,
     find_errors,
 )
-from yo_wrangle.wrangle import run_detections, prepare_dataset_and_train, reverse_train
-from yo_wrangle.yo_valuate import binary_and_group_classification_performance
+from yo_ratchet.yo_wrangle.wrangle import run_detections, prepare_dataset_and_train, reverse_train
+from yo_ratchet.yo_valuate.as_classification import binary_and_group_classification_performance
 
 YOLO_ROOT = Path()
 DATASET_ROOT = Path()
@@ -27,26 +28,6 @@ EVERY_NTH_TO_VAL = 0
 KEEP_CLASS_IDS = []
 SKIP_CLASS_IDS = []
 DATASET_LABEL = ""
-
-
-def edit_all_bounding_boxes_in_a_folder():
-    calling_script = Path(sys.argv[0])
-    if calling_script.name == "label_folder":  # For manually testing yo-wrangle in-situ.
-        base_dir = calling_script.parents[2]
-    else:
-        base_dir = Path(__file__).parents[1]
-    _, _, _, _, _, _, classes_json_path = get_config_items(
-        base_dir=base_dir
-    )
-    classes_json_path = Path(classes_json_path)
-    classes_dict = get_id_to_label_map(classes_json_path)
-    classes_list = list(classes_dict.values())
-
-    class Args:
-        class_list = classes_list
-
-    args = Args()
-    launcher.main(args=args)
 
 
 def set_globals(base_dir: Path, workbook_ptr):
@@ -73,6 +54,16 @@ def set_globals(base_dir: Path, workbook_ptr):
     CLASSES_MAP = get_id_to_label_map(CLASSES_JSON_PATH)
     DST_ROOT = Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
     CONFIDENCE = int(workbook_ptr.CONF * 100)
+
+
+def launch_open_labeling_folder_browser():
+    class_names_list = get_classes_list(base_dir=inferred_base_dir())
+
+    class Args:
+        class_list = class_names_list
+
+    args = Args()
+    launcher.main(args=args)
 
 
 def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):

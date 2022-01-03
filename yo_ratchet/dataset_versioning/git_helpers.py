@@ -1,9 +1,8 @@
 import subprocess
-import sys
 from pathlib import Path
 from typing import Optional
 
-from yo_wrangle.common import get_version_control_config
+from yo_ratchet.yo_wrangle.common import get_version_control_config
 
 
 def commit_and_push(

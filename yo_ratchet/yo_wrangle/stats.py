@@ -3,7 +3,7 @@ from tabulate import tabulate
 
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
-from yo_wrangle.common import (
+from yo_ratchet.yo_wrangle.common import (
     YOLO_ANNOTATIONS_FOLDER_NAME,
     get_all_jpg_recursive,
 )

@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "yo-wrangle"
-version = "0.2.4"
+name = "yo-laborate"
+version = "0.2.5-alpha.12"
 description = "YOLO dataset improvement and wrangling tool."
 authors = ["David MacNaughton"]
 license = "MIT"
 packages = [
-    { include = "yo_wrangle" },
+    { include = "yo_ratchet" },
 ]
 
 [tool.poetry.dependencies]
@@ -28,5 +28,6 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-ratchet = "yo_wrangle.user_interface.landing_gui:main"
-label_folder = "yo_wrangle.workflow:edit_all_bounding_boxes_in_a_folder"
+ratchet = "yo_ratchet.user_interface.landing_gui:launch_main_gui"
+label_folder = "yo_ratchet.workflow:launch_open_labeling_folder_browser"
+find_errors = "yo_ratchet.user_interface.find_errors_gui:launch_find_errors_config_window"
