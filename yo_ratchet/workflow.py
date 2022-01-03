@@ -30,16 +30,6 @@ SKIP_CLASS_IDS = []
 DATASET_LABEL = ""
 
 
-def launch_open_labeling_folder_browser():
-    class_names_list = get_classes_list(base_dir=inferred_base_dir())
-
-    class Args:
-        class_list = class_names_list
-
-    args = Args()
-    launcher.main(args=args)
-
-
 def set_globals(base_dir: Path, workbook_ptr):
     global YOLO_ROOT, DATASET_ROOT, CLASSES_JSON_PATH, CLASSES_MAP
     global DST_ROOT, CONFIDENCE
@@ -64,6 +54,16 @@ def set_globals(base_dir: Path, workbook_ptr):
     CLASSES_MAP = get_id_to_label_map(CLASSES_JSON_PATH)
     DST_ROOT = Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
     CONFIDENCE = int(workbook_ptr.CONF * 100)
+
+
+def launch_open_labeling_folder_browser():
+    class_names_list = get_classes_list(base_dir=inferred_base_dir())
+
+    class Args:
+        class_list = class_names_list
+
+    args = Args()
+    launcher.main(args=args)
 
 
 def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):
