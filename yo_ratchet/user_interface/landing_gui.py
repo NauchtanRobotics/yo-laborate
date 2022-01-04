@@ -8,6 +8,8 @@ from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
 from yo_ratchet.user_interface.vcs_gui import backup_train_window
 from open_labeling.launcher import main as open_labeling_launcher
 
+LOG_PANE_SIZE = (120, 25)
+
 BACKUP_TRAIN_VCS = "Backup/Train"
 LABEL_FOLDER = "Label Folder"
 EXPLORE_DS = "Explore Dataset"
@@ -28,7 +30,7 @@ def launch_main_gui(base_dir: Path = None):
     ]
     middle_column = [
         [sg.Text("Actions Log:")],
-        [sg.Output(size=(60, 25), key="console",)]
+        [sg.Output(size=LOG_PANE_SIZE, key="console", )]
     ]
     col_element = sg.Column(middle_column,)
 
