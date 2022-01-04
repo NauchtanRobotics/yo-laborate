@@ -109,30 +109,33 @@ def edit_labels(filenames: List[str], class_names: List[str], base_dir: Path):
     open_labeling_app = res.decode("utf8").splitlines()[0]
     open_labeling_app = Path(open_labeling_app)
     if sys.platform == "win32":
-        open_labeling_app = (open_labeling_app / "Lib" / "site-packages" / "open_labeling" / "run_app.py").resolve()
+        open_labeling_app = (
+            open_labeling_app / "Lib" / "site-packages" / "open_labeling" / "run_app.py"
+        ).resolve()
     else:
         open_labeling_app = (
-                open_labeling_app / "lib" / "python3.8" / "site-packages" / "open_labeling" / "run_app.py"
+            open_labeling_app
+            / "lib"
+            / "python3.8"
+            / "site-packages"
+            / "open_labeling"
+            / "run_app.py"
         ).resolve()
     assert open_labeling_app.exists(), f"Path does not exist: {str(open_labeling_app)}"
     print(str(open_labeling_app))
 
     cmd = [
-            str(POETRY_APP),
-            "run",
-            "python",
-            f"{str(open_labeling_app)}",
-            "-c",
-            *class_names,
-            "--files-list",
-            *filenames,
-        ]
+        str(POETRY_APP),
+        "run",
+        "python",
+        f"{str(open_labeling_app)}",
+        "-c",
+        *class_names,
+        "--files-list",
+        *filenames,
+    ]
     subprocess.run(
-        args=cmd,
-        stdout=SYS_STDOUT,
-        stderr=SYS_STDERR,
-        check=True,
-        cwd=str(base_dir)
+        args=cmd, stdout=SYS_STDOUT, stderr=SYS_STDERR, check=True, cwd=str(base_dir)
     )
 
 

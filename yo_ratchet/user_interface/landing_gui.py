@@ -21,22 +21,36 @@ def launch_main_gui(base_dir: Path = None):
         base_dir = inferred_base_dir()
     else:
         pass
-    sg.ChangeLookAndFeel('LightGreen')
+    sg.ChangeLookAndFeel("LightGreen")
 
     # ------ Menu Definition ------ #
     menu_def = [
-        ["Actions", [LABEL_FOLDER, BACKUP_TRAIN_VCS, EXPLORE_DS, FIND_ERRORS, "---", "Exit"]],
-        ['Help', 'About...'],
+        [
+            "Actions",
+            [LABEL_FOLDER, BACKUP_TRAIN_VCS, EXPLORE_DS, FIND_ERRORS, "---", "Exit"],
+        ],
+        ["Help", "About..."],
     ]
     middle_column = [
         [sg.Text("Actions Log:")],
-        [sg.Output(size=LOG_PANE_SIZE, key="console", )]
+        [
+            sg.Output(
+                size=LOG_PANE_SIZE,
+                key="console",
+            )
+        ],
     ]
-    col_element = sg.Column(middle_column,)
+    col_element = sg.Column(
+        middle_column,
+    )
 
     # ----- Full layout -----
     layout = [
-        [sg.Menu(menu_def, )],
+        [
+            sg.Menu(
+                menu_def,
+            )
+        ],
         [col_element],
     ]
     window = sg.Window(
@@ -64,7 +78,7 @@ def launch_main_gui(base_dir: Path = None):
             class_labels_list = get_classes_list(base_dir)
 
             class Args:
-                class_list = *class_labels_list,
+                class_list = (*class_labels_list,)
 
             open_labeling_launcher(args=Args())
         elif event == FIND_ERRORS:
