@@ -60,7 +60,7 @@ def get_config_items(base_dir: Path):
         raise RuntimeError(f"{str(config_path)} does not exist.")
     config.read(str(config_path))
     python_path = config.get("YOLO", "PYTHON_EXE")
-    yolo_root = config.get("YOLO", "BASE_DIR")
+    yolo_root = config.get("YOLO", "YOLO_ROOT")
     cfg_path = config.get("YOLO", "CFG_PATH")
     weights_path = config.get("YOLO", "WEIGHTS_PATH")
     hyp_path = config.get("YOLO", "HYP_PATH")
