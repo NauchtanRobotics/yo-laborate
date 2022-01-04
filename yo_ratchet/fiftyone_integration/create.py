@@ -253,7 +253,7 @@ def start(dataset_label: Optional[str] = None):
     if len(fo.list_datasets()) == 0:
         raise RuntimeError("No datasets available. First run init_fiftyone_dataset().")
     elif dataset_label is None:
-        dataset_label = sorted(fo.list_datasets())[-1]
+        dataset_label = sorted(fo.list_datasets(), reverse=True)[0]
     else:
         pass
 

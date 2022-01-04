@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import fiftyone as fo
@@ -6,7 +7,7 @@ import threading
 from fiftyone import ViewField, DatasetView
 from typing import List, Tuple, Optional
 
-from open_labeling.launcher import POETRY_APP
+from open_labeling.launcher import POETRY_APP, SYS_STDOUT, SYS_STDERR
 
 from yo_ratchet.fiftyone_integration.helpers import print_dataset_info
 from yo_ratchet.yo_wrangle.common import inferred_base_dir
@@ -48,7 +49,6 @@ def _extract_filenames_by_tag(
 
     if tag.lower() == "mistakenness":
         dataset = dataset.sort_by("mistakenness", reverse=reverse)
-        print("came here", len(dataset))
         filtered_dataset = dataset.limit(limit)
     elif tag == "error":
         filtered_dataset = dataset.match_tags("error").limit(limit)
@@ -91,42 +91,52 @@ def edit_labels(filenames: List[str], class_names: List[str], base_dir: Path):
     then having to manually search for these and edit in another application.
 
     """
-    print("base_dir: ")
-    print(str(base_dir))
+    assert base_dir.exists(), f"base_dir does not exist: {str(base_dir)}"
     cmd = [
         str(POETRY_APP),
         "env",
         "info",
         "--path",
     ]
-    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, cwd=str(base_dir))
-    open_labeling_app = res.stdout.decode("utf8").splitlines()[0]
+    try:
+        res = subprocess.check_output(cmd, cwd=str(base_dir))
+    except subprocess.CalledProcessError as error:
+        message = f"{error} | base_dir = {str(base_dir)}"
+        raise RuntimeError(message)
+    if res is None:
+        raise RuntimeError(f"Poetry env not installed. Res = {res}")
+
+    open_labeling_app = res.decode("utf8").splitlines()[0]
     open_labeling_app = Path(open_labeling_app)
-    open_labeling_app = (open_labeling_app / "Lib" / "site-packages" / "open_labeling" / "run_app.py").resolve()
+    if sys.platform == "win32":
+        open_labeling_app = (
+            open_labeling_app / "Lib" / "site-packages" / "open_labeling" / "run_app.py"
+        ).resolve()
+    else:
+        open_labeling_app = (
+            open_labeling_app
+            / "lib"
+            / "python3.8"
+            / "site-packages"
+            / "open_labeling"
+            / "run_app.py"
+        ).resolve()
     assert open_labeling_app.exists(), f"Path does not exist: {str(open_labeling_app)}"
     print(str(open_labeling_app))
-    if len(res.stderr) > 0:
-        print(str(res.stderr))
+
     cmd = [
-            str(POETRY_APP),
-            "run",
-            "python",
-            f"{str(open_labeling_app)}",
-            "-c",
-            *class_names,
-            "--files-list",
-            *filenames,
-        ]
-    try:
-        res = subprocess.run(
-            args=cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-            cwd=str(base_dir)
-        )
-    except subprocess.CalledProcessError as error:
-        print(error)
+        str(POETRY_APP),
+        "run",
+        "python",
+        f"{str(open_labeling_app)}",
+        "-c",
+        *class_names,
+        "--files-list",
+        *filenames,
+    ]
+    subprocess.run(
+        args=cmd, stdout=SYS_STDOUT, stderr=SYS_STDERR, check=True, cwd=str(base_dir)
+    )
 
 
 def find_errors(
@@ -150,7 +160,8 @@ def find_errors(
     """
     if base_dir is None:
         base_dir = inferred_base_dir()
-    print("B A S E  D I R: ", str(base_dir))
+    else:
+        pass
     file_names, filtered_dataset = _extract_filenames_by_tag(
         dataset_label=dataset_label,
         tag=tag,
@@ -171,7 +182,7 @@ def find_errors(
 
     if isinstance(filtered_dataset, DatasetView):
         print_dataset_info(filtered_dataset)
-        session = fo.launch_app(filtered_dataset)
+        fo.launch_app(filtered_dataset)
     else:
         print("Cannot launch the FiftyOne interface.")
         raise Exception(

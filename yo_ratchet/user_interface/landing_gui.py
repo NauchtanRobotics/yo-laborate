@@ -2,10 +2,13 @@ from pathlib import Path
 
 import PySimpleGUI as sg
 
+from yo_ratchet.fiftyone_integration import start
 from yo_ratchet.user_interface.find_errors_gui import launch_find_errors_config_window
 from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
 from yo_ratchet.user_interface.vcs_gui import backup_train_window
 from open_labeling.launcher import main as open_labeling_launcher
+
+LOG_PANE_SIZE = (120, 25)
 
 BACKUP_TRAIN_VCS = "Backup/Train"
 LABEL_FOLDER = "Label Folder"
@@ -18,22 +21,36 @@ def launch_main_gui(base_dir: Path = None):
         base_dir = inferred_base_dir()
     else:
         pass
-    sg.ChangeLookAndFeel('LightGreen')
+    sg.ChangeLookAndFeel("LightGreen")
 
     # ------ Menu Definition ------ #
     menu_def = [
-        ["Actions", [LABEL_FOLDER, BACKUP_TRAIN_VCS, EXPLORE_DS, FIND_ERRORS, "---", "Exit"]],
-        ['Help', 'About...'],
+        [
+            "Actions",
+            [LABEL_FOLDER, BACKUP_TRAIN_VCS, EXPLORE_DS, FIND_ERRORS, "---", "Exit"],
+        ],
+        ["Help", "About..."],
     ]
     middle_column = [
         [sg.Text("Actions Log:")],
-        [sg.Output(size=(60, 25), key="console",)]
+        [
+            sg.Output(
+                size=LOG_PANE_SIZE,
+                key="console",
+            )
+        ],
     ]
-    col_element = sg.Column(middle_column,)
+    col_element = sg.Column(
+        middle_column,
+    )
 
     # ----- Full layout -----
     layout = [
-        [sg.Menu(menu_def, )],
+        [
+            sg.Menu(
+                menu_def,
+            )
+        ],
         [col_element],
     ]
     window = sg.Window(
@@ -61,11 +78,15 @@ def launch_main_gui(base_dir: Path = None):
             class_labels_list = get_classes_list(base_dir)
 
             class Args:
-                class_list = *class_labels_list,
+                class_list = (*class_labels_list,)
 
             open_labeling_launcher(args=Args())
         elif event == FIND_ERRORS:
             launch_find_errors_config_window(base_dir=base_dir)
+        elif event == EXPLORE_DS:
+            start()
+        else:
+            pass  # Event Unknown
 
     window.close()
 

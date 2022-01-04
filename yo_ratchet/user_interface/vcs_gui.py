@@ -17,10 +17,10 @@ def backup_train_window():
     base_message = message_1
     message = base_message + supplementary_text
     radio_group = [
-                      [sg.Radio(message_1, RB_GROUP_1, enable_events=True, key=RB1, default=True)],
-                      [sg.Radio(message_2, RB_GROUP_1, enable_events=True, key=RB2)],
-                      [sg.Radio(message_3, RB_GROUP_1, enable_events=True, key=RB3)],
-                  ]
+        [sg.Radio(message_1, RB_GROUP_1, enable_events=True, key=RB1, default=True)],
+        [sg.Radio(message_2, RB_GROUP_1, enable_events=True, key=RB2)],
+        [sg.Radio(message_3, RB_GROUP_1, enable_events=True, key=RB3)],
+    ]
     middle_column = [
         [
             sg.Text("Commit Description"),

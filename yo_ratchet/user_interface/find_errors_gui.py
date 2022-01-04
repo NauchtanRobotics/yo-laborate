@@ -20,8 +20,12 @@ def list_available_fo_datasets(base_dir: Path) -> List[str]:
 
     """
     installed_dataset_names = fo.list_datasets()
-    exports_available = [folder.name for folder in (base_dir / EXPORT_FOLDER_NAME).iterdir()]
-    dataset_names = sorted(list(set(installed_dataset_names + exports_available)), reverse=True)
+    exports_available = [
+        folder.name for folder in (base_dir / EXPORT_FOLDER_NAME).iterdir()
+    ]
+    dataset_names = sorted(
+        list(set(installed_dataset_names + exports_available)), reverse=True
+    )
     return dataset_names
 
 
@@ -41,47 +45,46 @@ def launch_find_errors_config_window(base_dir: Path = None):
     class_names_list = get_classes_list(base_dir=base_dir)
     available_datasets = list_available_fo_datasets(base_dir=base_dir)
     middle_col = [
-            # DS: Name DROPDOWN for Dataset Names - or KISS: Do we want to risk the wrong DS being opened?
-            [sg.Text("Dataset")],
-            [
-                sg.Listbox(
-                    values=available_datasets,
-                    select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
-                    size=(30, 3),
-                    enable_events=False,
-                    visible=True,
-                    key=DATASET_KEY,
-                )
-            ],
-            # TAG: DROPDOWN for error type tag
-            [sg.Text("Method")],
-            [
-                sg.Listbox(
-                    values=["mistakenness", "eval_fp", "eval_fn"],
-                    select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
-                    size=(30, 3),
-                    enable_events=False,
-                    visible=True,
-                    key=METHOD_KEY,
-                )
-            ],
-            # CLASS: DROPDOWN SELECT class FROM CLASS LIST
-            [sg.Text("Class")],
-            [
-                sg.Listbox(
-                    values=class_names_list,
-                    select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
-                    size=(30, 6),
-                    enable_events=True,
-                    visible=True,
-                    change_submits=True,
-                    key=CLASS_KEY,
-                )
-            ],
-            # LIMIT: INTEGER INPUT FIELD
-            # [sg.Text("#Results")],
-
-            [sg.Button("GO", key="-GO-")],
+        # DS: Name DROPDOWN for Dataset Names - or KISS: Do we want to risk the wrong DS being opened?
+        [sg.Text("Dataset")],
+        [
+            sg.Listbox(
+                values=available_datasets,
+                select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
+                size=(30, 3),
+                enable_events=False,
+                visible=True,
+                key=DATASET_KEY,
+            )
+        ],
+        # TAG: DROPDOWN for error type tag
+        [sg.Text("Method")],
+        [
+            sg.Listbox(
+                values=["mistakenness", "eval_fp", "eval_fn"],
+                select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
+                size=(30, 3),
+                enable_events=False,
+                visible=True,
+                key=METHOD_KEY,
+            )
+        ],
+        # CLASS: DROPDOWN SELECT class FROM CLASS LIST
+        [sg.Text("Class")],
+        [
+            sg.Listbox(
+                values=class_names_list,
+                select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
+                size=(30, 6),
+                enable_events=True,
+                visible=True,
+                change_submits=True,
+                key=CLASS_KEY,
+            )
+        ],
+        # LIMIT: INTEGER INPUT FIELD
+        # [sg.Text("#Results")],
+        [sg.Button("GO", key="-GO-")],
     ]
     # ----- Full layout -----
     layout = [
@@ -124,9 +127,13 @@ def launch_find_errors_config_window(base_dir: Path = None):
                 selected_dataset_name = values[DATASET_KEY][0]
 
             if selected_dataset_name not in fo.list_datasets():
-                ret = sg.popup_yes_no(f"Dataset {selected_dataset_name} not installed. Import now?")
+                ret = sg.popup_yes_no(
+                    f"Dataset {selected_dataset_name} not installed. Import now?"
+                )
                 if ret == YES_CONFIRMATION:
-                    path_to_import = base_dir / EXPORT_FOLDER_NAME / selected_dataset_name
+                    path_to_import = (
+                        base_dir / EXPORT_FOLDER_NAME / selected_dataset_name
+                    )
                     labels_path = str(path_to_import)
                     data_path = str(base_dir)
                     dataset = fo.Dataset.from_dir(
@@ -137,7 +144,9 @@ def launch_find_errors_config_window(base_dir: Path = None):
                     )
                     dataset.persistent = True
                     dataset.save()
-                    sg.popup(f"This may take 5-10 min. \nGo enjoy a coffee!\nImporting: {str(path_to_import)}")
+                    sg.popup(
+                        f"This may take 5-10 min. \nGo enjoy a coffee!\nImporting: {str(path_to_import)}"
+                    )
                 continue
             else:
                 pass  # selected dataset should be fine to be opened by find_errors()
@@ -160,7 +169,3 @@ def launch_find_errors_config_window(base_dir: Path = None):
 
 if __name__ == "__main__":
     launch_find_errors_config_window()
-
-
-def test_create_window():
-    launch_find_errors_config_window(base_dir=Path("C:\\sealed_roads_dataset"))

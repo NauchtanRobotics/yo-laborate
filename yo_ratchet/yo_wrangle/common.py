@@ -96,15 +96,17 @@ def get_classes_list(base_dir: Path) -> List[str]:
     config.read(str(config_path))
     classes_json_path = config.get("DATASET", "CLASSES_JSON")
     if (
-            classes_json_path is None
-            or classes_json_path == ""
-            or classes_json_path == "./"
+        classes_json_path is None
+        or classes_json_path == ""
+        or classes_json_path == "./"
     ):
         classes_json_path = base_dir / "classes.json"
     else:
         classes_json_path = Path(classes_json_path).resolve()
     if not classes_json_path.exists():
-        raise RuntimeError(f"CLASSES_JSON path does not exist at {str(classes_json_path)}")
+        raise RuntimeError(
+            f"CLASSES_JSON path does not exist at {str(classes_json_path)}"
+        )
     classes_id_to_label_map = get_id_to_label_map(classes_json_path=classes_json_path)
     class_labels_list = list(classes_id_to_label_map.values())
     return class_labels_list
@@ -139,13 +141,21 @@ def inferred_base_dir() -> Path:
         base_dir = caller.parents[2]
     elif (cwd / "config.ini").exists() and (cwd / "classes.json").exists():
         base_dir = cwd
-    elif (cwd.parent / "config.ini").exists() and (cwd.parent / "classes.json").exists():
+    elif (cwd.parent / "config.ini").exists() and (
+        cwd.parent / "classes.json"
+    ).exists():
         base_dir = cwd.parent
-    elif (cwd.parents[1] / "config.ini").exists() and (cwd.parents[1] / "classes.json").exists():
+    elif (cwd.parents[1] / "config.ini").exists() and (
+        cwd.parents[1] / "classes.json"
+    ).exists():
         base_dir = cwd.parents[1]
-    elif (cwd.parents[2] / "config.ini").exists() and (cwd.parents[2] / "classes.json").exists():
+    elif (cwd.parents[2] / "config.ini").exists() and (
+        cwd.parents[2] / "classes.json"
+    ).exists():
         base_dir = cwd.parents[2]
-    elif (cwd.parents[3] / "config.ini").exists() and (cwd.parents[3] / "classes.json").exists():
+    elif (cwd.parents[3] / "config.ini").exists() and (
+        cwd.parents[3] / "classes.json"
+    ).exists():
         base_dir = cwd.parents[3]
     else:
         raise RuntimeError("Could not infer BASE_DIR.")

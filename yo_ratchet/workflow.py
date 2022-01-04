@@ -3,14 +3,25 @@ from pathlib import Path
 from typing import List
 
 from open_labeling import launcher
-from yo_ratchet.yo_wrangle.common import get_config_items, get_id_to_label_map, inferred_base_dir, get_classes_list
+from yo_ratchet.yo_wrangle.common import (
+    get_config_items,
+    get_id_to_label_map,
+    inferred_base_dir,
+    get_classes_list,
+)
 from yo_ratchet.fiftyone_integration import (
     init_fifty_one_dataset,
     delete_fiftyone_dataset,
     find_errors,
 )
-from yo_ratchet.yo_wrangle.wrangle import run_detections, prepare_dataset_and_train, reverse_train
-from yo_ratchet.yo_valuate.as_classification import binary_and_group_classification_performance
+from yo_ratchet.yo_wrangle.wrangle import (
+    run_detections,
+    prepare_dataset_and_train,
+    reverse_train,
+)
+from yo_ratchet.yo_valuate.as_classification import (
+    binary_and_group_classification_performance,
+)
 
 YOLO_ROOT = Path()
 DATASET_ROOT = Path()

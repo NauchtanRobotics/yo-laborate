@@ -5,7 +5,13 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from cv2.cv2 import VideoWriter_fourcc
 
-from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive, ORANGE, GREEN, RED, PURPLE
+from yo_ratchet.yo_wrangle.common import (
+    get_all_jpg_recursive,
+    ORANGE,
+    GREEN,
+    RED,
+    PURPLE,
+)
 
 COLOUR_MAPPING = {
     GREEN: (0, 255, 0),

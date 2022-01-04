@@ -40,7 +40,9 @@ def commit_and_push(
             stderr=subprocess.PIPE,
             check=True,
         )
-        full_message = f"{dataset_label} {description}" if len(dataset_label) > 0 else description
+        full_message = (
+            f"{dataset_label} {description}" if len(dataset_label) > 0 else description
+        )
         cmd = [git_exe_path, "commit", "-m", full_message]
         subprocess.run(
             args=cmd,
@@ -61,11 +63,3 @@ def commit_and_push(
     except subprocess.CalledProcessError:
         print("Git Error. Probably no changes to commit. Continuing...")
 
-
-def test_git_commit_and_push():
-    commit_and_push(
-        dataset_label="",
-        base_dir=Path(__file__).parents[2],
-        description="TEST",
-        remote_branch="CLAS-127"
-    )
