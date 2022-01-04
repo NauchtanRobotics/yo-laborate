@@ -65,3 +65,7 @@ def backup_train_window():
         window["input"].update(value=message)
     window.close()
     return message
+
+
+if __name__ == "__main__":
+    backup_train_window()
