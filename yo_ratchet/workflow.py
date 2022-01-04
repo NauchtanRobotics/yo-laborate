@@ -197,8 +197,8 @@ def run_full_training():
     and reverse means train=val, val=train.
 
     """
-    # run_prepare_dataset_and_train(init_fiftyone=False)
-    # run_reverse_train(init_fiftyone=False)
+    run_prepare_dataset_and_train(init_fiftyone=False)
+    run_reverse_train(init_fiftyone=False)
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
     (_, _, _, val_inferences_root) = get_labels_and_paths_tuple(
         dataset_label=DATASET_LABEL, reverse_it=False
