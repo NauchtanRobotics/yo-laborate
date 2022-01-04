@@ -35,6 +35,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 
+from dataset_versioning.tag import get_path_for_best_pretrained_model
 from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.common import (
@@ -577,11 +578,12 @@ names: {class_names}"""
         python_path,
         yolo_base_dir,
         cfg_path,
-        weights_path,
+        _,
         hyp_path,
         _,
         _,
     ) = get_config_items(base_dir)
+    weights_path = get_path_for_best_pretrained_model(base_dir=base_dir)
     train_script = str(Path(yolo_base_dir) / "train.py")
     pytorch_cmd = [
         python_path,
