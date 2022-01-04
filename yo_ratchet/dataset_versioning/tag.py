@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from yo_wrangle.common import get_config_items
+from yo_ratchet.yo_wrangle.common import get_config_items
 
 GET_TAG_HASH_CMD = ["git", "rev-list", "--tags", "--max-count=1"]
 GET_TAG_TEXT_CMD = ["git", "describe", "--tags"]
