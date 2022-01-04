@@ -49,7 +49,6 @@ def _extract_filenames_by_tag(
 
     if tag.lower() == "mistakenness":
         dataset = dataset.sort_by("mistakenness", reverse=reverse)
-        print("came here", len(dataset))
         filtered_dataset = dataset.limit(limit)
     elif tag == "error":
         filtered_dataset = dataset.match_tags("error").limit(limit)
@@ -105,7 +104,7 @@ def edit_labels(filenames: List[str], class_names: List[str], base_dir: Path):
         message = f"{error} | base_dir = {str(base_dir)}"
         raise RuntimeError(message)
     if res is None:
-        raise RuntimeError(f"Res = {res}")
+        raise RuntimeError(f"Poetry env not installed. Res = {res}")
 
     open_labeling_app = res.decode("utf8").splitlines()[0]
     open_labeling_app = Path(open_labeling_app)
@@ -158,7 +157,8 @@ def find_errors(
     """
     if base_dir is None:
         base_dir = inferred_base_dir()
-    print("B A S E  D I R: ", str(base_dir))
+    else:
+        pass
     file_names, filtered_dataset = _extract_filenames_by_tag(
         dataset_label=dataset_label,
         tag=tag,
@@ -179,7 +179,7 @@ def find_errors(
 
     if isinstance(filtered_dataset, DatasetView):
         print_dataset_info(filtered_dataset)
-        session = fo.launch_app(filtered_dataset)
+        fo.launch_app(filtered_dataset)
     else:
         print("Cannot launch the FiftyOne interface.")
         raise Exception(
