@@ -92,7 +92,11 @@ def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):
     return model_label, test_set_part_label, ground_truth_path, inferences_path
 
 
-def run_prepare_dataset_and_train(run_training=True, init_fiftyone=True):
+def run_prepare_dataset_and_train(
+    run_training=True,
+    init_fiftyone=True,
+    cross_validation_index: int = 0,
+):
     prepare_dataset_and_train(
         classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
@@ -102,6 +106,7 @@ def run_prepare_dataset_and_train(run_training=True, init_fiftyone=True):
         skip_class_ids=SKIP_CLASS_IDS,
         base_dir=BASE_DIR,
         run_training=run_training,
+        cross_validation_index=cross_validation_index,
     )
     detect_images_root = DST_ROOT / "val" / "images"
     (
