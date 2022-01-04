@@ -2,6 +2,7 @@ from pathlib import Path
 
 import PySimpleGUI as sg
 
+from yo_ratchet.fiftyone_integration import start
 from yo_ratchet.user_interface.find_errors_gui import launch_find_errors_config_window
 from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
 from yo_ratchet.user_interface.vcs_gui import backup_train_window
@@ -66,6 +67,10 @@ def launch_main_gui(base_dir: Path = None):
             open_labeling_launcher(args=Args())
         elif event == FIND_ERRORS:
             launch_find_errors_config_window(base_dir=base_dir)
+        elif event == EXPLORE_DS:
+            start()
+        else:
+            pass  # Event Unknown
 
     window.close()
 
