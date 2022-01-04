@@ -160,7 +160,3 @@ def launch_find_errors_config_window(base_dir: Path = None):
 
 if __name__ == "__main__":
     launch_find_errors_config_window()
-
-
-def test_create_window():
-    launch_find_errors_config_window(base_dir=Path("C:\\sealed_roads_dataset"))
