@@ -589,7 +589,11 @@ names: {class_names}"""
         _,
         _,
     ) = get_config_items(base_dir)
-    weights_path = get_path_for_best_pretrained_model(base_dir=base_dir)
+    weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
+    if fine_tune:
+        patience = 25
+    else:
+        patience = 50
     train_script = str(Path(yolo_base_dir) / "train.py")
     pytorch_cmd = [
         python_path,
@@ -604,10 +608,14 @@ names: {class_names}"""
         f"--weights={weights_path}",
         f"--hyp={hyp_path}",
         f"--name={model_instance}",
-        "--patience=50",
+        f"--patience={str(patience)}",
         "--cache",
         "--freeze=3",
     ]
+    if fine_tune:
+        pytorch_cmd.append("--start-epoch=200")
+    else:
+        pass
 
     train_cmd_str = " ".join(pytorch_cmd)
     with open(f"{model_instance}_train_cmd.txt", "w") as f_out:

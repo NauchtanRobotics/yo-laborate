@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from yo_ratchet.yo_wrangle.common import get_config_items
 
@@ -30,10 +30,13 @@ def get_model_path_corresponding_to_tag(base_dir: Path, tag_text: str) -> Path:
     return model_path
 
 
-def get_path_for_best_pretrained_model(base_dir: Path):
+def get_path_for_best_pretrained_model(base_dir: Path) -> Tuple[Path, bool]:
     """
     Provides the path to a pretrained model that can provide initial
-    weights to commence model fine-tuning training.
+    weights to commence model training, and a boolean to indicate whether
+    fine-tuning of a customised model is required (requiring a smaller initial
+    learning rate) or the training will be based on generic pretrained model
+    (requiring the default initial learning rate).
 
     Weights from an incremental model for your classification problem
     can be used as a starting point for training you next model, or
@@ -52,9 +55,11 @@ def get_path_for_best_pretrained_model(base_dir: Path):
         weights_path = get_model_path_corresponding_to_tag(
             base_dir=base_dir, tag_text=tag_text
         )
+        fine_tune = True
     else:
         (_, _, _, weights_path, _, _, _) = get_config_items(base_dir=base_dir)
-    return weights_path
+        fine_tune = False
+    return weights_path, fine_tune
 
 
 def test_get_highest_tag():
@@ -65,5 +70,6 @@ def test_get_highest_tag():
 
 def test_get_path_for_best_pretrained_model():
     base_dir = Path("/home/david/RACAS/sealed_roads_dataset")
-    weights_path = get_path_for_best_pretrained_model(base_dir=base_dir)
+    weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
     print(f"\nPath: {str(weights_path)}")
+    print(f"Mode is pretrained / only requires fine_tune: {fine_tune}")
