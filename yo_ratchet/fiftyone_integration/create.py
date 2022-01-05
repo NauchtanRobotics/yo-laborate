@@ -240,7 +240,7 @@ def init_fifty_one_dataset(
     dataset.save()
     if export_to_json:
         dataset.export(
-            export_dir="./.export",
+            export_dir=f"./.export/{dataset_label}",
             dataset_type=fo.types.FiftyOneDataset,
             export_media=False,
         )
