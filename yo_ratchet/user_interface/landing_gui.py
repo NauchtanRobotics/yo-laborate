@@ -5,7 +5,7 @@ import PySimpleGUI as sg
 from yo_ratchet.fiftyone_integration import start
 from yo_ratchet.user_interface.find_errors_gui import launch_find_errors_config_window
 from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
-from yo_ratchet.user_interface.vcs_gui import backup_train_window
+from yo_ratchet.user_interface.backup_train_gui import backup_train_window
 from open_labeling.launcher import main as open_labeling_launcher
 
 LOG_PANE_SIZE = (120, 25)
