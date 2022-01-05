@@ -145,6 +145,7 @@ def run_prepare_dataset_and_train(
             dataset_root=DATASET_ROOT,
             images_root=None,  # Use dataset_root approach
             ground_truths_root=None,  # Use dataset_root approach
+            export_to_json=True,
         )
 
 
