@@ -591,7 +591,7 @@ names: {class_names}"""
     ) = get_config_items(base_dir)
     weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
     if fine_tune:
-        patience = 25
+        patience = 5
     else:
         patience = 50
     train_script = str(Path(yolo_base_dir) / "train.py")
@@ -613,7 +613,7 @@ names: {class_names}"""
         "--freeze=3",
     ]
     if fine_tune:
-        pytorch_cmd.append("--start-epoch=200")
+        pytorch_cmd.append("--start-epoch=295")
     else:
         pass
 
