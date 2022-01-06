@@ -51,7 +51,7 @@ def launch_find_errors_config_window(base_dir: Path = None):
             sg.Listbox(
                 values=available_datasets,
                 select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
-                size=(30, 3),
+                size=(30, 5),
                 enable_events=False,
                 visible=True,
                 key=DATASET_KEY,
