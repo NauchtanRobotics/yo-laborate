@@ -526,6 +526,7 @@ def prepare_dataset_and_train(
     base_dir: Path,
     run_training: bool = True,
     cross_validation_index: int = 0,
+    fine_tune_patience: int = 5,
 ):
     class_ids = list(classes_map.keys())
     output_str = count_class_instances_in_datasets(
@@ -590,10 +591,10 @@ names: {class_names}"""
         _,
     ) = get_config_items(base_dir)
     weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
-    if fine_tune:
-        patience = 5
-    else:
+    if not fine_tune:
         patience = 50
+    else:
+        patience = fine_tune_patience  # Just use the default param value
     train_script = str(Path(yolo_base_dir) / "train.py")
     pytorch_cmd = [
         python_path,
@@ -613,7 +614,8 @@ names: {class_names}"""
         "--freeze=3",
     ]
     if fine_tune:
-        pytorch_cmd.append("--start-epoch=295")
+        start_epoch = 300 - fine_tune_patience
+        pytorch_cmd.append(f"--start-epoch={start_epoch}")
     else:
         pass
 
