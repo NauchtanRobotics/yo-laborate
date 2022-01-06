@@ -1,7 +1,10 @@
 import PySimpleGUI as sg
 
+from yo_ratchet.dataset_versioning.version import bump_minor, get_dataset_label_from_version, bump_patch
 from yo_ratchet.yo_wrangle.common import inferred_base_dir
 from yo_ratchet.dataset_versioning import commit_and_push
+
+PATCH = "-PATCH-"
 
 RB_GROUP_1 = "Radio_1"
 RB1 = "R1"
@@ -11,8 +14,8 @@ RB3 = "R3"
 
 def backup_train_window():
     message_1 = "BKU: Backup to cloud. "
-    message_2 = "EFT: Request 'enhance' training (full). "
-    message_3 = "PMT: Submit for 'performance measurement' training. "
+    message_2 = "TI: Backup and request incremental training (1:5 left out). "
+    message_3 = "TD: Backup and request 1:1 double training (not recommended). "
     supplementary_text = "Changes primarily to class: "
     base_message = message_1
     message = base_message + supplementary_text
@@ -21,16 +24,20 @@ def backup_train_window():
         [sg.Radio(message_2, RB_GROUP_1, enable_events=True, key=RB2)],
         [sg.Radio(message_3, RB_GROUP_1, enable_events=True, key=RB3)],
     ]
+    check_boxes = [
+        [sg.Checkbox("Only increment the version patch.", key=PATCH, visible=True, disabled=True)],
+    ]
     middle_column = [
         [
             sg.Text("Commit Description"),
             sg.In(default_text=message, size=(100, 1), enable_events=True, key="input"),
-            sg.Button("Push", key="commit"),
         ],
+        [sg.Button("Push", key="commit"),]
     ]
     # ----- Full layout -----
     layout = [
         radio_group,
+        check_boxes,
         [
             sg.Column(middle_column),
         ],
@@ -46,15 +53,25 @@ def backup_train_window():
             nominal_class = assembled_message.split(":")[-1].strip()
         elif event == RB1:
             base_message = message_1
+            window[PATCH].Update(disabled=True)
         elif event == RB2:
             base_message = message_2
+            window[PATCH].Update(disabled=False)
         elif event == RB3:
             base_message = message_3
+            window[PATCH].Update(disabled=False)
         elif event == "commit":
             print(message)
             base_dir = inferred_base_dir()
+            if values[RB2] or values[RB3]:  # Training was requested
+                if values[PATCH] is True:
+                    bump_patch(base_dir=base_dir)
+                else:
+                    bump_minor(base_dir=base_dir)
+            else:
+                pass  # Do not bump version if it is only a "save-point"
             commit_and_push(
-                dataset_label="",  # CLAS-127 How to get dataset label - from Poetry? Do we want to?
+                dataset_label=get_dataset_label_from_version(base_dir=base_dir),
                 base_dir=base_dir,
                 description=message,
             )

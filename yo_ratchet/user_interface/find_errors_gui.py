@@ -3,10 +3,13 @@ import fiftyone as fo
 from pathlib import Path
 from typing import List
 
+from yo_ratchet.user_interface.backup_train_gui import backup_train_window
 from yo_ratchet.fiftyone_integration import find_errors
 from yo_ratchet.yo_wrangle.common import inferred_base_dir, get_classes_list
 
 EXPORT_FOLDER_NAME = ".export"
+GO = "-GO-"
+BACKUP = "-BACKUP-"
 DATASET_KEY = "-DATASET-"
 CLASS_KEY = "-CLASS-"
 METHOD_KEY = "-METHOD-"
@@ -84,7 +87,10 @@ def launch_find_errors_config_window(base_dir: Path = None):
         ],
         # LIMIT: INTEGER INPUT FIELD
         # [sg.Text("#Results")],
-        [sg.Button("GO", key="-GO-")],
+        [
+            sg.Button("GO", key=GO),
+            sg.Button("Save Changes", key=BACKUP, visible=False),
+        ],
     ]
     # ----- Full layout -----
     layout = [
@@ -107,7 +113,10 @@ def launch_find_errors_config_window(base_dir: Path = None):
         event, values = window.read()
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
-        elif event == "-GO-":
+        elif event == BACKUP:
+            backup_train_window()
+        elif event == GO:
+            window[BACKUP].update(visible=True)
             if len(values[CLASS_KEY]) == 0:
                 sg.popup("Please select a class")
                 continue
