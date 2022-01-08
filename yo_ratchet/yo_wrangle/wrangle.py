@@ -35,6 +35,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
 
+from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
 from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.common import (
@@ -298,6 +299,7 @@ def split_yolo_train_dataset_every_nth(
     src_images_root: Path,
     dst_dataset_root: Path,
     every_n_th: int = 5,
+    cross_validation_index: int = 0,
 ):
     """
     Copies images and annotations from <src_images_root> and <src_images_root>/YOLO_darknet
@@ -326,12 +328,13 @@ def split_yolo_train_dataset_every_nth(
     dst_val_labels_root.mkdir()
 
     for i, image_path in enumerate(get_all_jpg_recursive(img_root=src_images_root)):
-
+        if i < cross_validation_index:
+            continue
         src_annotations_file = (
             src_images_root / YOLO_ANNOTATIONS_FOLDER_NAME / f"{image_path.stem}.txt"
         )
 
-        if i % every_n_th != 0:
+        if (i - cross_validation_index) % every_n_th != 0:
             dst = dst_train_root
         else:
             dst = dst_val_root
@@ -360,6 +363,7 @@ def collate_and_split(
     every_n_th: int = 1,  # for the validation subset.
     keep_class_ids: Optional[List] = None,  # None actually means keep all classes
     skip_class_ids: Optional[List] = None,
+    cross_validation_index: int = 0,
 ):
     if dst_root.exists():
         shutil.rmtree(str(dst_root))
@@ -374,6 +378,7 @@ def collate_and_split(
         src_images_root=Path(temp_dir),
         dst_dataset_root=dst_root,
         every_n_th=every_n_th,
+        cross_validation_index=cross_validation_index,
     )
     check_train_val_are_unique(dataset_path=dst_root)
     shutil.rmtree(temp_dir)
@@ -520,6 +525,8 @@ def prepare_dataset_and_train(
     skip_class_ids: Optional[List[int]],
     base_dir: Path,
     run_training: bool = True,
+    cross_validation_index: int = 0,
+    fine_tune_patience: int = 5,
 ):
     class_ids = list(classes_map.keys())
     output_str = count_class_instances_in_datasets(
@@ -538,6 +545,7 @@ def prepare_dataset_and_train(
         every_n_th=every_n_th,
         keep_class_ids=keep_class_ids,
         skip_class_ids=skip_class_ids,
+        cross_validation_index=cross_validation_index,
     )
     """Add actual classes support after filtering"""
     final_subsets_included = [
@@ -577,11 +585,16 @@ names: {class_names}"""
         python_path,
         yolo_base_dir,
         cfg_path,
-        weights_path,
+        _,
         hyp_path,
         _,
         _,
     ) = get_config_items(base_dir)
+    weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
+    if not fine_tune:
+        patience = 50
+    else:
+        patience = fine_tune_patience  # Just use the default param value
     train_script = str(Path(yolo_base_dir) / "train.py")
     pytorch_cmd = [
         python_path,
@@ -596,10 +609,15 @@ names: {class_names}"""
         f"--weights={weights_path}",
         f"--hyp={hyp_path}",
         f"--name={model_instance}",
-        "--patience=50",
+        f"--patience={str(patience)}",
         "--cache",
         "--freeze=3",
     ]
+    if fine_tune:
+        start_epoch = 300 - fine_tune_patience
+        pytorch_cmd.append(f"--start-epoch={start_epoch}")
+    else:
+        pass
 
     train_cmd_str = " ".join(pytorch_cmd)
     with open(f"{model_instance}_train_cmd.txt", "w") as f_out:

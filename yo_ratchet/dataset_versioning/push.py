@@ -62,4 +62,3 @@ def commit_and_push(
         )
     except subprocess.CalledProcessError:
         print("Git Error. Probably no changes to commit. Continuing...")
-
