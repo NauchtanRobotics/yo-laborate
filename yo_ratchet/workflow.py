@@ -1,8 +1,10 @@
-import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from open_labeling import launcher
+
+from yo_ratchet.dataset_versioning.version import bump_patch, get_dataset_label_from_version
+from yo_ratchet.fiftyone_integration.create import init_fifty_one_dataset_for_cross_validation_combinations
 from yo_ratchet.yo_wrangle.common import (
     get_config_items,
     get_id_to_label_map,
@@ -22,6 +24,8 @@ from yo_ratchet.yo_wrangle.wrangle import (
 from yo_ratchet.yo_valuate.as_classification import (
     binary_and_group_classification_performance,
 )
+
+K_FOLDS = 6
 
 YOLO_ROOT = Path()
 DATASET_ROOT = Path()
@@ -96,12 +100,17 @@ def run_prepare_dataset_and_train(
     run_training=True,
     init_fiftyone=True,
     cross_validation_index: int = 0,
+    every_n_th: Optional[int] = None,
 ):
+    if every_n_th is None:
+        every_n_th = EVERY_NTH_TO_VAL
+    else:
+        pass  # Use the new parameter
     prepare_dataset_and_train(
         classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
         dst_root=DST_ROOT,
-        every_n_th=EVERY_NTH_TO_VAL,
+        every_n_th=every_n_th,
         keep_class_ids=KEEP_CLASS_IDS,
         skip_class_ids=SKIP_CLASS_IDS,
         base_dir=BASE_DIR,
@@ -220,6 +229,62 @@ def run_full_training():
         dataset_root=DATASET_ROOT,
         images_root=None,  # Use dataset_root approach
         ground_truths_root=None,  # Use dataset_root approach
+    )
+
+
+def cross_validation_combinations_training(base_dir: Path):
+    fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
+    val_inferences_roots = []
+    for cv_index in range(K_FOLDS):
+        bump_patch(base_dir=base_dir)
+        dataset_label = get_dataset_label_from_version(base_dir=base_dir)
+        dst_root = Path(YOLO_ROOT) / f"datasets/{dataset_label}"
+
+        prepare_dataset_and_train(
+            classes_map=CLASSES_MAP,
+            subsets_included=SUBSETS_INCLUDED,
+            dst_root=dst_root,
+            every_n_th=K_FOLDS,
+            keep_class_ids=KEEP_CLASS_IDS,
+            skip_class_ids=SKIP_CLASS_IDS,
+            base_dir=base_dir,
+            run_training=True,
+            cross_validation_index=cv_index,
+        )
+
+        detect_images_root = dst_root / "val" / "images"
+        test_set_str = "val"
+        model_label = dataset_label
+        test_set_part_label = f"{dataset_label}_{test_set_str}"
+        # ground_truth_path = DST_ROOT / test_set_str / "labels"
+        run_name = f"{test_set_part_label}__{model_label}_conf{CONFIDENCE}pcnt"
+        inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
+        val_inferences_roots.append(inferences_path)
+
+        run_detections(
+            images_path=detect_images_root,
+            dataset_version=test_set_part_label,
+            model_path=Path(f"{YOLO_ROOT}/runs/train/{model_label}/weights/best.pt"),
+            model_version=model_label,
+            base_dir=base_dir,
+            conf_thres=CONF,
+            device=0,
+        )
+        # table_str = binary_and_group_classification_performance(
+        #     images_root=detect_images_root,
+        #     root_ground_truths=ground_truth_path,
+        #     root_inferred_bounding_boxes=inferences_path,
+        #     classes_map=CLASSES_MAP,
+        #     print_first_n=24,
+        #     groupings=GROUPINGS,
+        # )
+    init_fifty_one_dataset_for_cross_validation_combinations(
+        dataset_label=fiftyone_dataset_label,
+        classes_map=CLASSES_MAP,
+        val_inferences_roots=val_inferences_roots,
+        dataset_root=DATASET_ROOT,
+        candidate_subset=None,
+        export_to_json=True,
     )
 
 
