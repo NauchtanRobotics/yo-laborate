@@ -1,6 +1,10 @@
 import PySimpleGUI as sg
 
-from yo_ratchet.dataset_versioning.version import bump_minor, get_dataset_label_from_version, bump_patch
+from yo_ratchet.dataset_versioning.version import (
+    get_dataset_label_from_version,
+    bump_patch,
+    bump_minor_and_remove_patch,
+)
 from yo_ratchet.yo_wrangle.common import inferred_base_dir
 from yo_ratchet.dataset_versioning import commit_and_push
 
@@ -67,7 +71,7 @@ def backup_train_window():
                 if values[PATCH] is True:
                     bump_patch(base_dir=base_dir)
                 else:
-                    bump_minor(base_dir=base_dir)
+                    bump_minor_and_remove_patch(base_dir=base_dir)
             else:
                 pass  # Do not bump version if it is only a "save-point"
             commit_and_push(
