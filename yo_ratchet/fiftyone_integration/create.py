@@ -246,6 +246,109 @@ def init_fifty_one_dataset(
         )
 
 
+def init_fifty_one_dataset_for_cross_validation_combinations(
+    dataset_label: str,
+    classes_map: Dict[int, str],
+    val_inferences_roots: List[Path],
+    dataset_root: Optional[Path] = None,
+    candidate_subset: Path = None,
+    export_to_json: bool = True,
+):
+    """
+    Returns a fiftyOne dataset with uniqueness, mistakenness and evaluations.
+    Gets the annotations from the sample folders not from DST_ROOT.
+
+    """
+    subset_folders = _get_subset_folders(dataset_root=dataset_root)
+    samples = []
+    for subset_folder in subset_folders:
+        ground_truths_folder = _get_annotations_root(subset_folder=subset_folder)
+        subset_image_paths = list(get_all_jpg_recursive(img_root=subset_folder))
+        for image_path in subset_image_paths:
+            sample = fo.Sample(filepath=str(image_path))
+            detections = []
+            ground_truths_path = ground_truths_folder / f"{image_path.stem}.txt"
+            if not ground_truths_path.exists():
+                print(f"Ground truth not exist: {str(ground_truths_path)}")
+                pass  # no detection(s) will be added to this sample.
+            else:
+                with open(str(ground_truths_path), "r") as file_obj:
+                    annotation_lines = file_obj.readlines()
+
+                for line in annotation_lines:
+                    label, yolo_box, _ = _extract_annotation(
+                        line=line, label_mapping=classes_map
+                    )
+                    bounding_box = _get_bounding_box(yolo_box=yolo_box)
+                    detections.append(
+                        fo.Detection(label=label, bounding_box=bounding_box)
+                    )
+            predictions = []
+            inferences_path = None
+            for val_inferences_root in val_inferences_roots:
+                if (
+                    val_inferences_root
+                    and (val_inferences_root / f"{image_path.stem}.txt").exists()
+                ):
+                    inferences_path = val_inferences_root / f"{image_path.stem}.txt"
+                    sample.tags.append("val")
+                    break
+                else:
+                    inferences_path = None
+
+            if inferences_path and inferences_path.exists():
+                with open(str(inferences_path), "r") as file_obj:
+                    annotation_lines = file_obj.readlines()
+                for line in annotation_lines:
+                    label, yolo_box, confidence = _extract_annotation(
+                        line=line, label_mapping=classes_map
+                    )
+                    bounding_box = _get_bounding_box(yolo_box=yolo_box)
+                    predictions.append(
+                        fo.Detection(
+                            label=label,
+                            bounding_box=bounding_box,
+                            confidence=confidence,
+                        )
+                    )
+                sample.tags.append("processed")
+
+            # Store detections in a field name of your choice
+            sample["ground_truth"] = fo.Detections(detections=detections)
+            sample["prediction"] = fo.Detections(
+                detections=predictions
+            )  # Should we do this if predictions is empty?
+            sample["subset"] = subset_folder.name
+
+            if candidate_subset and subset_folder.name == candidate_subset.name:
+                sample.tags.append("candidate")
+            else:
+                pass
+            samples.append(sample)
+
+    # Create dataset
+    dataset = fo.Dataset(dataset_label)
+    dataset.add_samples(samples)
+    dataset.save()
+    model = foz.load_zoo_model("wide-resnet101-2-imagenet-torch")
+    embeddings = dataset.compute_embeddings(model=model)
+    fob.compute_uniqueness(dataset, embeddings=embeddings)
+    fob.compute_mistakenness(
+        samples=dataset,
+        pred_field="prediction",
+        label_field="ground_truth",
+    )
+    _evaluate(dataset_label=dataset_label)
+    dataset.persistent = True
+    dataset.save()
+    if export_to_json:
+        dataset.export(
+            export_dir=f"./.export/{dataset_label}",
+            dataset_type=fo.types.FiftyOneDataset,
+            export_media=False,
+        )
+
+
 def start(dataset_label: Optional[str] = None):
     """
     You must first run init_fifty_one_dataset.
