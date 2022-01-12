@@ -16,7 +16,16 @@ def bump_patch(base_dir: Path):
 
 def bump_minor(base_dir: Path):
     cmd = VERSION_CMD + [MINOR]
-    subprocess.run(args=cmd, cwd=str(base_dir))
+    subprocess.check_output(args=cmd, cwd=str(base_dir))
+
+
+def bump_minor_and_remove_patch(base_dir: Path):
+    bump_minor(base_dir)
+    version = get_version(base_dir=base_dir)
+    version = version.split(".")
+    version = ".".join(version[:2])  # Removes the patch in third position
+    cmd = VERSION_CMD + [version]
+    subprocess.check_output(args=cmd, cwd=str(base_dir))
 
 
 def bump_major(base_dir: Path):
@@ -72,6 +81,10 @@ def get_dataset_label_from_version(base_dir: Path) -> str:
 """################## TESTING #########################"""
 
 BASE_DIR = Path(__file__).parents[2]
+
+
+def test_bump_minor_and_remove_patch():
+    bump_minor_and_remove_patch(base_dir=BASE_DIR)
 
 
 def test_get_repository_abbreviation():
