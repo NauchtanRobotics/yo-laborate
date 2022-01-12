@@ -1,7 +1,7 @@
 import numpy
 import pandas
 from tabulate import tabulate
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from sklearn import metrics as skm
 from pathlib import Path
 
@@ -44,19 +44,24 @@ def get_truth_vs_inferred_dict_by_photo(
             root_inferred_bounding_boxes / f"{image_path.stem}.txt"
         )
         inferred_classifications = [False for i in range(num_classes)]
+        confidence = [0.0 for i in range(num_classes)]
         if inferred_annotations_path.exists():
             with open(str(inferred_annotations_path), "r") as annotations_file:
                 inferred_annotations_lines = annotations_file.readlines()
 
             for inference_line in inferred_annotations_lines:
-                class_id = inference_line.split(" ")[0]
+                line_split = inference_line.split(" ")
+                class_id = line_split[0]
                 inferred_classifications[int(class_id)] = True
+                conf = line_split[5]
+                confidence[int(class_id)] = float(conf)
         else:
             pass  # inference already initialized to False
 
         results_dict[image_path] = {
             "actual_classifications": numpy.array(actual_classifications),
             "inferred_classifications": inferred_classifications,
+            "confidence": confidence,
         }
     df = pandas.DataFrame(results_dict)
     df = df.transpose()
@@ -67,7 +72,7 @@ def _get_classification_metrics_for_group(
     df: pandas.DataFrame,
     idxs: List[int],
     to_console: bool = False,
-):
+) -> Tuple[float, float, float, float]:
     """
     Given a dataframe that contains a list of actual classifications, and
     a list of inferred classification for each image, returns
@@ -140,7 +145,7 @@ def _get_binary_classification_metrics_for_idx(
     df: pandas.DataFrame,
     idx: int,
     to_console: bool = False,
-):
+) -> Tuple[float, float, float, float]:
     """
     A simple interface for binary metrics that passes through to the more
     generalised function to assess model metrics.
@@ -185,8 +190,8 @@ def analyse_model_binary_metrics(
     print_first_n = num_classes if print_first_n is None else print_first_n
     for class_id in range(print_first_n):
         class_name = classes_map.get(class_id, "Unknown")
-        precision, recall, f1, _ = _get_classification_metrics_for_group(
-            df=df, idxs=[class_id]
+        precision, recall, f1, _ = _get_binary_classification_metrics_for_idx(
+            df=df, idx=class_id
         )
         results[class_name] = {
             "P": "{:.2f}".format(precision),
@@ -288,3 +293,110 @@ def binary_and_group_classification_performance(
     )
     table_str += "\n"
     return table_str
+
+
+def optimise_analyse_model_binary_metrics(
+    images_root: Path,
+    root_ground_truths: Path,
+    root_inferred_bounding_boxes: Path,
+    classes_map: Dict[int, str],
+    print_first_n: Optional[int] = None,
+    dst_csv: Optional[Path] = None,
+):
+    """
+    Prints (and optionally saves) results for CLASSIFICATION performance from
+    object detection ground truths and predictions.
+
+    This approach is appropriate when you don't care for object detection
+    and just want classification performance per image, not per bounding box.
+
+    """
+    num_classes = len(classes_map)
+    df = get_truth_vs_inferred_dict_by_photo(
+        images_root=images_root,
+        root_ground_truths=root_ground_truths,
+        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
+        num_classes=num_classes,
+    )
+    if dst_csv:
+        df.to_csv(dst_csv, index=False)
+
+    print_first_n = num_classes if print_first_n is None else print_first_n
+    results = _optimise_analyse_model_binary_metrics(
+        df=df, classes_map=classes_map, print_first_n=print_first_n
+    )
+    table_str = tabulate(
+        pandas.DataFrame(results).transpose(),
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
+    )
+
+
+def _optimise_analyse_model_binary_metrics(
+    df: pandas.DataFrame,
+    classes_map: Dict[int, str],
+    print_first_n: int,
+):
+    y_truths = df["actual_classifications"]
+    y_inferences = df["inferred_classifications"]
+    y_confidences = df["confidence"]
+    count = y_truths.size
+    assert count == y_inferences.size
+
+    conf_levels = [0.1, 0.15, 0.18, 0.2, 0.25, 0.2, 0.25, 0.27, 0.29, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7]
+    results = {}
+
+    for class_id in range(print_first_n):
+        precision = 0
+        recall = 0
+        f1 = 0
+        optimum_conf = 0
+        truths = numpy.array([y[class_id] for y in y_truths])
+        inferences = numpy.array([y[class_id] for y in y_inferences])
+        confidences = numpy.array([y[class_id] for y in y_confidences])
+        for conf in conf_levels:
+            cond = (confidences >= conf)
+            re_inferences = inferences & cond
+            labels = None
+            p = skm.precision_score(
+                y_true=truths,
+                y_pred=re_inferences,
+                labels=labels,
+                pos_label=1,
+                average="binary",
+                sample_weight=None,
+                zero_division="warn",
+            )
+            r = skm.recall_score(
+                y_true=truths,
+                y_pred=re_inferences,
+                labels=labels,
+                pos_label=1,
+                average="binary",
+                sample_weight=None,
+                zero_division="warn",
+            )
+            f = skm.f1_score(
+                y_true=truths,
+                y_pred=re_inferences,
+                labels=labels,
+                pos_label=1,
+                average="binary",
+                sample_weight=None,
+                zero_division="warn",
+            )
+            if f > f1:
+                recall = r
+                precision = p
+                f1 = f
+                optimum_conf = conf
+
+        class_name = classes_map.get(class_id, "Unknown")
+        results[class_name] = {
+            "P": "{:.2f}".format(precision),
+            "R": "{:.2f}".format(recall),
+            "F1": "{:.2f}".format(f1),
+            "@conf": "{:.2f}".format(optimum_conf),
+        }
+    return results

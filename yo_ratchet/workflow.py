@@ -22,7 +22,7 @@ from yo_ratchet.yo_wrangle.wrangle import (
     reverse_train,
 )
 from yo_ratchet.yo_valuate.as_classification import (
-    binary_and_group_classification_performance,
+    binary_and_group_classification_performance, optimise_analyse_model_binary_metrics,
 )
 
 K_FOLDS = 6
@@ -32,10 +32,10 @@ DATASET_ROOT = Path()
 CLASSES_JSON_PATH = Path()
 CLASSES_MAP = {}
 DST_ROOT = Path()
-CONFIDENCE = 0.1
+CONF = 0.05
+CONF_PCNT = int(CONF * 100)
 TEST_SET_LABEL = ""
 BASE_DIR = None
-CONF = 0.05
 GROUPINGS = {}
 
 SUBSETS_INCLUDED = []
@@ -47,7 +47,7 @@ DATASET_LABEL = ""
 
 def set_globals(base_dir: Path, workbook_ptr):
     global YOLO_ROOT, DATASET_ROOT, CLASSES_JSON_PATH, CLASSES_MAP
-    global DST_ROOT, CONFIDENCE
+    global DST_ROOT, CONF_PCNT
     global BASE_DIR, CONF, GROUPINGS, SUBSETS_INCLUDED, EVERY_NTH_TO_VAL
     global KEEP_CLASS_IDS, SKIP_CLASS_IDS, DATASET_LABEL
 
@@ -68,7 +68,7 @@ def set_globals(base_dir: Path, workbook_ptr):
     CLASSES_JSON_PATH = Path(classes_json_path)
     CLASSES_MAP = get_id_to_label_map(CLASSES_JSON_PATH)
     DST_ROOT = Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
-    CONFIDENCE = int(workbook_ptr.CONF * 100)
+    CONF_PCNT = int(workbook_ptr.CONF * 100)
 
 
 def launch_open_labeling_folder_browser():
@@ -91,7 +91,7 @@ def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):
         model_label = dataset_label
     test_set_part_label = f"{dataset_label}_{test_set_str}"
     ground_truth_path = DST_ROOT / test_set_str / "labels"
-    run_name = f"{test_set_part_label}__{model_label}_conf{CONFIDENCE}pcnt"
+    run_name = f"{test_set_part_label}__{model_label}_conf{CONF_PCNT}pcnt"
     inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
     return model_label, test_set_part_label, ground_truth_path, inferences_path
 
@@ -141,7 +141,7 @@ def run_prepare_dataset_and_train(
         print_first_n=24,
         groupings=GROUPINGS,
     )
-    output_filename = f"{model_label}_forward_performance_conf{CONFIDENCE}pcnt.txt"
+    output_filename = f"{model_label}_forward_performance_conf{CONF_PCNT}pcnt.txt"
     with open(output_filename, "w") as file_out:
         file_out.write(table_str)
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
@@ -190,7 +190,7 @@ def run_reverse_train(init_fiftyone: bool = True):
         print_first_n=24,
         groupings=GROUPINGS,
     )
-    output_filename = f"{model_label}_reverse_performance_conf{CONFIDENCE}pcnt.txt"
+    output_filename = f"{model_label}_reverse_performance_conf{CONF_PCNT}pcnt.txt"
     with open(output_filename, "w") as file_out:
         file_out.write(table_str)
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
@@ -256,8 +256,7 @@ def cross_validation_combinations_training(base_dir: Path):
         test_set_str = "val"
         model_label = dataset_label
         test_set_part_label = f"{dataset_label}_{test_set_str}"
-        # ground_truth_path = DST_ROOT / test_set_str / "labels"
-        run_name = f"{test_set_part_label}__{model_label}_conf{CONFIDENCE}pcnt"
+        run_name = f"{test_set_part_label}__{model_label}_conf{CONF_PCNT}pcnt"
         inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
         val_inferences_roots.append(inferences_path)
 
@@ -278,6 +277,17 @@ def cross_validation_combinations_training(base_dir: Path):
         #     print_first_n=24,
         #     groupings=GROUPINGS,
         # )
+        ground_truth_path = DST_ROOT / test_set_str / "labels"
+        table_str = optimise_analyse_model_binary_metrics(
+            images_root=detect_images_root,
+            root_ground_truths=ground_truth_path,
+            root_inferred_bounding_boxes=inferences_path,
+            classes_map=CLASSES_MAP,
+            print_first_n=24,
+        )
+        output_filename = f"{model_label}_optimum_performance_conf{CONF_PCNT}pcnt.txt"
+        with open(output_filename, "w") as file_out:
+            file_out.write(table_str)
     init_fifty_one_dataset_for_cross_validation_combinations(
         dataset_label=fiftyone_dataset_label,
         classes_map=CLASSES_MAP,
