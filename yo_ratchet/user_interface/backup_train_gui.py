@@ -29,14 +29,23 @@ def backup_train_window():
         [sg.Radio(message_3, RB_GROUP_1, enable_events=True, key=RB3)],
     ]
     check_boxes = [
-        [sg.Checkbox("Only increment the version patch.", key=PATCH, visible=True, disabled=True)],
+        [
+            sg.Checkbox(
+                "Only increment the version patch.",
+                key=PATCH,
+                visible=True,
+                disabled=True,
+            )
+        ],
     ]
     middle_column = [
         [
             sg.Text("Commit Description"),
             sg.In(default_text=message, size=(100, 1), enable_events=True, key="input"),
         ],
-        [sg.Button("Push", key="commit"),]
+        [
+            sg.Button("Push", key="commit"),
+        ],
     ]
     # ----- Full layout -----
     layout = [
