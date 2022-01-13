@@ -7,6 +7,27 @@ from pathlib import Path
 
 from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive
 
+CONF_TEST_LEVELS = [
+    0.1,
+    0.15,
+    0.18,
+    0.2,
+    0.25,
+    0.2,
+    0.25,
+    0.27,
+    0.29,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+]
+
 
 def get_truth_vs_inferred_dict_by_photo(
     images_root: Path,
@@ -331,20 +352,33 @@ def optimise_analyse_model_binary_metrics(
         showindex="always",
         tablefmt="pretty",
     )
+    return table_str
 
 
 def _optimise_analyse_model_binary_metrics(
     df: pandas.DataFrame,
     classes_map: Dict[int, str],
     print_first_n: int,
-):
+) -> Dict[str, Dict[str, str]]:
+    """
+    Finds the individual 'conf' level that produces the highest F1 score for
+    each class_id and returns the F1, recall and precision scores ('F1', 'R',
+    'P') corresponding to the 'optimum' conf level for the respective class.
+
+    For example, an object detection model for Cats and Dogs might return:
+
+        {
+            "Cats": {"@conf": "0.18", "F1": "1.00", "P": "1.00", "R": "1.00"},
+            "Dogs": {"@conf": "0.25", "F1": "0.50", "P": "0.50", "R": "0.50"},
+        }
+
+    """
     y_truths = df["actual_classifications"]
     y_inferences = df["inferred_classifications"]
     y_confidences = df["confidence"]
     count = y_truths.size
     assert count == y_inferences.size
 
-    conf_levels = [0.1, 0.15, 0.18, 0.2, 0.25, 0.2, 0.25, 0.27, 0.29, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7]
     results = {}
 
     for class_id in range(print_first_n):
@@ -355,8 +389,8 @@ def _optimise_analyse_model_binary_metrics(
         truths = numpy.array([y[class_id] for y in y_truths])
         inferences = numpy.array([y[class_id] for y in y_inferences])
         confidences = numpy.array([y[class_id] for y in y_confidences])
-        for conf in conf_levels:
-            cond = (confidences >= conf)
+        for conf in CONF_TEST_LEVELS:
+            cond = confidences >= conf
             re_inferences = inferences & cond
             labels = None
             p = skm.precision_score(

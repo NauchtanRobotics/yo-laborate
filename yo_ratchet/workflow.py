@@ -1,20 +1,24 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from open_labeling import launcher
-
-from yo_ratchet.dataset_versioning.version import bump_patch, get_dataset_label_from_version
-from yo_ratchet.fiftyone_integration.create import init_fifty_one_dataset_for_cross_validation_combinations
+from yo_ratchet.fiftyone_integration import (
+    init_fifty_one_dataset,
+    delete_fiftyone_dataset,
+    find_errors,
+)
+from yo_ratchet.fiftyone_integration.create import (
+    init_fifty_one_dataset_for_cross_validation_combinations,
+)
+from yo_ratchet.dataset_versioning.version import (
+    bump_patch,
+    get_dataset_label_from_version,
+)
 from yo_ratchet.yo_wrangle.common import (
     get_config_items,
     get_id_to_label_map,
     inferred_base_dir,
     get_classes_list,
-)
-from yo_ratchet.fiftyone_integration import (
-    init_fifty_one_dataset,
-    delete_fiftyone_dataset,
-    find_errors,
 )
 from yo_ratchet.yo_wrangle.wrangle import (
     run_detections,
@@ -22,7 +26,8 @@ from yo_ratchet.yo_wrangle.wrangle import (
     reverse_train,
 )
 from yo_ratchet.yo_valuate.as_classification import (
-    binary_and_group_classification_performance, optimise_analyse_model_binary_metrics,
+    binary_and_group_classification_performance,
+    optimise_analyse_model_binary_metrics,
 )
 
 K_FOLDS = 6
@@ -234,6 +239,9 @@ def run_full_training():
 
 def cross_validation_combinations_training(base_dir: Path):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
+    detect_images_root = Path()
+    ground_truth_path = Path()
+    inferences_path = Path()
     val_inferences_roots = []
     for cv_index in range(K_FOLDS):
         bump_patch(base_dir=base_dir)
@@ -254,40 +262,46 @@ def cross_validation_combinations_training(base_dir: Path):
 
         detect_images_root = dst_root / "val" / "images"
         test_set_str = "val"
-        model_label = dataset_label
         test_set_part_label = f"{dataset_label}_{test_set_str}"
-        run_name = f"{test_set_part_label}__{model_label}_conf{CONF_PCNT}pcnt"
+        run_name = f"{test_set_part_label}__{dataset_label}_conf{CONF_PCNT}pcnt"
         inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
         val_inferences_roots.append(inferences_path)
 
         run_detections(
             images_path=detect_images_root,
             dataset_version=test_set_part_label,
-            model_path=Path(f"{YOLO_ROOT}/runs/train/{model_label}/weights/best.pt"),
-            model_version=model_label,
+            model_path=Path(f"{YOLO_ROOT}/runs/train/{dataset_label}/weights/best.pt"),
+            model_version=dataset_label,
             base_dir=base_dir,
             conf_thres=CONF,
             device=0,
         )
-        # table_str = binary_and_group_classification_performance(
-        #     images_root=detect_images_root,
-        #     root_ground_truths=ground_truth_path,
-        #     root_inferred_bounding_boxes=inferences_path,
-        #     classes_map=CLASSES_MAP,
-        #     print_first_n=24,
-        #     groupings=GROUPINGS,
-        # )
-        ground_truth_path = DST_ROOT / test_set_str / "labels"
-        table_str = optimise_analyse_model_binary_metrics(
-            images_root=detect_images_root,
-            root_ground_truths=ground_truth_path,
-            root_inferred_bounding_boxes=inferences_path,
-            classes_map=CLASSES_MAP,
-            print_first_n=24,
-        )
-        output_filename = f"{model_label}_optimum_performance_conf{CONF_PCNT}pcnt.txt"
-        with open(output_filename, "w") as file_out:
-            file_out.write(table_str)
+        try:
+            ground_truth_path = DST_ROOT / test_set_str / "labels"
+            table_str = optimise_analyse_model_binary_metrics(
+                images_root=detect_images_root,
+                root_ground_truths=ground_truth_path,
+                root_inferred_bounding_boxes=inferences_path,
+                classes_map=CLASSES_MAP,
+                print_first_n=24,
+            )
+            output_filename = (
+                f"{dataset_label}_optimum_performance_conf{CONF_PCNT}pcnt.txt"
+            )
+            with open(output_filename, "w") as file_out:
+                file_out.write(table_str)
+        except Exception:
+            print(f"Could not calculate sklearn metrics.")
+
+    table_str = binary_and_group_classification_performance(
+        images_root=detect_images_root,
+        root_ground_truths=ground_truth_path,
+        root_inferred_bounding_boxes=inferences_path,
+        classes_map=CLASSES_MAP,
+        print_first_n=24,
+        groupings=GROUPINGS,
+    )
+    print(table_str)
     init_fifty_one_dataset_for_cross_validation_combinations(
         dataset_label=fiftyone_dataset_label,
         classes_map=CLASSES_MAP,

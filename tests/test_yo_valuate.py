@@ -5,7 +5,7 @@ import pandas
 from yo_ratchet.yo_valuate.as_classification import (
     analyse_model_binary_metrics,
     analyse_model_binary_metrics_for_groups,
-    _optimise_analyse_model_binary_metrics
+    _optimise_analyse_model_binary_metrics,
 )
 
 ROOT_TEST_DATA = Path(__file__).parent / "test_data"
@@ -39,11 +39,11 @@ def test_analyse_performance():
         images_root=(ROOT_TEST_DATA / "bbox_collation_7_split/val/images"),
         root_ground_truths=(ROOT_TEST_DATA / "bbox_collation_7_split/val/labels"),
         root_inferred_bounding_boxes=(
-                ROOT_TEST_DATA / "Collation_7_unweighted_equal_fitness_scale40pcnt/labels"
+            ROOT_TEST_DATA / "Collation_7_unweighted_equal_fitness_scale40pcnt/labels"
         ),
         classes_map=CLASSES_MAP,
         print_first_n=2,
-        dst_csv=None
+        dst_csv=None,
     )
 
 
@@ -52,7 +52,7 @@ def test_analyse_model_binary_metrics_for_groups():
         images_root=(ROOT_TEST_DATA / "bbox_collation_7_split/val/images"),
         root_ground_truths=(ROOT_TEST_DATA / "bbox_collation_7_split/val/labels"),
         root_inferred_bounding_boxes=(
-                ROOT_TEST_DATA / "Collation_7_unweighted_equal_fitness_scale40pcnt/labels"
+            ROOT_TEST_DATA / "Collation_7_unweighted_equal_fitness_scale40pcnt/labels"
         ),
         classes_map=CLASSES_MAP,
         groupings={
@@ -88,7 +88,7 @@ def test_df():
             "actual_classifications": numpy.array([False, True, False]),
             "inferred_classifications": [False, False, False],
             "confidence": [0.0, 0.0, 0.0],
-        }
+        },
     }
     df = pandas.DataFrame(results_dict)
     df = df.transpose()
@@ -98,4 +98,11 @@ def test_df():
 def test__optimise_analyse_model_binary_metrics():
     df = test_df()
     classes_map = {0: "Casper", 1: "Friendly", 2: "Ghost"}
-    _optimise_analyse_model_binary_metrics(df=df, classes_map=classes_map, print_first_n=3)
+    res = _optimise_analyse_model_binary_metrics(
+        df=df, classes_map=classes_map, print_first_n=3
+    )
+    assert {
+        "Casper": {"@conf": "0.18", "F1": "1.00", "P": "1.00", "R": "1.00"},
+        "Friendly": {"@conf": "0.25", "F1": "0.50", "P": "0.50", "R": "0.50"},
+        "Ghost": {"@conf": "0.25", "F1": "1.00", "P": "1.00", "R": "1.00"},
+    } == res
