@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from dataset_versioning.version import get_dataset_label_from_version
+
 SUBSETS_INCLUDED = [
     (
         Path("/home/david/RACAS/sealed_roads_dataset/Caboone_10pcnt_AP_LO_LG_WS"),
@@ -89,7 +91,7 @@ SUBSETS_INCLUDED = [
     ),
     (
         Path(
-            "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Charters_Towers_2021_subsample"
+            "/home/david/RACAS/sealed_roads_dataset/Train_Charters_Towers_2021_subsample"
         ),
         None,
     ),
@@ -98,6 +100,6 @@ SUBSETS_INCLUDED = [
 KEEP_CLASS_IDS = None  # None actually means keep all classes
 SKIP_CLASS_IDS = [15, 22]  # Signs, Shoving
 EVERY_NTH_TO_VAL = 1  # for the validation subset
-DATASET_LABEL = "v8e"  # get_dataset_label_from_version(Path(__file__).parent)
+DATASET_LABEL = get_dataset_label_from_version(Path(__file__).parent)
 GROUPINGS = {"Risk Defects": [3, 4, 14], "Cracking": [0, 1, 2, 11, 16]}
 CONF = 0.1
