@@ -711,10 +711,10 @@ def run_detections(
         f"--iou-thres=0.55",
         f"--conf-thres={conf_thres}",
     ]
-    print(" ".join(pytorch_cmd))
-    subprocess.check_call(
-        pytorch_cmd,
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-        cwd=yolo_root,
+    print(
+        subprocess.check_output(
+            pytorch_cmd,
+            stderr=subprocess.STDOUT,
+            cwd=yolo_root,
+        )
     )

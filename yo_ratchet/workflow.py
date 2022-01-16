@@ -243,6 +243,7 @@ def cross_validation_combinations_training(base_dir: Path):
     ground_truth_path = Path()
     inferences_path = Path()
     val_inferences_roots = []
+    dataset_label = ""
     for cv_index in range(K_FOLDS):
         bump_patch(base_dir=base_dir)
         dataset_label = get_dataset_label_from_version(base_dir=base_dir)
@@ -263,9 +264,6 @@ def cross_validation_combinations_training(base_dir: Path):
         detect_images_root = dst_root / "val" / "images"
         test_set_str = "val"
         test_set_part_label = f"{dataset_label}_{test_set_str}"
-        run_name = f"{test_set_part_label}__{dataset_label}_conf{CONF_PCNT}pcnt"
-        inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
-        val_inferences_roots.append(inferences_path)
 
         run_detections(
             images_path=detect_images_root,
@@ -278,6 +276,9 @@ def cross_validation_combinations_training(base_dir: Path):
         )
         try:
             ground_truth_path = DST_ROOT / test_set_str / "labels"
+            run_name = f"{test_set_part_label}__{dataset_label}_conf{CONF_PCNT}pcnt"
+            inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
+            val_inferences_roots.append(inferences_path)
             table_str = optimise_analyse_model_binary_metrics(
                 images_root=detect_images_root,
                 root_ground_truths=ground_truth_path,
@@ -286,7 +287,7 @@ def cross_validation_combinations_training(base_dir: Path):
                 print_first_n=24,
             )
             output_filename = (
-                f"{dataset_label}_optimum_performance_conf{CONF_PCNT}pcnt.txt"
+                f"{dataset_label}_optimum_performance.txt"
             )
             with open(output_filename, "w") as file_out:
                 file_out.write(table_str)
@@ -301,6 +302,11 @@ def cross_validation_combinations_training(base_dir: Path):
         print_first_n=24,
         groupings=GROUPINGS,
     )
+    output_filename = (
+        f"{dataset_label}_performance_conf{CONF_PCNT}pcnt.txt"
+    )
+    with open(output_filename, "w") as file_out:
+        file_out.write(table_str)
     print(table_str)
     init_fifty_one_dataset_for_cross_validation_combinations(
         dataset_label=fiftyone_dataset_label,
