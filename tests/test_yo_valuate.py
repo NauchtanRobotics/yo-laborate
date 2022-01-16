@@ -4,7 +4,7 @@ import numpy
 import pandas
 from yo_ratchet.yo_valuate.as_classification import (
     analyse_model_binary_metrics,
-    analyse_model_binary_metrics_for_groups,
+    optimise_model_binary_metrics_for_groups,
     _optimise_analyse_model_binary_metrics,
 )
 
@@ -48,7 +48,7 @@ def test_analyse_performance():
 
 
 def test_analyse_model_binary_metrics_for_groups():
-    analyse_model_binary_metrics_for_groups(
+    optimise_model_binary_metrics_for_groups(
         images_root=(ROOT_TEST_DATA / "bbox_collation_7_split/val/images"),
         root_ground_truths=(ROOT_TEST_DATA / "bbox_collation_7_split/val/labels"),
         root_inferred_bounding_boxes=(
