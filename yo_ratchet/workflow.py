@@ -26,8 +26,8 @@ from yo_ratchet.yo_wrangle.wrangle import (
     reverse_train,
 )
 from yo_ratchet.yo_valuate.as_classification import (
-    binary_and_group_classification_performance,
-    optimise_analyse_model_binary_metrics,
+    save_binary_and_group_classification_performance,
+    get_average_individual_classification_metrics,
 )
 
 K_FOLDS = 6
@@ -138,17 +138,17 @@ def run_prepare_dataset_and_train(
         conf_thres=CONF,
         device=0,
     )
-    table_str = binary_and_group_classification_performance(
+    output_filename = f"{model_label}_forward_performance_conf{CONF_PCNT}pcnt.txt"
+    save_binary_and_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
         classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
+        output_path=Path(output_filename).resolve(),
     )
-    output_filename = f"{model_label}_forward_performance_conf{CONF_PCNT}pcnt.txt"
-    with open(output_filename, "w") as file_out:
-        file_out.write(table_str)
+
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
     if init_fiftyone:
         init_fifty_one_dataset(
@@ -187,7 +187,7 @@ def run_reverse_train(init_fiftyone: bool = True):
         conf_thres=CONF,
         device=1,
     )
-    table_str = binary_and_group_classification_performance(
+    table_str = save_binary_and_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
@@ -239,11 +239,7 @@ def run_full_training():
 
 def cross_validation_combinations_training(base_dir: Path):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
-    detect_images_root = Path()
-    ground_truth_path = Path()
-    inferences_path = Path()
     val_inferences_roots = []
-    dataset_label = ""
     for cv_index in range(K_FOLDS):
         bump_patch(base_dir=base_dir)
         dataset_label = get_dataset_label_from_version(base_dir=base_dir)
@@ -265,7 +261,7 @@ def cross_validation_combinations_training(base_dir: Path):
         test_set_str = "val"
         test_set_part_label = f"{dataset_label}_{test_set_str}"
 
-        run_detections(
+        run_name = run_detections(
             images_path=detect_images_root,
             dataset_version=test_set_part_label,
             model_path=Path(f"{YOLO_ROOT}/runs/train/{dataset_label}/weights/best.pt"),
@@ -274,40 +270,9 @@ def cross_validation_combinations_training(base_dir: Path):
             conf_thres=CONF,
             device=0,
         )
-        try:
-            ground_truth_path = DST_ROOT / test_set_str / "labels"
-            run_name = f"{test_set_part_label}__{dataset_label}_conf{CONF_PCNT}pcnt"
-            inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
-            val_inferences_roots.append(inferences_path)
-            table_str = optimise_analyse_model_binary_metrics(
-                images_root=detect_images_root,
-                root_ground_truths=ground_truth_path,
-                root_inferred_bounding_boxes=inferences_path,
-                classes_map=CLASSES_MAP,
-                print_first_n=24,
-            )
-            output_filename = (
-                f"{dataset_label}_optimum_performance.txt"
-            )
-            with open(output_filename, "w") as file_out:
-                file_out.write(table_str)
-        except Exception:
-            print(f"Could not calculate sklearn metrics.")
+        inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
+        val_inferences_roots.append(inferences_path.resolve())
 
-    table_str = binary_and_group_classification_performance(
-        images_root=detect_images_root,
-        root_ground_truths=ground_truth_path,
-        root_inferred_bounding_boxes=inferences_path,
-        classes_map=CLASSES_MAP,
-        print_first_n=24,
-        groupings=GROUPINGS,
-    )
-    output_filename = (
-        f"{dataset_label}_performance_conf{CONF_PCNT}pcnt.txt"
-    )
-    with open(output_filename, "w") as file_out:
-        file_out.write(table_str)
-    print(table_str)
     init_fifty_one_dataset_for_cross_validation_combinations(
         dataset_label=fiftyone_dataset_label,
         classes_map=CLASSES_MAP,
@@ -315,6 +280,10 @@ def cross_validation_combinations_training(base_dir: Path):
         dataset_root=DATASET_ROOT,
         candidate_subset=None,
         export_to_json=True,
+    )
+    get_average_individual_classification_metrics(
+        dataset_prefix=fiftyone_dataset_label,
+        base_dir=base_dir,
     )
 
 

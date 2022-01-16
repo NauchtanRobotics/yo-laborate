@@ -718,3 +718,4 @@ def run_detections(
             cwd=yolo_root,
         )
     )
+    return results_name
