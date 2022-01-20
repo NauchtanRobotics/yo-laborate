@@ -719,3 +719,44 @@ def run_detections(
         )
     )
     return results_name
+
+
+def run_detections_using_cv_ensemble(
+    images_path: Path,
+    detection_dataset_name: str,
+    model_version: str,
+    k_folds: int,
+    base_dir: Path,
+    conf_thres: float = 0.1,
+    device: int = 0,
+) -> str:
+    results_name = f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
+    detect_script = Path(yolo_root) / "detect.py"
+    models_root = Path(yolo_root) / "runs" / "train"
+    model_paths = [models_root / f"{model_version}.{str(i+1)}" / "weights" / "best.pt" for i in range(k_folds)]
+    model_paths = [str(model_path) for model_path in model_paths]
+    pytorch_cmd = [
+        python_path,
+        f"{str(detect_script)}",
+        f"--source={str(images_path)}",
+        "--img=640",
+        f"--device={device}",
+        f"--name={results_name}",
+        "--save-txt",
+        "--save-conf",
+        "--nosave",
+        "--agnostic-nms",
+        f"--iou-thres=0.55",
+        f"--conf-thres={conf_thres}",
+        f"--weights",
+    ]
+    pytorch_cmd.extend(model_paths)
+    print(
+        subprocess.check_output(
+            pytorch_cmd,
+            stderr=subprocess.STDOUT,
+            cwd=yolo_root,
+        )
+    )
+    return results_name
