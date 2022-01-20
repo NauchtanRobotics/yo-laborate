@@ -157,7 +157,7 @@ def inferred_base_dir() -> Path:
     cwd = Path().cwd()
     caller = Path(sys.argv[0])
 
-    if caller.name == "label_folder":
+    if caller.name == "label_folder" and Path(caller.parents[2] / CONFIG_INI).exists():
         base_dir = caller.parents[2]
     elif (cwd / CONFIG_INI).exists() and (cwd / CLASSES_JSON_FILENAME).exists():
         base_dir = cwd

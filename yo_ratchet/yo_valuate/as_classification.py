@@ -5,11 +5,16 @@ from typing import Optional, List, Dict, Tuple
 from sklearn import metrics as skm
 from pathlib import Path
 
-from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive
+from yo_ratchet.yo_wrangle.common import (
+    get_all_jpg_recursive,
+    get_id_to_label_map,
+    get_config_items,
+)
 
 CONF_TEST_LEVELS = [
     0.1,
     0.15,
+    0.16,
     0.18,
     0.2,
     0.25,
@@ -18,6 +23,7 @@ CONF_TEST_LEVELS = [
     0.27,
     0.29,
     0.3,
+    0.32,
     0.35,
     0.4,
     0.45,
@@ -93,7 +99,8 @@ def _get_classification_metrics_for_group(
     df: pandas.DataFrame,
     idxs: List[int],
     to_console: bool = False,
-) -> Tuple[float, float, float, float]:
+    confidence_level: float = 0.35,
+) -> Tuple[float, float, float, float, float]:
     """
     Given a dataframe that contains a list of actual classifications, and
     a list of inferred classification for each image, returns
@@ -106,18 +113,21 @@ def _get_classification_metrics_for_group(
         pass
     y_truths = df["actual_classifications"]
     y_inferences = df["inferred_classifications"]
+    y_confidences = df["confidence"]
+
     count = y_truths.size
     assert count == y_inferences.size
 
     group_truths = numpy.array([False for i in range(count)])
     group_inferences = numpy.array([False for i in range(count)])
     for i, idx in enumerate(idxs):
-        group_truths = numpy.logical_or(
-            group_truths, numpy.array([y[idx] for y in y_truths])
-        )
-        group_inferences = numpy.logical_or(
-            group_inferences, numpy.array([y[idx] for y in y_inferences])
-        )
+        confidences = numpy.array([y[idx] for y in y_confidences])
+        cond = confidences >= confidence_level
+        inferences = numpy.array([y[idx] for y in y_inferences])
+        truths = numpy.array([y[idx] for y in y_truths])
+        re_inferences = inferences & cond
+        group_truths = numpy.logical_or(group_truths, truths)
+        group_inferences = numpy.logical_or(group_inferences, re_inferences)
 
     labels = None
     precision = skm.precision_score(
@@ -159,14 +169,14 @@ def _get_classification_metrics_for_group(
         print("Accuracy:  {:.1f}".format(accuracy * 100))
         print("\n")
 
-    return precision, recall, f1, accuracy
+    return precision, recall, f1, accuracy, confidence_level
 
 
 def _get_binary_classification_metrics_for_idx(
     df: pandas.DataFrame,
     idx: int,
     to_console: bool = False,
-) -> Tuple[float, float, float, float]:
+) -> Tuple[float, float, float, float, float]:
     """
     A simple interface for binary metrics that passes through to the more
     generalised function to assess model metrics.
@@ -181,57 +191,7 @@ def _get_binary_classification_metrics_for_idx(
     return _get_classification_metrics_for_group(df=df, idxs=idx, to_console=to_console)
 
 
-def analyse_model_binary_metrics(
-    images_root: Path,
-    root_ground_truths: Path,
-    root_inferred_bounding_boxes: Path,
-    classes_map: Dict[int, str],
-    print_first_n: Optional[int] = None,
-    dst_csv: Optional[Path] = None,
-):
-    """
-    Prints (and optionally saves) results for CLASSIFICATION performance from
-    object detection ground truths and predictions.
-
-    This approach is appropriate when you don't care for object detection
-    and just want classification performance per image, not per bounding box.
-
-    """
-    num_classes = len(classes_map)
-    df = get_truth_vs_inferred_dict_by_photo(
-        images_root=images_root,
-        root_ground_truths=root_ground_truths,
-        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
-        num_classes=num_classes,
-    )
-    if dst_csv:
-        df.to_csv(dst_csv, index=False)
-
-    results = {}
-    print_first_n = num_classes if print_first_n is None else print_first_n
-    for class_id in range(print_first_n):
-        class_name = classes_map.get(class_id, "Unknown")
-        precision, recall, f1, _ = _get_binary_classification_metrics_for_idx(
-            df=df, idx=class_id
-        )
-        results[class_name] = {
-            "P": "{:.2f}".format(precision),
-            "R": "{:.2f}".format(recall),
-            "F1": "{:.2f}".format(f1),
-        }
-
-    table_str = tabulate(
-        pandas.DataFrame(results).transpose(),
-        headers="keys",
-        showindex="always",
-        tablefmt="pretty",
-    )
-    print("\n")
-    print(table_str)
-    return table_str
-
-
-def analyse_model_binary_metrics_for_groups(
+def optimise_model_binary_metrics_for_groups(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
@@ -240,7 +200,9 @@ def analyse_model_binary_metrics_for_groups(
         str, List[int]
     ],  # E.g. {"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 11, 16]}
     dst_csv: Optional[Path] = None,
-):
+    confidence_level: Optional[float] = None,
+    print_table: bool = True,
+) -> pandas.DataFrame:
     """
     Prints (and optionally saves) results for CLASSIFICATION performance
     (per image, not per bounding box) for groups of classes, according
@@ -264,38 +226,51 @@ def analyse_model_binary_metrics_for_groups(
     )
     if dst_csv:
         df.to_csv(dst_csv, index=False)
-
+    if confidence_level is None:
+        confidence_levels = CONF_TEST_LEVELS
+    else:
+        confidence_levels = [confidence_level]
     results = {}
     for group_name, group_members in groupings.items():
-        precision, recall, f1, _ = _get_classification_metrics_for_group(
-            df=df, idxs=group_members
-        )
+        f1_optimum = recall = precision = optimum_conf = 0
+        for confidence_level in confidence_levels:
+            p, r, f1, _, conf = _get_classification_metrics_for_group(
+                df=df, idxs=group_members, confidence_level=confidence_level
+            )
+            if f1 > f1_optimum:
+                recall = r
+                precision = p
+                f1_optimum = f1
+                optimum_conf = conf
         results[group_name] = {
             "P": "{:.2f}".format(precision),
             "R": "{:.2f}".format(recall),
-            "F1": "{:.2f}".format(f1),
+            "F1": "{:.2f}".format(f1_optimum),
+            "@conf": "{:.2f}".format(optimum_conf),
         }
+    df = pandas.DataFrame(results)
+    if print_table:
+        print(
+            tabulate(
+                df.transpose(),
+                headers="keys",
+                showindex="always",
+                tablefmt="pretty",
+            )
+        )
+    return df
 
-    table_str = tabulate(
-        pandas.DataFrame(results).transpose(),
-        headers="keys",
-        showindex="always",
-        tablefmt="pretty",
-    )
-    print("\n")
-    print(table_str)
-    return table_str
 
-
-def binary_and_group_classification_performance(
+def save_binary_and_group_classification_performance(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
     classes_map: Dict[int, str],
     print_first_n: Optional[int] = None,
     groupings: Dict[str, List[int]] = None,
+    output_path: Path = None,
 ):
-    table_str = analyse_model_binary_metrics(
+    df = optimise_analyse_model_binary_metrics(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
@@ -303,8 +278,14 @@ def binary_and_group_classification_performance(
         print_first_n=print_first_n,
         dst_csv=None,
     )
+    table_str = tabulate(
+        df.transpose(),
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
+    )
     table_str += "\n"
-    table_str += analyse_model_binary_metrics_for_groups(
+    df = optimise_model_binary_metrics_for_groups(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferred_bounding_boxes,
@@ -313,7 +294,83 @@ def binary_and_group_classification_performance(
         dst_csv=None,
     )
     table_str += "\n"
+    table_str += tabulate(
+        df.transpose(),
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
+    )
+    if output_path:
+        with open(str(output_path), "w") as file_out:
+            file_out.write(table_str)
+    else:
+        pass
     return table_str
+
+
+def get_average_individual_classification_metrics(
+    base_dir: Path,
+    dataset_prefix: str,  # E.g. 14.4  - do not include patch
+    print_table: bool = False,
+):
+    from yo_ratchet.workflow import K_FOLDS, CONF_PCNT  # To prevent circular references
+
+    _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
+        base_dir=base_dir
+    )
+
+    f1_scores = []
+    confidences = []
+    for i in range(K_FOLDS):
+        dataset_label = f"{dataset_prefix}.{str(i+1)}"
+        inferences_path = Path(
+            f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{CONF_PCNT}pcnt/labels"
+        ).resolve()
+        detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
+        ground_truth_path = Path(f"{yolo_root}/datasets/{dataset_label}/val/labels").resolve()
+        classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
+        if print_table:
+            print(f"\nDataset: {dataset_label}")
+        df = optimise_analyse_model_binary_metrics(
+            images_root=detect_images_root,
+            root_ground_truths=ground_truth_path,
+            root_inferred_bounding_boxes=inferences_path,
+            classes_map=classes_map,
+            dst_csv=None,
+            print_table=print_table,
+        )
+
+        f1_scores.append(df.loc[["F1"]])
+        confidences.append(df.loc[["@conf"]])
+        output_filename = f"{dataset_label}_performance_for_optimum_conf.txt"
+        save_binary_and_group_classification_performance(
+            images_root=detect_images_root,
+            root_ground_truths=ground_truth_path,
+            root_inferred_bounding_boxes=inferences_path,
+            classes_map=classes_map,
+            groupings={"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 16]},
+            output_path=Path(output_filename),
+        )
+
+    df = pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float)
+    df_conf = pandas.concat(confidences, axis=0, ignore_index=True).astype(float)
+
+    new_df = pandas.DataFrame()
+    new_df["F1"] = df.mean(axis=0)
+    new_df["min"] = df.min(axis=0)
+    new_df["max"] = df.max(axis=0)
+    new_df["conf_min"] = df_conf.min(axis=0)
+    new_df["conf_max"] = df_conf.max(axis=0)
+    new_df = new_df.applymap(lambda x: round(x, 3))
+    tbl_str = tabulate(
+        new_df,
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
+    )
+    output_filename = f"{dataset_prefix}_f1_performance_summary.txt"
+    with open(str(output_filename), "w") as file_out:
+        file_out.write(tbl_str)
 
 
 def optimise_analyse_model_binary_metrics(
@@ -323,7 +380,9 @@ def optimise_analyse_model_binary_metrics(
     classes_map: Dict[int, str],
     print_first_n: Optional[int] = None,
     dst_csv: Optional[Path] = None,
-):
+    confidence_threshold: Optional[float] = None,
+    print_table: bool = True,
+) -> pandas.DataFrame:
     """
     Prints (and optionally saves) results for CLASSIFICATION performance from
     object detection ground truths and predictions.
@@ -344,21 +403,29 @@ def optimise_analyse_model_binary_metrics(
 
     print_first_n = num_classes if print_first_n is None else print_first_n
     results = _optimise_analyse_model_binary_metrics(
-        df=df, classes_map=classes_map, print_first_n=print_first_n
+        df=df,
+        classes_map=classes_map,
+        print_first_n=print_first_n,
+        confidence_threshold=confidence_threshold,
     )
-    table_str = tabulate(
-        pandas.DataFrame(results).transpose(),
-        headers="keys",
-        showindex="always",
-        tablefmt="pretty",
-    )
-    return table_str
+    results = pandas.DataFrame(results)
+    if print_table:
+        print(
+            tabulate(
+                results.transpose(),
+                headers="keys",
+                showindex="always",
+                tablefmt="pretty",
+            )
+        )
+    return results
 
 
 def _optimise_analyse_model_binary_metrics(
     df: pandas.DataFrame,
     classes_map: Dict[int, str],
     print_first_n: int,
+    confidence_threshold: float = None,
 ) -> Dict[str, Dict[str, str]]:
     """
     Finds the individual 'conf' level that produces the highest F1 score for
@@ -379,6 +446,11 @@ def _optimise_analyse_model_binary_metrics(
     count = y_truths.size
     assert count == y_inferences.size
 
+    if confidence_threshold is None:
+        confidence_levels = CONF_TEST_LEVELS
+    else:
+        confidence_levels = [confidence_threshold]
+
     results = {}
 
     for class_id in range(print_first_n):
@@ -389,7 +461,7 @@ def _optimise_analyse_model_binary_metrics(
         truths = numpy.array([y[class_id] for y in y_truths])
         inferences = numpy.array([y[class_id] for y in y_inferences])
         confidences = numpy.array([y[class_id] for y in y_confidences])
-        for conf in CONF_TEST_LEVELS:
+        for conf in confidence_levels:
             cond = confidences >= conf
             re_inferences = inferences & cond
             labels = None
