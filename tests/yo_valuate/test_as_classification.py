@@ -2,13 +2,14 @@ from pathlib import Path
 
 import numpy
 import pandas
+import pytest
+
 from yo_ratchet.yo_valuate.as_classification import (
-    analyse_model_binary_metrics,
     optimise_model_binary_metrics_for_groups,
     _optimise_analyse_model_binary_metrics,
 )
 
-ROOT_TEST_DATA = Path(__file__).parent / "test_data"
+ROOT_TEST_DATA = Path(__file__).parent.parent / "test_data"
 CLASSES_MAP = {
     0: "D00",
     1: "D10",
@@ -34,35 +35,32 @@ CLASSES_MAP = {
 }
 
 
-def test_analyse_performance():
-    analyse_model_binary_metrics(
-        images_root=(ROOT_TEST_DATA / "bbox_collation_7_split/val/images"),
-        root_ground_truths=(ROOT_TEST_DATA / "bbox_collation_7_split/val/labels"),
-        root_inferred_bounding_boxes=(
-            ROOT_TEST_DATA / "Collation_7_unweighted_equal_fitness_scale40pcnt/labels"
-        ),
-        classes_map=CLASSES_MAP,
-        print_first_n=2,
-        dst_csv=None,
-    )
-
-
 def test_analyse_model_binary_metrics_for_groups():
-    optimise_model_binary_metrics_for_groups(
-        images_root=(ROOT_TEST_DATA / "bbox_collation_7_split/val/images"),
-        root_ground_truths=(ROOT_TEST_DATA / "bbox_collation_7_split/val/labels"),
-        root_inferred_bounding_boxes=(
-            ROOT_TEST_DATA / "Collation_7_unweighted_equal_fitness_scale40pcnt/labels"
-        ),
+    images_root = ROOT_TEST_DATA / "classification" / "images"
+    root_ground_truths = ROOT_TEST_DATA / "filter_yolo"
+    root_inferences = ROOT_TEST_DATA / "classification" / "labels"
+
+    df = optimise_model_binary_metrics_for_groups(
+        images_root=images_root,
+        root_ground_truths=root_ground_truths,
+        root_inferred_bounding_boxes=root_inferences,
         classes_map=CLASSES_MAP,
         groupings={
             "Risk Defects": [3, 4],
             "Cracking": [0, 1, 2, 16],
         },
     )
+    assert isinstance(df, pandas.DataFrame)
+    assert "Risk Defects" in list(df)
+    assert "Cracking" in list(df)
+    assert "P" in df.index
+    assert "R" in df.index
+    assert "F1" in df.index
+    assert "@conf" in df.index
 
 
-def test_df():
+@pytest.fixture
+def dummy_df():
     results_dict = {
         "001": {
             "actual_classifications": numpy.array([False, True, True]),
@@ -95,14 +93,13 @@ def test_df():
     return df
 
 
-def test__optimise_analyse_model_binary_metrics():
-    df = test_df()
+def test__optimise_analyse_model_binary_metrics(dummy_df):
     classes_map = {0: "Casper", 1: "Friendly", 2: "Ghost"}
     res = _optimise_analyse_model_binary_metrics(
-        df=df, classes_map=classes_map, print_first_n=3
+        df=dummy_df, classes_map=classes_map, print_first_n=3
     )
-    assert {
-        "Casper": {"@conf": "0.18", "F1": "1.00", "P": "1.00", "R": "1.00"},
+    assert res == {
+        "Casper": {"@conf": "0.16", "F1": "1.00", "P": "1.00", "R": "1.00"},
         "Friendly": {"@conf": "0.25", "F1": "0.50", "P": "0.50", "R": "0.50"},
         "Ghost": {"@conf": "0.25", "F1": "1.00", "P": "1.00", "R": "1.00"},
-    } == res
+    }
