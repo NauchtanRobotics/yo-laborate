@@ -176,6 +176,7 @@ def _get_binary_classification_metrics_for_idx(
     df: pandas.DataFrame,
     idx: int,
     to_console: bool = False,
+    confidence_level: float = 0.15,
 ) -> Tuple[float, float, float, float, float]:
     """
     A simple interface for binary metrics that passes through to the more
@@ -188,7 +189,9 @@ def _get_binary_classification_metrics_for_idx(
         pass  # This is okay too
     else:
         raise Exception("idx should be an int")
-    return _get_classification_metrics_for_group(df=df, idxs=idx, to_console=to_console)
+    return _get_classification_metrics_for_group(
+        df=df, idxs=idx, to_console=to_console, confidence_level=confidence_level
+    )
 
 
 def optimise_model_binary_metrics_for_groups(
@@ -327,7 +330,9 @@ def get_average_individual_classification_metrics(
             f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{CONF_PCNT}pcnt/labels"
         ).resolve()
         detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
-        ground_truth_path = Path(f"{yolo_root}/datasets/{dataset_label}/val/labels").resolve()
+        ground_truth_path = Path(
+            f"{yolo_root}/datasets/{dataset_label}/val/labels"
+        ).resolve()
         classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
         if print_table:
             print(f"\nDataset: {dataset_label}")
