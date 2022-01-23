@@ -3,9 +3,9 @@ import pandas
 from pathlib import Path
 from sklearn import metrics as skm
 from tabulate import tabulate
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
-from yo_wrangle.common import get_all_jpg_recursive
+from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive
 
 
 def get_memberships(value: Any, group_to_members_mapping: Dict[str, List[Any]]) -> str:
@@ -205,7 +205,7 @@ def get_actual_vs_inferred_df(
         inferred_groups = inferred_group_memberships[image_name]
         results_dict[image_name] = {
             "actual_classifications": numpy.array(actual_groups),
-            "inferred_classifications": inferred_groups,
+            "inferred_classifications": numpy.array(inferred_groups),
         }
     df = pandas.DataFrame(results_dict)
     df = df.transpose()
