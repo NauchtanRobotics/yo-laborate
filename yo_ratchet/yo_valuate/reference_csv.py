@@ -153,6 +153,24 @@ def get_classification_performance(
     return df
 
 
+def get_severity_dict(truths_csv: Path, image_name_key: str = "Photo_Name"):
+    classifications = pandas.read_csv(
+        filepath_or_buffer=str(truths_csv),
+    )
+    classifications = classifications.fillna("")
+    classifications["severity"] = classifications.apply(
+        lambda x: int(x["D2_Side"].split(",")[0].strip())
+        if x["D2_Side"] != "" else 10,
+        axis=1,
+    )
+    severity_dict = {}
+    for row in classifications.iterrows():
+        image_name = row[1][image_name_key]
+        severity = row[1]["severity"]
+        severity_dict[image_name] = severity
+    return severity_dict
+
+
 def get_actual_vs_inferred_df(
     images_root: Path,
     truths_csv: Path,
@@ -217,6 +235,7 @@ def get_group_memberships_truths(
     csv_group_filters: Dict[str, List[str]],
     image_key: str = "Photo_Name",
     classifications_key: str = "Final_Remedy",
+    severity_threshold: int = 8,
 ) -> Dict[str, List[bool]]:
     """
     Gets a dict of truths where key is the image name and
@@ -241,11 +260,13 @@ def get_group_memberships_truths(
     )
     num_groups = len(csv_group_filters.keys())
     results_dict = {}
+    severity_dict = get_severity_dict(truths_csv=truths_csv, image_name_key=image_key)
     for image_name, group_memberships in classifications.items():
         actual_groups = [False for i in range(num_groups)]
+        severity = severity_dict[image_name]
         for group_name in group_memberships:
             group_int = group_to_int_mapping.get(group_name, None)
-            if group_int is not None:
+            if group_int is not None and severity >= severity_threshold:
                 actual_groups[group_int] = True
         results_dict[image_name] = actual_groups
     return results_dict

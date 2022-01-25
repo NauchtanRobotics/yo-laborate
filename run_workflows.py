@@ -12,7 +12,7 @@ from yo_ratchet.workflow import (
     run_find_errors,
 )
 import wrangling_example as dataset_workbook
-from yo_valuate.reference_csv import get_classification_performance, get_actual_vs_inferred_df
+from yo_valuate.reference_csv import get_classification_performance, get_actual_vs_inferred_df, get_severity_dict
 
 
 def test_prepare_dataset_and_train():
@@ -106,14 +106,17 @@ def test_performance_metrics_for_charters_towers():
     )
 
 
-def test_ct_classification_errors():
-    dst_folder_fp = Path("/home/david/RACAS/CT_Errors/fp")
-    dst_folder_fn = Path("/home/david/RACAS/CT_Errors/fn")
-    images_root = Path("/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed")
+def test_arrange_images_per_classification_errors():
+    every_n_th = 10
+    dst_folder_fp = Path("/home/david/RACAS/CT_Errors_10pcnt/fp_sev_8")
+    dst_folder_fn = Path("/home/david/RACAS/CT_Errors_10pcnt/fn_sev_8")
+    images_root = Path("/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd16.3_conf7pcnt")  # "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed")
     truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/CTRC_all_sealed.csv")
     inferences_path = Path(
-            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers__srd16.3_conf7pcnt/labels"
+            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd16.3_conf7pcnt/labels"
         )
+    boxed_images = Path("/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd16.3_conf7pcnt")
+
     csv_group_filters = {
         "Cracking": ["Cracking"],
         "Pothole": ["POTHOLE", "pothole", "Potholes"],
@@ -132,7 +135,8 @@ def test_ct_classification_errors():
     keys = list(csv_group_filters.keys())
     for key in keys:
         (dst_folder_fp / key).mkdir(parents=True)
-        (dst_folder_fn / key).mkdir(parents=True)
+        for sev in ["8", "9", "10"]:
+            (dst_folder_fn / sev / key).mkdir(parents=True)
     df = get_actual_vs_inferred_df(
         images_root=images_root,
         truths_csv=truths_csv,
@@ -143,23 +147,33 @@ def test_ct_classification_errors():
         image_key="Photo_Name",
         classifications_key="Final_Remedy",
     )
-    for row in df.iterrows():
-        actual = row[1]["actual_classifications"]
-        inferred = row[1]["inferred_classifications"]
-        comp = numpy.logical_xor(actual, inferred)
-        # ace = comp.nonzero()
-        image_name = str(row[0])
-        false_negative = numpy.logical_and(comp, actual).nonzero()[0]
+    true_positive = true_negative = 0
+    severity_dict = get_severity_dict(truths_csv=truths_csv, image_name_key="Photo_Name")
+    count = 0
+    for index, row in df.iterrows():
+        count += 1
+        if count % every_n_th != 0:
+            continue
+        actual = row["actual_classifications"]
+        inferred = row["inferred_classifications"]
+        comparison = numpy.logical_xor(actual, inferred)
+        image_name = str(index)
+        false_negative = numpy.logical_and(comparison, actual).nonzero()[0]
+        if len(inferred.nonzero()[0]) == 0 and len(comparison.nonzero()[0]) == 0:
+            true_negative += 1
+        elif len(inferred.nonzero()[0]) > 0 and len(comparison.nonzero()[0]) == 0:
+            true_positive += 1
         if len(false_negative) > 0:
             for el in false_negative:
                 class_name = keys[el]
-                shutil.copy(src=str(images_root / image_name), dst=str(dst_folder_fn / class_name / image_name))
-        false_positive = numpy.logical_and(comp, inferred).nonzero()[0]
+                severity = severity_dict[image_name]
+                shutil.copy(src=str(boxed_images / image_name), dst=str(dst_folder_fn / str(severity) / class_name / image_name))
+        false_positive = numpy.logical_and(comparison, inferred).nonzero()[0]
         if len(false_positive) > 0:  # There is a disagreement either False Positive or False Negative
             for el in false_positive:
                 class_name = keys[el]
-                shutil.copy(src=str(images_root / image_name), dst=str(dst_folder_fp / class_name / image_name))
-        # if not numpy.array_equal(row[1]["actual_classifications"], row[1]["inferred_classifications"]):
-        #     print(ace)
-        # else:
-        #     print(ace)
+                shutil.copy(src=str(boxed_images / image_name), dst=str(dst_folder_fp / class_name / image_name))
+    print()
+    print(f"True Positive = ", true_positive)
+    print(f"True Negative = ", true_negative)
+    print("Count = ", count)
