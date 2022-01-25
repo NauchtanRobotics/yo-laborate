@@ -35,7 +35,7 @@ from yo_ratchet.yo_wrangle.wrangle import (
     split_yolo_train_dataset_every_nth,
     prepare_unique_dataset_from_detections,
     copy_detect_folder_recursively_as_reference_then_subsample,
-    delete_redundant_samples, collate_additional_sample,
+    delete_redundant_samples, collate_additional_sample, add_subset_folder_unique_images_only,
 )
 
 
@@ -56,13 +56,14 @@ def test_copy_recursive_images_and_yolo_annotations_by_cropped_image_reference()
     """
     copy_images_recursive_inc_yolo_annotations_by_reference_dir(
         reference_dir=Path(
-            "/home/david/addn_repos/yolov5/runs/detect/ChartersTowers__Coll_8a_unweighted_55conf",
+            "/home/david/RACAS/CT_Errors_10pcnt/CT_EB_D40_Cracking_hard_pos"
+            # "/home/david/addn_repos/yolov5/runs/detect/ChartersTowers__Coll_8a_unweighted_55conf",
         ),
         original_images_dir=Path(
-            "/media/david/Samsung_T8/640_x_640/RACAS_Whitsunday_2018"
+            "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed"
         ),
         dst_sample_dir=Path(
-            "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Whitsunday_2018_sample_0"
+            "/home/david/RACAS/640_x_640/CT_EB_D40_Cracking_hard_pos"
         ),
         num=None,
         move=False,
@@ -280,6 +281,9 @@ def test_prepare_unique_dataset_from_detections():
 
 def test_collate_additional_sample():
     """
+    Use this function when you want to amalgamate existing and new images into the
+    same subfolder. See also add_unique().
+
     Cannot be done within prepare_unique_dataset_from_detections() as the bounding
     boxes need to be manually established.
 
@@ -342,4 +346,11 @@ def test_signs():
         src_images_root=Path(temp_images_root),
         dst_dataset_root=Path(dst_root),
         every_n_th=3,
+    )
+
+
+def test_add_unique():
+    add_subset_folder_unique_images_only(
+        existing_dataset_root=Path("/home/david/RACAS/sealed_roads_dataset"),
+        src_new_images=Path("/home/david/RACAS/640_x_640/CT_EB_D40_Cracking_hard_pos")
     )
