@@ -56,14 +56,14 @@ def test_copy_recursive_images_and_yolo_annotations_by_cropped_image_reference()
     """
     copy_images_recursive_inc_yolo_annotations_by_reference_dir(
         reference_dir=Path(
-            "/home/david/RACAS/CT_Errors_10pcnt/CT_EB_D40_Cracking_hard_pos"
-            # "/home/david/addn_repos/yolov5/runs/detect/ChartersTowers__Coll_8a_unweighted_55conf",
+            # "/home/david/RACAS/CT_Errors_10pcnt/CT_EB_D40_Cracking_hard_pos"
+            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_stripping__srd17.1_conf7pcnt",
         ),
         original_images_dir=Path(
-            "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed"
+            "/home/david/RACAS/640_x_640/CTRC_Stripping_9_plus"
         ),
         dst_sample_dir=Path(
-            "/home/david/RACAS/640_x_640/CT_EB_D40_Cracking_hard_pos"
+            "/home/david/RACAS/640_x_640/Charters_Towers_Stripping"
         ),
         num=None,
         move=False,

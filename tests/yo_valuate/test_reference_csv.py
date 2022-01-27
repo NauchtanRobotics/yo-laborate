@@ -11,6 +11,7 @@ from yo_valuate.reference_csv import (
     get_thresholds,
     get_actual_vs_inferred_df,
     get_classification_performance,
+    get_severity_dict,
 )
 
 ROOT_TEST_DATA = Path(__file__).parent.parent / "test_data"
@@ -220,3 +221,8 @@ def test_get_classification_performance(
         "Beverages": {"P": "0.00", "R": "0.00", "F1": "0.00"},
     }
     assert res_dict == expected_result
+
+
+def test_get_severity_dict():
+    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/CTRC_all_sealed.csv")
+    get_severity_dict(truths_csv=truths_csv)
