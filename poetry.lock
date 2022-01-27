@@ -8,7 +8,7 @@ python-versions = ">=3.6,<4.0"
 
 [[package]]
 name = "anyio"
-version = "3.4.0"
+version = "3.5.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 category = "main"
 optional = false
@@ -19,7 +19,7 @@ idna = ">=2.8"
 sniffio = ">=1.1"
 
 [package.extras]
-doc = ["sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
+doc = ["packaging", "sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
 test = ["coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "pytest (>=6.0)", "pytest-mock (>=3.6.1)", "trustme", "contextlib2", "uvloop (<0.15)", "mock (>=4)", "uvloop (>=0.15)"]
 trio = ["trio (>=0.16)"]
 
@@ -69,14 +69,14 @@ tzdata = ["tzdata"]
 
 [[package]]
 name = "boto3"
-version = "1.20.27"
+version = "1.20.40"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.23.27,<1.24.0"
+botocore = ">=1.23.40,<1.24.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
 
@@ -85,7 +85,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.23.27"
+version = "1.23.40"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -109,7 +109,7 @@ python-versions = "*"
 
 [[package]]
 name = "charset-normalizer"
-version = "2.0.9"
+version = "2.0.10"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 category = "main"
 optional = false
@@ -161,18 +161,19 @@ graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
 name = "dnspython"
-version = "2.1.0"
+version = "2.2.0"
 description = "DNS toolkit"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.6,<4.0"
 
 [package.extras]
-dnssec = ["cryptography (>=2.6)"]
-doh = ["requests", "requests-toolbelt"]
-idna = ["idna (>=2.1)"]
-curio = ["curio (>=1.2)", "sniffio (>=1.1)"]
-trio = ["trio (>=0.14.0)", "sniffio (>=1.1)"]
+dnssec = ["cryptography (>=2.6,<37.0)"]
+curio = ["curio (>=1.2,<2.0)", "sniffio (>=1.1,<2.0)"]
+doh = ["h2 (>=4.1.0)", "httpx (>=0.21.1)", "requests (>=2.23.0,<3.0.0)", "requests-toolbelt (>=0.9.1,<0.10.0)"]
+idna = ["idna (>=2.1,<4.0)"]
+trio = ["trio (>=0.14,<0.20)"]
+wmi = ["wmi (>=1.5.1,<2.0.0)"]
 
 [[package]]
 name = "eventlet"
@@ -189,7 +190,7 @@ six = ">=1.10.0"
 
 [[package]]
 name = "fiftyone"
-version = "0.14.2"
+version = "0.14.3"
 description = "FiftyOne: the open-source tool for building high-quality datasets and computer vision models"
 category = "main"
 optional = false
@@ -201,7 +202,7 @@ argcomplete = "*"
 boto3 = "*"
 Deprecated = "*"
 eventlet = "*"
-fiftyone-brain = ">=0.7.2,<0.8"
+fiftyone-brain = ">=0.7.3,<0.8"
 fiftyone-db = ">=0.3,<0.4"
 future = "*"
 Jinja2 = "*"
@@ -226,7 +227,7 @@ scikit-learn = "*"
 tabulate = "*"
 tornado = ">=5.1.1,<7"
 universal-analytics-python3 = ">=1.0.1,<2"
-voxel51-eta = ">=0.6.1,<0.7"
+voxel51-eta = ">=0.6.2,<0.7"
 xmltodict = "*"
 
 [package.extras]
@@ -234,7 +235,7 @@ desktop = ["fiftyone-desktop (>=0.19.1,<0.20)"]
 
 [[package]]
 name = "fiftyone-brain"
-version = "0.7.2"
+version = "0.7.3"
 description = "FiftyOne Brain"
 category = "main"
 optional = false
@@ -311,7 +312,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "httpcore"
-version = "0.14.3"
+version = "0.14.5"
 description = "A minimal low-level HTTP client."
 category = "main"
 optional = false
@@ -325,10 +326,11 @@ sniffio = ">=1.0.0,<2.0.0"
 
 [package.extras]
 http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "httpx"
-version = "0.21.1"
+version = "0.21.3"
 description = "The next generation HTTP client."
 category = "main"
 optional = false
@@ -356,7 +358,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "imageio"
-version = "2.13.5"
+version = "2.14.0"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
 category = "main"
 optional = false
@@ -712,7 +714,7 @@ zstd = ["zstandard"]
 
 [[package]]
 name = "pyparsing"
-version = "3.0.6"
+version = "3.0.7"
 description = "Python parsing module"
 category = "main"
 optional = false
@@ -723,8 +725,8 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pysimplegui"
-version = "4.55.1"
-description = "Python GUIs for Humans. Launched in 2018. It's 2021 & PySimpleGUI is an ACTIVE & supported project. Super-simple to create custom GUI's. 325+ Demo programs & Cookbook for rapid start. Extensive documentation. Main docs at www.PySimpleGUI.org. Fun & your success are the focus. Examples using Machine Learning (GUI, OpenCV Integration), Rainmeter Style Desktop Widgets, Matplotlib + Pyplot, PIL support, add GUI to command line scripts, PDF & Image Viewers. Great for beginners & advanced GUI programmers."
+version = "4.56.0"
+description = "Python GUIs for Humans. Launched in 2018. It's 2022 & PySimpleGUI is an ACTIVE & supported project. Super-simple to create custom GUI's. 325+ Demo programs & Cookbook for rapid start. Extensive documentation. Main docs at www.PySimpleGUI.org. Fun & your success are the focus. Examples using Machine Learning (GUI, OpenCV Integration), Rainmeter Style Desktop Widgets, Matplotlib + Pyplot, PIL support, add GUI to command line scripts, PDF & Image Viewers. Great for beginners & advanced GUI programmers."
 category = "main"
 optional = false
 python-versions = "*"
@@ -749,6 +751,20 @@ toml = "*"
 
 [package.extras]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
+
+[[package]]
+name = "pytest-mock"
+version = "3.6.1"
+description = "Thin-wrapper around the mock package for easier use with pytest"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+pytest = ">=5.0"
+
+[package.extras]
+dev = ["pre-commit", "tox", "pytest-asyncio"]
 
 [[package]]
 name = "python-dateutil"
@@ -802,7 +818,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "requests"
-version = "2.27.0"
+version = "2.27.1"
 description = "Python HTTP for Humans."
 category = "main"
 optional = false
@@ -914,7 +930,7 @@ numpy = ">=1.16.5,<1.23.0"
 
 [[package]]
 name = "setuptools-scm"
-version = "6.3.2"
+version = "6.4.2"
 description = "the blessed package to manage your versions by scm tags"
 category = "main"
 optional = false
@@ -925,7 +941,8 @@ packaging = ">=20.0"
 tomli = ">=1.0.0"
 
 [package.extras]
-toml = ["setuptools (>=42)", "tomli (>=1.0.0)"]
+test = ["pytest (>=6.2)", "virtualenv (>20)"]
+toml = ["setuptools (>=42)"]
 
 [[package]]
 name = "six"
@@ -1062,7 +1079,7 @@ httpx = ">=0.10.0"
 
 [[package]]
 name = "urllib3"
-version = "1.26.7"
+version = "1.26.8"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
@@ -1075,7 +1092,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "voxel51-eta"
-version = "0.6.1"
+version = "0.6.2.2"
 description = "Extensible Toolkit for Analytics"
 category = "main"
 optional = false
@@ -1125,7 +1142,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "df0b9da020ac23a221473bb1bdacc489b9bb1aba8a985bcbe2045c5e6793ea43"
+content-hash = "924d7d4e0159c2b40b613848b311b8444faa2d59a8fd12ab6a89afe603a5719f"
 
 [metadata.files]
 aiofiles = [
@@ -1133,8 +1150,8 @@ aiofiles = [
     {file = "aiofiles-0.8.0.tar.gz", hash = "sha256:8334f23235248a3b2e83b2c3a78a22674f39969b96397126cc93664d9a901e59"},
 ]
 anyio = [
-    {file = "anyio-3.4.0-py3-none-any.whl", hash = "sha256:2855a9423524abcdd652d942f8932fda1735210f77a6b392eafd9ff34d3fe020"},
-    {file = "anyio-3.4.0.tar.gz", hash = "sha256:24adc69309fb5779bc1e06158e143e0b6d2c56b302a3ac3de3083c705a6ed39d"},
+    {file = "anyio-3.5.0-py3-none-any.whl", hash = "sha256:b5fa16c5ff93fa1046f2eeb5bbff2dad4d3514d6cda61d02816dba34fa8c3c2e"},
+    {file = "anyio-3.5.0.tar.gz", hash = "sha256:a0aeffe2fb1fdf374a8e4b471444f0f3ac4fb9f5a5b542b48824475e0042a5a6"},
 ]
 argcomplete = [
     {file = "argcomplete-2.0.0-py2.py3-none-any.whl", hash = "sha256:cffa11ea77999bb0dd27bb25ff6dc142a6796142f68d45b1a26b11f58724561e"},
@@ -1167,20 +1184,20 @@ attrs = [
     {file = "backports.zoneinfo-0.2.1.tar.gz", hash = "sha256:fadbfe37f74051d024037f223b8e001611eac868b5c5b06144ef4d8b799862f2"},
 ]
 boto3 = [
-    {file = "boto3-1.20.27-py3-none-any.whl", hash = "sha256:1def3b3b0414915e20a543ea5f0f6dfb8fdab20819d5a7c2ce107937668d1085"},
-    {file = "boto3-1.20.27.tar.gz", hash = "sha256:9364b6310891e4ce478d8379ce114de3ede46e53beb1012cda07121e969ced5a"},
+    {file = "boto3-1.20.40-py3-none-any.whl", hash = "sha256:cfe85589e4a0a997c7b9ae7432400b03fa6fa5fea29fdc48db3099a903b76998"},
+    {file = "boto3-1.20.40.tar.gz", hash = "sha256:66aef9a6d8cad393f69166112ba49e14e2c6766f9278c96134101314a9af2992"},
 ]
 botocore = [
-    {file = "botocore-1.23.27-py3-none-any.whl", hash = "sha256:8dca8fb66c47b8be9a5c9d29cc4dcf0a4d28289df8cbe1a6d3df431c1f2400d6"},
-    {file = "botocore-1.23.27.tar.gz", hash = "sha256:fac6515997a7e86216a280ae57f6a80b3560ed5fb157c84e87a9341936773437"},
+    {file = "botocore-1.23.40-py3-none-any.whl", hash = "sha256:88a314fe27cd97a0c731094c5b34db01ebe930801700e5d1b68485ebde746c3c"},
+    {file = "botocore-1.23.40.tar.gz", hash = "sha256:49baa1fca4483b24769f0743fbf72afe4db391f41f1fc12ea34e06036db642a4"},
 ]
 certifi = [
     {file = "certifi-2021.10.8-py2.py3-none-any.whl", hash = "sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569"},
     {file = "certifi-2021.10.8.tar.gz", hash = "sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872"},
 ]
 charset-normalizer = [
-    {file = "charset-normalizer-2.0.9.tar.gz", hash = "sha256:b0b883e8e874edfdece9c28f314e3dd5badf067342e42fb162203335ae61aa2c"},
-    {file = "charset_normalizer-2.0.9-py3-none-any.whl", hash = "sha256:1eecaa09422db5be9e29d7fc65664e6c33bd06f9ced7838578ba40d58bdf3721"},
+    {file = "charset-normalizer-2.0.10.tar.gz", hash = "sha256:876d180e9d7432c5d1dfd4c5d26b72f099d503e8fcc0feb7532c9289be60fcbd"},
+    {file = "charset_normalizer-2.0.10-py3-none-any.whl", hash = "sha256:cb957888737fc0bbcd78e3df769addb41fd1ff8cf950dc9e7ad7793f1bf44455"},
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
@@ -1199,35 +1216,44 @@ dill = [
     {file = "dill-0.3.4.zip", hash = "sha256:9f9734205146b2b353ab3fec9af0070237b6ddae78452af83d2fca84d739e675"},
 ]
 dnspython = [
-    {file = "dnspython-2.1.0-py3-none-any.whl", hash = "sha256:95d12f6ef0317118d2a1a6fc49aac65ffec7eb8087474158f42f26a639135216"},
-    {file = "dnspython-2.1.0.zip", hash = "sha256:e4a87f0b573201a0f3727fa18a516b055fd1107e0e5477cded4a2de497df1dd4"},
+    {file = "dnspython-2.2.0-py3-none-any.whl", hash = "sha256:081649da27ced5e75709a1ee542136eaba9842a0fe4c03da4fb0a3d3ed1f3c44"},
+    {file = "dnspython-2.2.0.tar.gz", hash = "sha256:e79351e032d0b606b98d38a4b0e6e2275b31a5b85c873e587cc11b73aca026d6"},
 ]
 eventlet = [
     {file = "eventlet-0.33.0-py2.py3-none-any.whl", hash = "sha256:d10a8fcc9e33381905d9873303fde96ebe3541c03fb795055d2c7347dce0639c"},
     {file = "eventlet-0.33.0.tar.gz", hash = "sha256:80144f489c1bb273a51b6f96ff9785a382d2866b9bab1f5bd748385019f4141f"},
 ]
 fiftyone = [
-    {file = "fiftyone-0.14.2-py3-none-any.whl", hash = "sha256:11d64fa1bff1bc73e421978238ba16aebed6b3c13fb5add77371fb4dce555ef9"},
+    {file = "fiftyone-0.14.3-py3-none-any.whl", hash = "sha256:0dd34ea6000c2c015ac59c1ba777ca45d461a8e8d7e3678f16ed09195c99d5a6"},
+    {file = "fiftyone-0.14.3.tar.gz", hash = "sha256:54aac3534a89f73a620ade6d4d1d1ebcd729359c079eb498cf0de8743d32eedb"},
 ]
 fiftyone-brain = [
-    {file = "fiftyone_brain-0.7.2-cp36-cp36m-macosx_10_11_x86_64.whl", hash = "sha256:aad31908238219107d660496688c733c66aeaa72188299b0feef66e41c7ccd04"},
-    {file = "fiftyone_brain-0.7.2-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:6fc98eab2ebcae1d96327a63990bd4874b8d2ed4098ad426bd420c183f2e199c"},
-    {file = "fiftyone_brain-0.7.2-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:f232eda5ce28ee4a93c0ab2eb4aab1c4223e9f327839d89f72fd4cd2550af391"},
-    {file = "fiftyone_brain-0.7.2-cp36-cp36m-win_amd64.whl", hash = "sha256:49dc85ff75be12a7dc1bac18e4233728141cf18b508846a634cb0cddb6b127b2"},
-    {file = "fiftyone_brain-0.7.2-cp37-cp37m-macosx_10_11_x86_64.whl", hash = "sha256:4c97ade7a4711aaa90e891569d9706676562f06853ad32275ab5f10be27b6546"},
-    {file = "fiftyone_brain-0.7.2-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ef306ef691f956373201de76ee6c25269535cc14a7969a708e33b4ca365c407f"},
-    {file = "fiftyone_brain-0.7.2-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:d83698c5200a8fe595a2bd2abfa5508655c3c140e26e64f15a4254ced2a54555"},
-    {file = "fiftyone_brain-0.7.2-cp37-cp37m-win_amd64.whl", hash = "sha256:dfd45e52f750e72a2d8ada157475101e3881864c2d3da22a53e28863e1cd94fc"},
-    {file = "fiftyone_brain-0.7.2-cp38-cp38-macosx_10_11_x86_64.whl", hash = "sha256:4744ac0a0d1d53ca75b944f9d00f9b8f2ed3775a2624feaaea2e291c2f7ee15e"},
-    {file = "fiftyone_brain-0.7.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:d7a3e03403845095cc6be16808bdb821e92797c6440924b25e1ba8df200b2422"},
-    {file = "fiftyone_brain-0.7.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:35757e992faf161e2a03aceefc130b855a946e8f1c626258cb4595621e1a68dc"},
-    {file = "fiftyone_brain-0.7.2-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:d7d8a3d7924fd191705d48fb5a3130b3e1b5e084ef3637a77cb34fd81505b8de"},
-    {file = "fiftyone_brain-0.7.2-cp38-cp38-win_amd64.whl", hash = "sha256:fc14340efd3b27b8a95b3489a2b07bbaabee5a9436f08b06fc999865036f0c31"},
-    {file = "fiftyone_brain-0.7.2-cp39-cp39-macosx_10_11_x86_64.whl", hash = "sha256:1397803be8327b3fb46276264f24a8d85d3e0470417577df533c4a51ea0f9109"},
-    {file = "fiftyone_brain-0.7.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:00ce704c4afbff58ae2f0e5d59bf382c1846739d02aa10fa8681ef25df2df026"},
-    {file = "fiftyone_brain-0.7.2-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:90b26df983c23a149387225e087b372cd8bc968fa73662bdbd7edab4a8854b0d"},
-    {file = "fiftyone_brain-0.7.2-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:eb7c2bfb7654c07ed1bf657161f857feb02e6064e5c9a7f9435c199c9b414db1"},
-    {file = "fiftyone_brain-0.7.2-cp39-cp39-win_amd64.whl", hash = "sha256:d825f32b8c2eebdb7c4d2ce493ce211da1dd33e00beae208f9a5ff188dd9b7f8"},
+    {file = "fiftyone_brain-0.7.3-cp36-cp36m-macosx_10_11_x86_64.whl", hash = "sha256:8f5a383b7ad706a5a08c9c4219554b329fd1d6ef3bfd7c59f5286d061ced41f7"},
+    {file = "fiftyone_brain-0.7.3-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:39cbff99b445a579c258859000825b998f3ff96933313f1129065e34be6e4169"},
+    {file = "fiftyone_brain-0.7.3-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:03e542a47e93ae2363e2dcbb89f32479d3d4d607961246db9faa949800e7654b"},
+    {file = "fiftyone_brain-0.7.3-cp36-cp36m-manylinux2014_aarch64.whl", hash = "sha256:348be6a72df9c461d6d41d2c770c1a14452d8bd81613c0b290b662b596e7bc43"},
+    {file = "fiftyone_brain-0.7.3-cp36-cp36m-win32.whl", hash = "sha256:06e2f2be4122a14397de56d355ea40d2f004bd96be6f48a4afcd78e7213188f5"},
+    {file = "fiftyone_brain-0.7.3-cp36-cp36m-win_amd64.whl", hash = "sha256:6c9da5f7a61c78c233585895db80d1d683c7bd7f1b6810bad50171e6cd22871d"},
+    {file = "fiftyone_brain-0.7.3-cp37-cp37m-macosx_10_11_x86_64.whl", hash = "sha256:734523e4549b530075111ec2068aaea818d13956fc2db298dfbfadfb584a61ea"},
+    {file = "fiftyone_brain-0.7.3-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:5130bddf82b7ac9b3170cb1639bf715a1de005080a7796468fa8879c804eda37"},
+    {file = "fiftyone_brain-0.7.3-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:cb8d91905a1de0b9b61241b07944c1d2b96d03cacfa4f2dd6cc8e927ccae5132"},
+    {file = "fiftyone_brain-0.7.3-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:66e2748a61988c7cbef1b79ba5b9dd6a8f876534d4ffae5135d28ec8b1c4cab5"},
+    {file = "fiftyone_brain-0.7.3-cp37-cp37m-win32.whl", hash = "sha256:4570be5d8e9f188ed5c83bf78b0d8f0f0c12c4f86779d3824e69c79c9fb5e74c"},
+    {file = "fiftyone_brain-0.7.3-cp37-cp37m-win_amd64.whl", hash = "sha256:73e527f459249dc6c80c92b169d5fe99a35a33e1f767dfa3cff74a96c3fca4d3"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-macosx_10_11_x86_64.whl", hash = "sha256:531918cd6e2131631008b9dbf5ca66c90406806cf89b59a3a8346ae04b5ab352"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:bd7f526fbc07916d1d1cc1c9741cdf3ae5249ccdd469c4fb7dcbf9fcf87431f6"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-manylinux1_i686.whl", hash = "sha256:6de5287b7acf32f87ff0260c5e18a50eb2370358df48fcbf7556eb967cfeba81"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:ac1b278a68aded0219390603bc8d605064a3d906724c5837642ae0db83c885b8"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:c79dea3a48c4eceb73127cad45f4c78be5936f899fde086a8b819fd30e30a093"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-win32.whl", hash = "sha256:2ab9d972c1dfa3ae83b6f9a552a929ff9cbd07d668ee0dd249f57308fccb7259"},
+    {file = "fiftyone_brain-0.7.3-cp38-cp38-win_amd64.whl", hash = "sha256:29cbbdcfa78cc527f20e4db342b4fff6238c8aeeab744739987d8ed66955f604"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-macosx_10_11_x86_64.whl", hash = "sha256:a90d2e98739b76d0b9f91b7369ddc3baaa117ec5b51d261cc34c8f601476a74b"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:51da4f44427d554b649e1b6b1f5024819e2d454eab24fe455391c9649f837302"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-manylinux1_i686.whl", hash = "sha256:876959d222f023996735122025b8e6dd424a0f7046eb152e5ba980f92ac162b2"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:8ffc499cde553e003cdc612e21a8a8f873052dd448749a2a752855b93ecfd859"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:8e3f086e070d3bd84f854b3a09a6a01e6ece36cf5a009950bd4188060f68fc30"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-win32.whl", hash = "sha256:d496eed1788b134e9662c8e068e5d0cca6cc001c38a343c3bd0e173a80b5f780"},
+    {file = "fiftyone_brain-0.7.3-cp39-cp39-win_amd64.whl", hash = "sha256:54a6ec8a81af3b264cba49a854f598c9aa71ab7339168164084f27b31bc4083f"},
 ]
 fiftyone-db = [
     {file = "fiftyone_db-0.3.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:16047893bf0fbb39fdc6833fff14eaa56107056f985f3c1ce481a2f2feeb9e28"},
@@ -1303,20 +1329,20 @@ h11 = [
     {file = "h11-0.12.0.tar.gz", hash = "sha256:47222cb6067e4a307d535814917cd98fd0a57b6788ce715755fa2b6c28b56042"},
 ]
 httpcore = [
-    {file = "httpcore-0.14.3-py3-none-any.whl", hash = "sha256:9a98d2416b78976fc5396ff1f6b26ae9885efbb3105d24eed490f20ab4c95ec1"},
-    {file = "httpcore-0.14.3.tar.gz", hash = "sha256:d10162a63265a0228d5807964bd964478cbdb5178f9a2eedfebb2faba27eef5d"},
+    {file = "httpcore-0.14.5-py3-none-any.whl", hash = "sha256:2621ee769d0236574df51b305c5f4c69ca8f0c7b215221ad247b1ee42a9a9de1"},
+    {file = "httpcore-0.14.5.tar.gz", hash = "sha256:435ab519628a6e2393f67812dea3ca5c6ad23b457412cd119295d9f906d96a2b"},
 ]
 httpx = [
-    {file = "httpx-0.21.1-py3-none-any.whl", hash = "sha256:208e5ef2ad4d105213463cfd541898ed9d11851b346473539a8425e644bb7c66"},
-    {file = "httpx-0.21.1.tar.gz", hash = "sha256:02af20df486b78892a614a7ccd4e4e86a5409ec4981ab0e422c579a887acad83"},
+    {file = "httpx-0.21.3-py3-none-any.whl", hash = "sha256:df9a0fd43fa79dbab411d83eb1ea6f7a525c96ad92e60c2d7f40388971b25777"},
+    {file = "httpx-0.21.3.tar.gz", hash = "sha256:7a3eb67ef0b8abbd6d9402248ef2f84a76080fa1c839f8662e6eb385640e445a"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
 ]
 imageio = [
-    {file = "imageio-2.13.5-py3-none-any.whl", hash = "sha256:a3a18d5d01732557247fba5658d7f75425e97ce49c8fe2cd81bd348f5c71ffb2"},
-    {file = "imageio-2.13.5.tar.gz", hash = "sha256:c7ec2be58e401b6eaa838f8eaf8368ed54b2de4a1b001fe6551644f1a30a843d"},
+    {file = "imageio-2.14.0-py3-none-any.whl", hash = "sha256:af6c7c89947ee9d81eab2caee3726f61e1a0d861e87e856904868d0fe7c0aa15"},
+    {file = "imageio-2.14.0.tar.gz", hash = "sha256:1a612b46c24805115701ed7c4e1f2d7feb53bb615d52bfef9713a6836e997bb1"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
@@ -1827,16 +1853,20 @@ pymongo = [
     {file = "pymongo-3.12.3.tar.gz", hash = "sha256:0a89cadc0062a5e53664dde043f6c097172b8c1c5f0094490095282ff9995a5f"},
 ]
 pyparsing = [
-    {file = "pyparsing-3.0.6-py3-none-any.whl", hash = "sha256:04ff808a5b90911829c55c4e26f75fa5ca8a2f5f36aa3a51f68e27033341d3e4"},
-    {file = "pyparsing-3.0.6.tar.gz", hash = "sha256:d9bdec0013ef1eb5a84ab39a3b3868911598afa494f5faa038647101504e2b81"},
+    {file = "pyparsing-3.0.7-py3-none-any.whl", hash = "sha256:a6c06a88f252e6c322f65faf8f418b16213b51bdfaece0524c1c1bc30c63c484"},
+    {file = "pyparsing-3.0.7.tar.gz", hash = "sha256:18ee9022775d270c55187733956460083db60b37d0d0fb357445f3094eed3eea"},
 ]
 pysimplegui = [
-    {file = "PySimpleGUI-4.55.1-py3-none-any.whl", hash = "sha256:dac8a7d43c246c68bb3c6cdabb0b0abb369df8a7bf3f246d6144e64b6e9330b4"},
-    {file = "PySimpleGUI-4.55.1.tar.gz", hash = "sha256:9d40c0a0c2b4c3d2ee935854e48d724f508ae68123f4bac8072612dd9e707dec"},
+    {file = "PySimpleGUI-4.56.0-py3-none-any.whl", hash = "sha256:abd39c0dfd14f8de39e71b3a832cf3ae05b6df993d55fb41362d26e58261208d"},
+    {file = "PySimpleGUI-4.56.0.tar.gz", hash = "sha256:1a13a19282f92626cc6a823cbe9f4aa08aa558870f03441a1c4e8b6cef27c9d5"},
 ]
 pytest = [
     {file = "pytest-6.2.5-py3-none-any.whl", hash = "sha256:7310f8d27bc79ced999e760ca304d69f6ba6c6649c0b60fb0e04a4a77cacc134"},
     {file = "pytest-6.2.5.tar.gz", hash = "sha256:131b36680866a76e6781d13f101efb86cf674ebb9762eb70d3082b6f29889e89"},
+]
+pytest-mock = [
+    {file = "pytest-mock-3.6.1.tar.gz", hash = "sha256:40217a058c52a63f1042f0784f62009e976ba824c418cced42e88d5f40ab0e62"},
+    {file = "pytest_mock-3.6.1-py3-none-any.whl", hash = "sha256:30c2f2cc9759e76eee674b81ea28c9f0b94f8f0445a1b87762cadf774f0df7e3"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
@@ -1926,8 +1956,8 @@ pyyaml = [
     {file = "PyYAML-6.0.tar.gz", hash = "sha256:68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2"},
 ]
 requests = [
-    {file = "requests-2.27.0-py2.py3-none-any.whl", hash = "sha256:f71a09d7feba4a6b64ffd8e9d9bc60f9bf7d7e19fd0e04362acb1cfc2e3d98df"},
-    {file = "requests-2.27.0.tar.gz", hash = "sha256:8e5643905bf20a308e25e4c1dd379117c09000bf8a82ebccc462cfb1b34a16b5"},
+    {file = "requests-2.27.1-py2.py3-none-any.whl", hash = "sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d"},
+    {file = "requests-2.27.1.tar.gz", hash = "sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"},
 ]
 retrying = [
     {file = "retrying-1.3.3.tar.gz", hash = "sha256:08c039560a6da2fe4f2c426d0766e284d3b736e355f8dd24b37367b0bb41973b"},
@@ -2034,8 +2064,8 @@ scipy = [
     {file = "scipy-1.7.3.tar.gz", hash = "sha256:ab5875facfdef77e0a47d5fd39ea178b58e60e454a4c85aa1e52fcb80db7babf"},
 ]
 setuptools-scm = [
-    {file = "setuptools_scm-6.3.2-py3-none-any.whl", hash = "sha256:4c64444b1d49c4063ae60bfe1680f611c8b13833d556fd1d6050c0023162a119"},
-    {file = "setuptools_scm-6.3.2.tar.gz", hash = "sha256:a49aa8081eeb3514eb9728fa5040f2eaa962d6c6f4ec9c32f6c1fba88f88a0f2"},
+    {file = "setuptools_scm-6.4.2-py3-none-any.whl", hash = "sha256:acea13255093849de7ccb11af9e1fb8bde7067783450cee9ef7a93139bddf6d4"},
+    {file = "setuptools_scm-6.4.2.tar.gz", hash = "sha256:6833ac65c6ed9711a4d5d2266f8024cfa07c533a0e55f4c12f6eff280a5a9e30"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
@@ -2129,11 +2159,12 @@ universal-analytics-python3 = [
     {file = "universal_analytics_python3-1.1.1-py3-none-any.whl", hash = "sha256:dc408a41865d3bd0adf5c04337f3f20fe418f2633155190e6e87de84e0b75cf1"},
 ]
 urllib3 = [
-    {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},
-    {file = "urllib3-1.26.7.tar.gz", hash = "sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece"},
+    {file = "urllib3-1.26.8-py2.py3-none-any.whl", hash = "sha256:000ca7f471a233c2251c6c7023ee85305721bfdf18621ebff4fd17a8653427ed"},
+    {file = "urllib3-1.26.8.tar.gz", hash = "sha256:0e7c33d9a63e7ddfcb86780aac87befc2fbddf46c58dbb487e0855f7ceec283c"},
 ]
 voxel51-eta = [
-    {file = "voxel51_eta-0.6.1-py2.py3-none-any.whl", hash = "sha256:c5141405c7a5eafe2a4328299b71a91898496c4da99f6f58682b4a765f975bf5"},
+    {file = "voxel51-eta-0.6.2.2.tar.gz", hash = "sha256:060614e93d76dd2308d65c66efb94bb69c07b1e467f68b7de2ce37dc74db01ae"},
+    {file = "voxel51_eta-0.6.2.2-py2.py3-none-any.whl", hash = "sha256:9813b4b11e1f096ecfc519bb51cc55dd65b048d4dd5bb92f0dcc57a7b62680df"},
 ]
 wrapt = [
     {file = "wrapt-1.13.3-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:e05e60ff3b2b0342153be4d1b597bbcfd8330890056b9619f4ad6b8d5c96a81a"},

@@ -719,3 +719,90 @@ def run_detections(
         )
     )
     return results_name
+
+
+def run_detections_using_cv_ensemble(
+    images_path: Path,
+    detection_dataset_name: str,
+    model_version: str,
+    k_folds: int,
+    base_dir: Path,
+    conf_thres: float = 0.1,
+    device: int = 0,
+) -> str:
+    results_name = (
+        f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    )
+    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
+    detect_script = Path(yolo_root) / "detect.py"
+    models_root = Path(yolo_root) / "runs" / "train"
+    model_paths = [
+        models_root / f"{model_version}.{str(i+1)}" / "weights" / "best.pt"
+        for i in range(k_folds)
+    ]
+    model_paths = [str(model_path) for model_path in model_paths]
+    pytorch_cmd = [
+        python_path,
+        f"{str(detect_script)}",
+        f"--source={str(images_path)}",
+        "--img=640",
+        f"--device={device}",
+        f"--name={results_name}",
+        "--save-txt",
+        "--save-conf",
+        # "--nosave",
+        "--agnostic-nms",
+        f"--iou-thres=0.55",
+        f"--conf-thres={conf_thres}",
+        f"--weights",
+    ]
+    pytorch_cmd.extend(model_paths)
+    print(
+        subprocess.check_output(
+            pytorch_cmd,
+            stderr=subprocess.STDOUT,
+            cwd=yolo_root,
+        )
+    )
+    return results_name
+
+
+def add_subset_folder_unique_images_only(
+    existing_dataset_root: Path,
+    src_new_images: Path,
+):
+    """
+    Adds images and embedded YOLO_darknet annotations folder to a dataset where
+    the images are a unique offering to the dataset.
+
+    Does this by establishing a list of image names that already exist and
+    then copies in additional images where the file name is not in the existing
+    set.
+
+    To keep this function simple, it assumes that all image names will be unique
+    across all subset folders. This function should be modified to create a unique
+    name if duplicate names are expected.
+
+    The destination subset folder retains the folder name as per src_new_images.
+
+    """
+    dst_root: Path = existing_dataset_root / src_new_images.name
+    (dst_root / YOLO_ANNOTATIONS_FOLDER_NAME).mkdir(parents=True, exist_ok=True)
+    existing_image_paths = get_all_jpg_recursive(img_root=existing_dataset_root)
+    existing_image_names = [
+        image_path.name
+        for image_path in existing_image_paths
+    ]
+
+    fresh_images_available_paths = list(get_all_jpg_recursive(img_root=src_new_images))
+
+    for image_path in fresh_images_available_paths:
+        if image_path.name in existing_image_names:
+            continue
+        new_image_path = dst_root / image_path.name
+        annotation_name = f"{image_path.stem}.txt"
+        src_annotation_path = image_path.parent / YOLO_ANNOTATIONS_FOLDER_NAME / annotation_name
+        dst_annotation_path = dst_root / YOLO_ANNOTATIONS_FOLDER_NAME / annotation_name
+        shutil.copy(src=str(image_path), dst=str(new_image_path))
+        if src_annotation_path.exists():
+            shutil.copy(src=str(src_annotation_path), dst=str(dst_annotation_path))

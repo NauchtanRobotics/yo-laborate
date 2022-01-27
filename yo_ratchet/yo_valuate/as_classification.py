@@ -1,3 +1,5 @@
+import json
+
 import numpy
 import pandas
 from tabulate import tabulate
@@ -10,6 +12,8 @@ from yo_ratchet.yo_wrangle.common import (
     get_id_to_label_map,
     get_config_items,
 )
+
+F1 = "F1"
 
 CONF_TEST_LEVELS = [
     0.1,
@@ -33,6 +37,10 @@ CONF_TEST_LEVELS = [
     0.65,
     0.7,
 ]
+
+RESULTS_FOLDER = ".results"
+PERFORMANCE_FOLDER = ".performance"
+F1_PERFORMANCE_JSON = "f1_performance.json"
 
 
 def get_truth_vs_inferred_dict_by_photo(
@@ -176,6 +184,7 @@ def _get_binary_classification_metrics_for_idx(
     df: pandas.DataFrame,
     idx: int,
     to_console: bool = False,
+    confidence_level: float = 0.15,
 ) -> Tuple[float, float, float, float, float]:
     """
     A simple interface for binary metrics that passes through to the more
@@ -188,7 +197,9 @@ def _get_binary_classification_metrics_for_idx(
         pass  # This is okay too
     else:
         raise Exception("idx should be an int")
-    return _get_classification_metrics_for_group(df=df, idxs=idx, to_console=to_console)
+    return _get_classification_metrics_for_group(
+        df=df, idxs=idx, to_console=to_console, confidence_level=confidence_level
+    )
 
 
 def optimise_model_binary_metrics_for_groups(
@@ -327,7 +338,9 @@ def get_average_individual_classification_metrics(
             f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{CONF_PCNT}pcnt/labels"
         ).resolve()
         detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
-        ground_truth_path = Path(f"{yolo_root}/datasets/{dataset_label}/val/labels").resolve()
+        ground_truth_path = Path(
+            f"{yolo_root}/datasets/{dataset_label}/val/labels"
+        ).resolve()
         classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
         if print_table:
             print(f"\nDataset: {dataset_label}")
@@ -340,23 +353,24 @@ def get_average_individual_classification_metrics(
             print_table=print_table,
         )
 
-        f1_scores.append(df.loc[["F1"]])
+        f1_scores.append(df.loc[[F1]])
         confidences.append(df.loc[["@conf"]])
-        output_filename = f"{dataset_label}_performance_for_optimum_conf.txt"
+        output_path = base_dir / RESULTS_FOLDER / f"{dataset_label}_performance_for_optimum_conf.txt"
         save_binary_and_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
             root_inferred_bounding_boxes=inferences_path,
             classes_map=classes_map,
             groupings={"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 16]},
-            output_path=Path(output_filename),
+            output_path=output_path,
         )
 
     df = pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float)
     df_conf = pandas.concat(confidences, axis=0, ignore_index=True).astype(float)
 
     new_df = pandas.DataFrame()
-    new_df["F1"] = df.mean(axis=0)
+    new_df[F1] = f1_mean = df.mean(axis=0)
+    update_performance_json(base_dir, version=dataset_prefix, label=F1, performance=f1_mean)
     new_df["min"] = df.min(axis=0)
     new_df["max"] = df.max(axis=0)
     new_df["conf_min"] = df_conf.min(axis=0)
@@ -368,9 +382,24 @@ def get_average_individual_classification_metrics(
         showindex="always",
         tablefmt="pretty",
     )
-    output_filename = f"{dataset_prefix}_f1_performance_summary.txt"
-    with open(str(output_filename), "w") as file_out:
+    output_path = base_dir / RESULTS_FOLDER / f"{dataset_prefix}_classification_f1_summary.txt"
+    with open(str(output_path), "w") as file_out:
         file_out.write(tbl_str)
+
+
+def update_performance_json(base_dir: Path, version: str, label: str, performance: pandas.Series):
+    (base_dir / PERFORMANCE_FOLDER).mkdir(exist_ok=True)
+    output_path = base_dir / PERFORMANCE_FOLDER / F1_PERFORMANCE_JSON
+    if output_path.exists():
+        with open(str(output_path), "r") as file_obj:
+            performance_dict = json.load(file_obj)
+    else:
+        performance_dict = {}
+    latest_performance = performance.to_dict()
+    latest_performance = {label: latest_performance}
+    performance_dict[version] = latest_performance
+    with open(str(output_path), "w") as file_obj:
+        json.dump(performance_dict, fp=file_obj, indent=4)
 
 
 def optimise_analyse_model_binary_metrics(
