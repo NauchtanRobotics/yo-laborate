@@ -34,6 +34,9 @@ CONF_TEST_LEVELS = [
     0.7,
 ]
 
+RESULTS_FOLDER = ".results"
+PERFORMANCE_FOLDER = ".performance"
+
 
 def get_truth_vs_inferred_dict_by_photo(
     images_root: Path,
@@ -347,14 +350,14 @@ def get_average_individual_classification_metrics(
 
         f1_scores.append(df.loc[["F1"]])
         confidences.append(df.loc[["@conf"]])
-        output_filename = f"{dataset_label}_performance_for_optimum_conf.txt"
+        output_path = base_dir / RESULTS_FOLDER / f"{dataset_label}_performance_for_optimum_conf.txt"
         save_binary_and_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
             root_inferred_bounding_boxes=inferences_path,
             classes_map=classes_map,
             groupings={"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 16]},
-            output_path=Path(output_filename),
+            output_path=output_path,
         )
 
     df = pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float)
@@ -373,8 +376,8 @@ def get_average_individual_classification_metrics(
         showindex="always",
         tablefmt="pretty",
     )
-    output_filename = f"{dataset_prefix}_f1_performance_summary.txt"
-    with open(str(output_filename), "w") as file_out:
+    output_path = base_dir / RESULTS_FOLDER / f"{dataset_prefix}_classification_f1_summary.txt"
+    with open(str(output_path), "w") as file_out:
         file_out.write(tbl_str)
 
 
