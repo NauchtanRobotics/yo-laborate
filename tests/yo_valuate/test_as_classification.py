@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy
@@ -7,6 +8,9 @@ import pytest
 from yo_ratchet.yo_valuate.as_classification import (
     optimise_model_binary_metrics_for_groups,
     _optimise_analyse_model_binary_metrics,
+    update_performance_json,
+    PERFORMANCE_FOLDER,
+    F1_PERFORMANCE_JSON,
 )
 
 ROOT_TEST_DATA = Path(__file__).parent.parent / "test_data"
@@ -102,4 +106,61 @@ def test__optimise_analyse_model_binary_metrics(dummy_df):
         "Casper": {"@conf": "0.16", "F1": "1.00", "P": "1.00", "R": "1.00"},
         "Friendly": {"@conf": "0.25", "F1": "0.50", "P": "0.50", "R": "0.50"},
         "Ghost": {"@conf": "0.25", "F1": "1.00", "P": "1.00", "R": "1.00"},
+    }
+
+
+def test_update_performance_json_initialises_output_file(tmp_path):
+    """
+    Test that the function update_performance_json() creates a new json file
+    that records performance when no such file currently exists.
+
+    """
+    a = [0.5, 0.7, 0.2]
+    test_series = pandas.Series(a, index=["Class_A", "Class_B", "Class_C"])
+    update_performance_json(
+        base_dir=tmp_path, version="versionX.Y.Z", label="F1", performance=test_series
+    )
+    performance_json_path = tmp_path / PERFORMANCE_FOLDER / F1_PERFORMANCE_JSON
+    assert performance_json_path.exists()
+
+    with open(str(performance_json_path), "r") as file_obj:
+        file_contents = json.load(file_obj)
+    assert file_contents == {
+        "versionX.Y.Z": {"F1": {"Class_A": 0.5, "Class_B": 0.7, "Class_C": 0.2}}
+    }
+
+
+def test_update_performance_json_updates_output_file(tmp_path):
+    """
+    Test that the function update_performance_json() creates a new json file
+    that records performance when no such file currently exists.
+
+    """
+    # First: prepare the context - a performance json file already in existence.
+    performance_json_path = tmp_path / PERFORMANCE_FOLDER / F1_PERFORMANCE_JSON
+    performance_json_path.parent.mkdir(parents=True)
+    existing_data = {
+        "versionX.Y.Z": {"F1": {"Class_A": 0.5, "Class_B": 0.7, "Class_C": 0.2}}
+    }
+    with open(str(performance_json_path), "w") as file_obj:
+        json.dump(existing_data, fp=file_obj, indent=4)
+    assert performance_json_path.exists()
+    with open(str(performance_json_path), "r") as file_obj:
+        file_contents = json.load(file_obj)
+    assert file_contents == {
+        "versionX.Y.Z": {"F1": {"Class_A": 0.5, "Class_B": 0.7, "Class_C": 0.2}}
+    }
+
+    # Now check that the code under test correctly adds new data to performance json file.
+    a = [0.9, 0.9, 0.9]
+    test_series = pandas.Series(a, index=["Class_A", "Class_B", "Class_C"])
+    update_performance_json(
+        base_dir=tmp_path, version="versionX.Y.Z2", label="F1", performance=test_series
+    )
+
+    with open(str(performance_json_path), "r") as file_obj:
+        file_contents = json.load(file_obj)
+    assert file_contents == {
+        "versionX.Y.Z": {"F1": {"Class_A": 0.5, "Class_B": 0.7, "Class_C": 0.2}},
+        "versionX.Y.Z2": {"F1": {"Class_A": 0.9, "Class_B": 0.9, "Class_C": 0.9}},
     }
