@@ -382,7 +382,7 @@ def get_average_individual_classification_metrics(
         showindex="always",
         tablefmt="pretty",
     )
-    output_path = base_dir / RESULTS_FOLDER / f"{dataset_prefix}_classification_f1_summary.txt"
+    output_path = base_dir / PERFORMANCE_FOLDER / f"{dataset_prefix}_classification_f1_summary.txt"
     with open(str(output_path), "w") as file_out:
         file_out.write(tbl_str)
 
