@@ -57,13 +57,13 @@ def test_copy_recursive_images_and_yolo_annotations_by_cropped_image_reference()
     copy_images_recursive_inc_yolo_annotations_by_reference_dir(
         reference_dir=Path(
             # "/home/david/RACAS/CT_Errors_10pcnt/CT_EB_D40_Cracking_hard_pos"
-            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_stripping__srd17.1_conf7pcnt",
+            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_potholes__srd18.3_conf5pcnt",
         ),
         original_images_dir=Path(
-            "/home/david/RACAS/640_x_640/CTRC_Stripping_9_plus"
+            "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed"
         ),
         dst_sample_dir=Path(
-            "/home/david/RACAS/640_x_640/Charters_Towers_Stripping"
+            "/home/david/RACAS/640_x_640/CT_D40_SD"
         ),
         num=None,
         move=False,
@@ -352,5 +352,5 @@ def test_signs():
 def test_add_unique():
     add_subset_folder_unique_images_only(
         existing_dataset_root=Path("/home/david/RACAS/sealed_roads_dataset"),
-        src_new_images=Path("/home/david/RACAS/640_x_640/CT_EB_D40_Cracking_hard_pos")
+        src_new_images=Path("/home/david/RACAS/640_x_640/CT_D40_SD")
     )
