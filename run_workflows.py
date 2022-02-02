@@ -74,10 +74,12 @@ def test_errors():
 
 
 def test_performance_metrics_for_charters_towers():
-    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/CTRC_all_sealed.csv")
+    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/.shapefile_data/CTRC_all_sealed.csv")
+    run_name = "Charters_Towers__srd19.1_conf10pcnt"
     inferences_path = Path(
-            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers__srd16.3_conf7pcnt/labels"
-        )
+        f"/home/david/addn_repos/yolov5/runs/detect/{run_name}/labels"
+    )
+    images_root = Path("/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed")
     csv_group_filters = {
         "Cracking": ["Cracking"],
         "Pothole": ["POTHOLE", "pothole", "Potholes"],
@@ -94,7 +96,7 @@ def test_performance_metrics_for_charters_towers():
         classes_info = json.load(f_in)
     print()
     get_classification_performance(
-        images_root=Path("/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed"),
+        images_root=images_root,
         truths_csv=truths_csv,
         root_inferred_bounding_boxes=inferences_path,
         csv_group_filters=csv_group_filters,
@@ -108,14 +110,15 @@ def test_performance_metrics_for_charters_towers():
 
 def test_arrange_images_per_classification_errors():
     every_n_th = 10
-    dst_folder_fp = Path("/home/david/RACAS/CT_Errors_10pcnt/fp_sev_8")
-    dst_folder_fn = Path("/home/david/RACAS/CT_Errors_10pcnt/fn_sev_8")
-    images_root = Path("/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd16.3_conf7pcnt")  # "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed")
-    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/CTRC_all_sealed.csv")
+    dst_folder_fp = Path("/home/david/RACAS/CT_Errors_19_1/fp_sev_8")
+    dst_folder_fn = Path("/home/david/RACAS/CT_Errors_19_1/fn_sev_8")
+    images_root = Path("/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed")  # "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd18.3_conf5pcnt")  #
+    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/.shapefile_data/CTRC_all_sealed.csv")
+    run_name = "Charters_Towers__srd19.1_conf10pcnt"
     inferences_path = Path(
-            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd16.3_conf7pcnt/labels"
+            f"/home/david/addn_repos/yolov5/runs/detect/{run_name}/labels"
         )
-    boxed_images = Path("/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd16.3_conf7pcnt")
+    boxed_images = Path(f"/home/david/addn_repos/yolov5/runs/detect/{run_name}")
 
     csv_group_filters = {
         "Cracking": ["Cracking"],
@@ -124,7 +127,7 @@ def test_arrange_images_per_classification_errors():
         "Stripping": ["Stripping", "Strip", "Failure"]
     }
     yolo_group_filters = {
-        "Cracking": [0, 1, 2, 16],
+        "Cracking": [0, 1, 2, 16, 6],  # #6=Rutting which often has cracks
         "Pothole": [3],
         "Edge Break": [4],
         "Stripping": [17, 12],  # Scf = 12; Stp = 17.

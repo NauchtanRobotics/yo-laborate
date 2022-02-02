@@ -59,8 +59,20 @@ LABEL_MAPPING = {
         "colour": ORANGE,
         "label": "",
     },
+    "5": {
+        "colour": GREEN,
+        "label": "",
+    },
+    "6": {
+        "colour": GREEN,
+        "label": "",
+    },
     "10": {
         "colour": GREEN,
+        "label": "",
+    },
+    "11": {
+        "colour": ORANGE,
         "label": "",
     },
     "12": {
@@ -71,8 +83,8 @@ LABEL_MAPPING = {
         "colour": ORANGE,
         "label": "",
     },
-    "5": {
-        "colour": GREEN,
+    "17": {
+        "colour": ORANGE,
         "label": "",
     },
 }
