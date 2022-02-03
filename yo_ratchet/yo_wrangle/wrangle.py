@@ -789,10 +789,7 @@ def add_subset_folder_unique_images_only(
     dst_root: Path = existing_dataset_root / src_new_images.name
     (dst_root / YOLO_ANNOTATIONS_FOLDER_NAME).mkdir(parents=True, exist_ok=True)
     existing_image_paths = get_all_jpg_recursive(img_root=existing_dataset_root)
-    existing_image_names = [
-        image_path.name
-        for image_path in existing_image_paths
-    ]
+    existing_image_names = [image_path.name for image_path in existing_image_paths]
 
     fresh_images_available_paths = list(get_all_jpg_recursive(img_root=src_new_images))
 
@@ -801,7 +798,9 @@ def add_subset_folder_unique_images_only(
             continue
         new_image_path = dst_root / image_path.name
         annotation_name = f"{image_path.stem}.txt"
-        src_annotation_path = image_path.parent / YOLO_ANNOTATIONS_FOLDER_NAME / annotation_name
+        src_annotation_path = (
+            image_path.parent / YOLO_ANNOTATIONS_FOLDER_NAME / annotation_name
+        )
         dst_annotation_path = dst_root / YOLO_ANNOTATIONS_FOLDER_NAME / annotation_name
         shutil.copy(src=str(image_path), dst=str(new_image_path))
         if src_annotation_path.exists():

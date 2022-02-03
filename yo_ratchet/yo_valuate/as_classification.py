@@ -355,7 +355,11 @@ def get_average_individual_classification_metrics(
 
         f1_scores.append(df.loc[[F1]])
         confidences.append(df.loc[["@conf"]])
-        output_path = base_dir / RESULTS_FOLDER / f"{dataset_label}_performance_for_optimum_conf.txt"
+        output_path = (
+            base_dir
+            / RESULTS_FOLDER
+            / f"{dataset_label}_performance_for_optimum_conf.txt"
+        )
         save_binary_and_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
@@ -370,7 +374,9 @@ def get_average_individual_classification_metrics(
 
     new_df = pandas.DataFrame()
     new_df[F1] = f1_mean = df.mean(axis=0)
-    update_performance_json(base_dir, version=dataset_prefix, label=F1, performance=f1_mean)
+    update_performance_json(
+        base_dir, version=dataset_prefix, label=F1, performance=f1_mean
+    )
     new_df["min"] = df.min(axis=0)
     new_df["max"] = df.max(axis=0)
     new_df["conf_min"] = df_conf.min(axis=0)
@@ -382,12 +388,18 @@ def get_average_individual_classification_metrics(
         showindex="always",
         tablefmt="pretty",
     )
-    output_path = base_dir / PERFORMANCE_FOLDER / f"{dataset_prefix}_classification_f1_summary.txt"
+    output_path = (
+        base_dir
+        / PERFORMANCE_FOLDER
+        / f"{dataset_prefix}_classification_f1_summary.txt"
+    )
     with open(str(output_path), "w") as file_out:
         file_out.write(tbl_str)
 
 
-def update_performance_json(base_dir: Path, version: str, label: str, performance: pandas.Series):
+def update_performance_json(
+    base_dir: Path, version: str, label: str, performance: pandas.Series
+):
     (base_dir / PERFORMANCE_FOLDER).mkdir(exist_ok=True)
     output_path = base_dir / PERFORMANCE_FOLDER / F1_PERFORMANCE_JSON
     if output_path.exists():

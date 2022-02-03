@@ -23,14 +23,15 @@ def test_init_fifty_one_dataset():
         pass
     init_fifty_one_dataset(
         dataset_label=dataset_label,
-        classes_map=label_mapping,
-        images_root=(
-                TEST_DATA_ROOT / "datasets/bbox_collation_7_split/train/images"
-        ),
-        ground_truths_root=(
-                TEST_DATA_ROOT / "datasets/bbox_collation_7_split/train/labels"
-        ),
         val_inferences_root=(
-                TEST_DATA_ROOT / "runs/detect/Coll_7_train_Collation_7_scale40pcnt_10conf/labels"
+            TEST_DATA_ROOT
+            / "runs/detect/Coll_7_train_Collation_7_scale40pcnt_10conf/labels"
         ),
+        train_inferences_root=None,
+        classes_map=label_mapping,
+        images_root=(TEST_DATA_ROOT / "datasets/bbox_collation_7_split/train/images"),
+        ground_truths_root=(
+            TEST_DATA_ROOT / "datasets/bbox_collation_7_split/train/labels"
+        ),
+        candidate_subset=None,
     )

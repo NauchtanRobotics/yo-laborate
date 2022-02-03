@@ -12,7 +12,11 @@ from yo_ratchet.workflow import (
     run_find_errors,
 )
 import wrangling_example as dataset_workbook
-from yo_valuate.reference_csv import get_classification_performance, get_actual_vs_inferred_df, get_severity_dict
+from yo_valuate.reference_csv import (
+    get_classification_performance,
+    get_actual_vs_inferred_df,
+    get_severity_dict,
+)
 
 
 def test_prepare_dataset_and_train():
@@ -74,7 +78,9 @@ def test_errors():
 
 
 def test_performance_metrics_for_charters_towers():
-    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/.shapefile_data/CTRC_all_sealed.csv")
+    truths_csv = Path(
+        "/home/david/RACAS/sealed_roads_dataset/.shapefile_data/CTRC_all_sealed.csv"
+    )
     run_name = "Charters_Towers__srd19.1_conf10pcnt"
     inferences_path = Path(
         f"/home/david/addn_repos/yolov5/runs/detect/{run_name}/labels"
@@ -84,7 +90,7 @@ def test_performance_metrics_for_charters_towers():
         "Cracking": ["Cracking"],
         "Pothole": ["POTHOLE", "pothole", "Potholes"],
         "Edge Break": ["Edge"],
-        "Stripping": ["Stripping", "Strip", "Failure"]
+        "Stripping": ["Stripping", "Strip", "Failure"],
     }
     yolo_group_filters = {
         "Cracking": [0, 1, 2, 16],
@@ -112,19 +118,23 @@ def test_arrange_images_per_classification_errors():
     every_n_th = 10
     dst_folder_fp = Path("/home/david/RACAS/CT_Errors_19_1/fp_sev_8")
     dst_folder_fn = Path("/home/david/RACAS/CT_Errors_19_1/fn_sev_8")
-    images_root = Path("/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed")  # "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd18.3_conf5pcnt")  #
-    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/.shapefile_data/CTRC_all_sealed.csv")
+    images_root = Path(
+        "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed"
+    )  # "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_errors__srd18.3_conf5pcnt")  #
+    truths_csv = Path(
+        "/home/david/RACAS/sealed_roads_dataset/.shapefile_data/CTRC_all_sealed.csv"
+    )
     run_name = "Charters_Towers__srd19.1_conf10pcnt"
     inferences_path = Path(
-            f"/home/david/addn_repos/yolov5/runs/detect/{run_name}/labels"
-        )
+        f"/home/david/addn_repos/yolov5/runs/detect/{run_name}/labels"
+    )
     boxed_images = Path(f"/home/david/addn_repos/yolov5/runs/detect/{run_name}")
 
     csv_group_filters = {
         "Cracking": ["Cracking"],
         "Pothole": ["POTHOLE", "pothole", "Potholes"],
         "Edge Break": ["Edge"],
-        "Stripping": ["Stripping", "Strip", "Failure"]
+        "Stripping": ["Stripping", "Strip", "Failure"],
     }
     yolo_group_filters = {
         "Cracking": [0, 1, 2, 16, 6],  # #6=Rutting which often has cracks
@@ -151,7 +161,9 @@ def test_arrange_images_per_classification_errors():
         classifications_key="Final_Remedy",
     )
     true_positive = true_negative = 0
-    severity_dict = get_severity_dict(truths_csv=truths_csv, image_name_key="Photo_Name")
+    severity_dict = get_severity_dict(
+        truths_csv=truths_csv, image_name_key="Photo_Name"
+    )
     count = 0
     for index, row in df.iterrows():
         count += 1
@@ -170,12 +182,20 @@ def test_arrange_images_per_classification_errors():
             for el in false_negative:
                 class_name = keys[el]
                 severity = severity_dict[image_name]
-                shutil.copy(src=str(boxed_images / image_name), dst=str(dst_folder_fn / str(severity) / class_name / image_name))
+                shutil.copy(
+                    src=str(boxed_images / image_name),
+                    dst=str(dst_folder_fn / str(severity) / class_name / image_name),
+                )
         false_positive = numpy.logical_and(comparison, inferred).nonzero()[0]
-        if len(false_positive) > 0:  # There is a disagreement either False Positive or False Negative
+        if (
+            len(false_positive) > 0
+        ):  # There is a disagreement either False Positive or False Negative
             for el in false_positive:
                 class_name = keys[el]
-                shutil.copy(src=str(boxed_images / image_name), dst=str(dst_folder_fp / class_name / image_name))
+                shutil.copy(
+                    src=str(boxed_images / image_name),
+                    dst=str(dst_folder_fp / class_name / image_name),
+                )
     print()
     print(f"True Positive = ", true_positive)
     print(f"True Negative = ", true_negative)
