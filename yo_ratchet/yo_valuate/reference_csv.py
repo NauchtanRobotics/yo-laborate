@@ -159,8 +159,7 @@ def get_severity_dict(truths_csv: Path, image_name_key: str = "Photo_Name"):
     )
     classifications = classifications.fillna("")
     classifications["severity"] = classifications.apply(
-        lambda x: int(x["D2_Side"].split(",")[0].strip())
-        if x["D2_Side"] != "" else 10,
+        lambda x: int(x["D2_Side"].split(",")[0].strip()) if x["D2_Side"] != "" else 10,
         axis=1,
     )
     severity_dict = {}
