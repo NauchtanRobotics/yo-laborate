@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional, Tuple
 
+from dataset_versioning.version import is_minor_absent
 from yo_ratchet.yo_wrangle.common import get_config_items
 
 GET_TAG_HASH_CMD = ["git", "rev-list", "--tags", "--max-count=1"]
@@ -46,19 +47,22 @@ def get_path_for_best_pretrained_model(base_dir: Path) -> Tuple[Path, bool]:
     of epochs will depend on a number of factors... so use judgement
     when using this function.
 
-    More work is required in this function to ensure that it meets the
-    'best' criteria.
+    A data analyst/scientist can trigger full retraining from epoch 0 by
+    removing the patch and minor part of the version in pyproject.toml file.
+    This is advisable upon changes to the classes list / or major shifts in
+    the boundaries there-between as fine tuning would be insufficient in
+    such a context.
 
     """
     tag_text = get_highest_tag_text(base_dir=base_dir)
-    if tag_text is not None:
+    if is_minor_absent(base_dir=base_dir) or tag_text is None:
+        (_, _, _, weights_path, _, _, _) = get_config_items(base_dir=base_dir)
+        fine_tune = False
+    else:
         weights_path = get_model_path_corresponding_to_tag(
             base_dir=base_dir, tag_text=tag_text
         )
         fine_tune = True
-    else:
-        (_, _, _, weights_path, _, _, _) = get_config_items(base_dir=base_dir)
-        fine_tune = False
     return weights_path, fine_tune
 
 

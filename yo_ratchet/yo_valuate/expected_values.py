@@ -123,7 +123,9 @@ def get_moving_average_for_combined_expectation_from_multiple_classes(
     class_ids: List[int],
     span: int,
     metric: str = COUNT_STR,
-):
+    index_column_name: Optional[str] = "Photo_Name",
+    image_reference_key: str = "Photo_Name",
+) -> pandas.Series:
     result_columns = []
     for class_id in class_ids:
         target_column = f"class_{str(class_id)}"
@@ -133,12 +135,12 @@ def get_moving_average_for_combined_expectation_from_multiple_classes(
             df_inferences=df_inference,
             class_id=class_id,
             metric=metric,
-            image_reference_key="Photo_Name",
+            image_reference_key=image_reference_key,
             result_column_name=target_column,
         )
     result = "combined_expectation"
     df[result] = df[result_columns].sum(axis=1, skipna=True)
     moving_average = get_moving_average_for_target_column(
-        df=df, span=span, index_column=None, target_column=result
+        df=df, span=span, index_column=index_column_name, target_column=result
     )
     return moving_average
