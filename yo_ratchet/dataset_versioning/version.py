@@ -60,6 +60,14 @@ def is_major_version(base_dir: Path) -> bool:
         return False
 
 
+def is_minor_absent(base_dir: Path) -> bool:
+    version_split = get_version(base_dir=base_dir).split(".")
+    if len(version_split) > 1:
+        return False
+    else:
+        return True
+
+
 def get_repository_abbreviation(base_dir: Path) -> str:
     name = base_dir.name
     if "-" in name:
