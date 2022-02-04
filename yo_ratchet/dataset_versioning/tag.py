@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional, Tuple
 
-from dataset_versioning.version import is_minor_absent
+from yo_ratchet.dataset_versioning.version import is_minor_absent
 from yo_ratchet.yo_wrangle.common import get_config_items
 
 GET_TAG_HASH_CMD = ["git", "rev-list", "--tags", "--max-count=1"]
