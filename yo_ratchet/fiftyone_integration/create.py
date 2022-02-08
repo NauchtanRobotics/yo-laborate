@@ -243,6 +243,7 @@ def init_fifty_one_dataset(
             export_dir=f"./.export/{dataset_label}",
             dataset_type=fo.types.FiftyOneDataset,
             export_media=False,
+            rel_dir=str(dataset_root),
         )
 
 
@@ -346,6 +347,7 @@ def init_fifty_one_dataset_for_cross_validation_combinations(
             export_dir=f"./.export/{dataset_label}",
             dataset_type=fo.types.FiftyOneDataset,
             export_media=False,
+            rel_dir=str(dataset_root),
         )
 
 
