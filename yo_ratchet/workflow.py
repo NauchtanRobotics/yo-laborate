@@ -20,7 +20,7 @@ from yo_ratchet.yo_wrangle.common import (
     inferred_base_dir,
     get_classes_list,
 )
-from yo_ratchet.yo_wrangle.wrangle import (
+from yo_ratchet.modelling import (
     run_detections,
     prepare_dataset_and_train,
     reverse_train,
@@ -40,7 +40,7 @@ DST_ROOT = Path()
 CONF = 0.05
 CONF_PCNT = int(CONF * 100)
 TEST_SET_LABEL = ""
-BASE_DIR = None
+BASE_DIR = Path()
 GROUPINGS = {}
 
 SUBSETS_INCLUDED = []
