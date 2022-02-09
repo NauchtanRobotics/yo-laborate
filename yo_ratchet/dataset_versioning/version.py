@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 from open_labeling.launcher import POETRY_APP
 
@@ -41,20 +42,30 @@ def get_version(base_dir: Path) -> str:
     return res
 
 
-def get_minor(base_dir: Path) -> int:
-    minor = get_version(base_dir=base_dir).split(".")[1]
-    return int(minor)
+def get_minor(base_dir: Path) -> Optional[int]:
+    version = get_version(base_dir=base_dir).split(".")
+    if len(version) > 1:
+        return int(version[1])
+    else:
+        return None
 
 
-def get_patch(base_dir: Path) -> int:
-    patch = get_version(base_dir=base_dir).split(".")[2]
-    return int(patch)
+def get_patch(base_dir: Path) -> Optional[int]:
+    version = get_version(base_dir=base_dir).split(".")
+    if len(version) > 2:
+        return int(version[2])
+    else:
+        return None
 
 
 def is_major_version(base_dir: Path) -> bool:
     minor = get_minor(base_dir=base_dir)
     patch = get_patch(base_dir=base_dir)
-    if minor == 0 and patch == 0:
+    if minor is None:
+        return True
+    elif minor == 0 and patch is None:
+        return True
+    elif minor == 0 and patch == 0:
         return True
     else:
         return False

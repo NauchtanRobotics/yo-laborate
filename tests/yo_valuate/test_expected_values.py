@@ -225,10 +225,7 @@ def test_get_moving_average_combined_score(custom_df, inference_df_2):
     df = custom_df.copy()
     span = 3
     moving_average = get_moving_average_for_combined_expectation_from_multiple_classes(
-        df=df,
-        df_inference=inference_df_2,
-        class_ids=class_ids,
-        span=span
+        df=df, df_inference=inference_df_2, class_ids=class_ids, span=span
     )
     result = [round(el, 4) for el in moving_average.tolist()]
     assert result == [0.5, 0.4, 0.1667]
