@@ -5,3 +5,5 @@ __pycache__/
 dist/
 config.ini
 classes.json
+.results/*
+.performance/*
