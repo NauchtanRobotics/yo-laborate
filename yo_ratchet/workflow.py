@@ -26,7 +26,7 @@ from yo_ratchet.modelling import (
     reverse_train,
 )
 from yo_ratchet.yo_valuate.as_classification import (
-    save_binary_and_group_classification_performance,
+    binary_and_group_classification_performance,
     get_average_individual_classification_metrics,
 )
 
@@ -139,7 +139,7 @@ def run_prepare_dataset_and_train(
         device=0,
     )
     output_filename = f"{model_label}_forward_performance_conf{CONF_PCNT}pcnt.txt"
-    save_binary_and_group_classification_performance(
+    binary_and_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
@@ -187,7 +187,7 @@ def run_reverse_train(init_fiftyone: bool = True):
         conf_thres=CONF,
         device=1,
     )
-    table_str = save_binary_and_group_classification_performance(
+    table_str = binary_and_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
@@ -284,6 +284,7 @@ def cross_validation_combinations_training(base_dir: Path):
     get_average_individual_classification_metrics(
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
+        groupings=GROUPINGS,
     )
 
 

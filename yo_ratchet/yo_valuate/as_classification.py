@@ -272,7 +272,7 @@ def optimise_model_binary_metrics_for_groups(
     return df
 
 
-def save_binary_and_group_classification_performance(
+def binary_and_group_classification_performance(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
@@ -296,26 +296,27 @@ def save_binary_and_group_classification_performance(
         tablefmt="pretty",
     )
     table_str += "\n"
-    df = optimise_model_binary_metrics_for_groups(
-        images_root=images_root,
-        root_ground_truths=root_ground_truths,
-        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
-        classes_map=classes_map,
-        groupings=groupings,
-        dst_csv=None,
-    )
-    table_str += "\n"
-    table_str += tabulate(
-        df.transpose(),
-        headers="keys",
-        showindex="always",
-        tablefmt="pretty",
-    )
+    if groupings:
+        df = optimise_model_binary_metrics_for_groups(
+            images_root=images_root,
+            root_ground_truths=root_ground_truths,
+            root_inferred_bounding_boxes=root_inferred_bounding_boxes,
+            classes_map=classes_map,
+            groupings=groupings,
+            dst_csv=None,
+        )
+        table_str += "\n"
+        table_str += tabulate(
+            df.transpose(),
+            headers="keys",
+            showindex="always",
+            tablefmt="pretty",
+        )
     if output_path:
         with open(str(output_path), "w") as file_out:
             file_out.write(table_str)
     else:
-        pass
+        print(table_str)
     return table_str
 
 
@@ -323,6 +324,7 @@ def get_average_individual_classification_metrics(
     base_dir: Path,
     dataset_prefix: str,  # E.g. 14.4  - do not include patch
     print_table: bool = False,
+    groupings: Dict[str, List[int]] = None,
 ):
     from yo_ratchet.workflow import K_FOLDS, CONF_PCNT  # To prevent circular references
 
@@ -360,12 +362,12 @@ def get_average_individual_classification_metrics(
             / RESULTS_FOLDER
             / f"{dataset_label}_performance_for_optimum_conf.txt"
         )
-        save_binary_and_group_classification_performance(
+        binary_and_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
             root_inferred_bounding_boxes=inferences_path,
             classes_map=classes_map,
-            groupings={"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 16]},
+            groupings=groupings,
             output_path=output_path,
         )
 

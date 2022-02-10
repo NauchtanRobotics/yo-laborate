@@ -8,7 +8,7 @@ from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
 from yo_ratchet.yo_wrangle.common import get_config_items
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
-from yo_valuate.as_classification import RESULTS_FOLDER
+from yo_ratchet.yo_valuate.as_classification import RESULTS_FOLDER
 
 
 def prepare_dataset_and_train(
