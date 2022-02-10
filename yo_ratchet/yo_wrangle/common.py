@@ -32,6 +32,9 @@ GREEN = "green"
 RED = "red"
 PURPLE = "purple"
 
+RESULTS_FOLDER = ".results"
+PERFORMANCE_FOLDER = ".performance"
+
 
 def get_all_jpg_recursive(img_root: Optional[Path]) -> Iterable[Path]:
     if img_root.exists():
@@ -206,3 +209,19 @@ def inferred_base_dir() -> Path:
             f"Path: {str(tentative_dir)}"
         )
         return tentative_dir
+
+
+def save_output_to_text_file(
+    content: str,
+    base_dir: Path,
+    file_name: str,
+    commit: bool = False,
+):
+    if commit:
+        folder_name = PERFORMANCE_FOLDER
+    else:
+        folder_name = RESULTS_FOLDER
+    output_path = base_dir / folder_name / file_name
+    output_path.parent.mkdir(exist_ok=True)
+    with open(str(output_path), "w") as file_out:
+        file_out.write(content)

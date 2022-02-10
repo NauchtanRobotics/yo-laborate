@@ -10,7 +10,7 @@ from pathlib import Path
 from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     get_id_to_label_map,
-    get_config_items,
+    get_config_items, PERFORMANCE_FOLDER, save_output_to_text_file, RESULTS_FOLDER,
 )
 
 F1 = "F1"
@@ -38,8 +38,6 @@ CONF_TEST_LEVELS = [
     0.7,
 ]
 
-RESULTS_FOLDER = ".results"
-PERFORMANCE_FOLDER = ".performance"
 F1_PERFORMANCE_JSON = "f1_performance.json"
 
 
@@ -390,13 +388,8 @@ def get_average_individual_classification_metrics(
         showindex="always",
         tablefmt="pretty",
     )
-    output_path = (
-        base_dir
-        / PERFORMANCE_FOLDER
-        / f"{dataset_prefix}_classification_f1_summary.txt"
-    )
-    with open(str(output_path), "w") as file_out:
-        file_out.write(tbl_str)
+    output_file = f"{dataset_prefix}_classification_f1_summary.txt"
+    save_output_to_text_file(content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True)
 
 
 def update_performance_json(
