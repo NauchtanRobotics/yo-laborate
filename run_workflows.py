@@ -12,11 +12,16 @@ from yo_ratchet.workflow import (
     run_find_errors,
 )
 import wrangling_example as dataset_workbook
+from yo_valuate.as_classification import (
+    binary_and_group_classification_performance,
+    classification_metrics_for_cross_validation_set,
+)
 from yo_valuate.reference_csv import (
     get_classification_performance,
     get_actual_vs_inferred_df,
     get_severity_dict,
 )
+from yo_wrangle.common import get_id_to_label_map, get_config_items
 
 
 def test_prepare_dataset_and_train():
@@ -200,3 +205,34 @@ def test_arrange_images_per_classification_errors():
     print(f"True Positive = ", true_positive)
     print(f"True Negative = ", true_negative)
     print("Count = ", count)
+
+
+def test_group_performance():
+    _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
+        base_dir=Path(__file__).parent
+    )
+    yolo_root = Path(yolo_root)
+    detect_images_root = yolo_root / "datasets" / "srd20.1.1" / "val" / "images"
+    ground_truth_path = yolo_root / "datasets" / "srd20.1.1" / "val" / "labels"
+    inferences_path = (
+        yolo_root / "runs/detect/srd20.1.1_val__srd20.1.1_conf5pcnt/labels"
+    )
+    classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
+
+    binary_and_group_classification_performance(
+        images_root=detect_images_root,
+        root_ground_truths=ground_truth_path,
+        root_inferred_bounding_boxes=inferences_path,
+        classes_map=classes_map,
+        groupings=dataset_workbook.GROUPINGS,
+        base_dir=None,
+    )
+
+
+def test_optimise_conf():
+    cross_validation_prefix = "srd20.1"
+    classification_metrics_for_cross_validation_set(
+        dataset_prefix=cross_validation_prefix,
+        base_dir=Path(__file__).parent,
+        groupings=dataset_workbook.GROUPINGS,
+    )
