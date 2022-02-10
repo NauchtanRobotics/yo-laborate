@@ -6,7 +6,7 @@ import pandas
 import pytest
 
 from yo_ratchet.yo_valuate.as_classification import (
-    optimise_model_binary_metrics_for_groups,
+    get_groups_classification_metrics,
     _optimise_analyse_model_binary_metrics,
     update_performance_json,
     PERFORMANCE_FOLDER,
@@ -44,7 +44,7 @@ def test_analyse_model_binary_metrics_for_groups():
     root_ground_truths = ROOT_TEST_DATA / "filter_yolo"
     root_inferences = ROOT_TEST_DATA / "classification" / "labels"
 
-    df = optimise_model_binary_metrics_for_groups(
+    df = get_groups_classification_metrics(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
         root_inferred_bounding_boxes=root_inferences,

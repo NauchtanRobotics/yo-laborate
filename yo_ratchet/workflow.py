@@ -20,14 +20,14 @@ from yo_ratchet.yo_wrangle.common import (
     inferred_base_dir,
     get_classes_list,
 )
-from yo_ratchet.yo_wrangle.wrangle import (
+from yo_ratchet.modelling import (
     run_detections,
     prepare_dataset_and_train,
     reverse_train,
 )
 from yo_ratchet.yo_valuate.as_classification import (
-    save_binary_and_group_classification_performance,
-    get_average_individual_classification_metrics,
+    binary_and_group_classification_performance,
+    classification_metrics_for_cross_validation_set,
 )
 
 K_FOLDS = 6
@@ -40,7 +40,7 @@ DST_ROOT = Path()
 CONF = 0.05
 CONF_PCNT = int(CONF * 100)
 TEST_SET_LABEL = ""
-BASE_DIR = None
+BASE_DIR = Path()
 GROUPINGS = {}
 
 SUBSETS_INCLUDED = []
@@ -139,14 +139,14 @@ def run_prepare_dataset_and_train(
         device=0,
     )
     output_filename = f"{model_label}_forward_performance_conf{CONF_PCNT}pcnt.txt"
-    save_binary_and_group_classification_performance(
+    binary_and_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
         classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
-        output_path=Path(output_filename).resolve(),
+        base_dir=Path(output_filename).resolve(),
     )
 
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
@@ -187,7 +187,7 @@ def run_reverse_train(init_fiftyone: bool = True):
         conf_thres=CONF,
         device=1,
     )
-    table_str = save_binary_and_group_classification_performance(
+    table_str = binary_and_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
@@ -281,9 +281,10 @@ def cross_validation_combinations_training(base_dir: Path):
         candidate_subset=None,
         export_to_json=True,
     )
-    get_average_individual_classification_metrics(
+    classification_metrics_for_cross_validation_set(
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
+        groupings=GROUPINGS,
     )
 
 

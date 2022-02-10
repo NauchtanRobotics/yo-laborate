@@ -11,9 +11,15 @@ from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     get_id_to_label_map,
     get_config_items,
+    PERFORMANCE_FOLDER,
+    save_output_to_text_file,
+    RESULTS_FOLDER,
 )
 
+RECALL = "R"
+PRECISION = "P"
 F1 = "F1"
+CONF_MIN_STR = "conf_min"
 
 CONF_TEST_LEVELS = [
     0.1,
@@ -38,8 +44,6 @@ CONF_TEST_LEVELS = [
     0.7,
 ]
 
-RESULTS_FOLDER = ".results"
-PERFORMANCE_FOLDER = ".performance"
 F1_PERFORMANCE_JSON = "f1_performance.json"
 
 
@@ -106,9 +110,9 @@ def get_truth_vs_inferred_dict_by_photo(
 def _get_classification_metrics_for_group(
     df: pandas.DataFrame,
     idxs: List[int],
+    optimised_thresholds: Dict[int, float],
     to_console: bool = False,
-    confidence_level: float = 0.35,
-) -> Tuple[float, float, float, float, float]:
+) -> Tuple[float, float, float, float]:
     """
     Given a dataframe that contains a list of actual classifications, and
     a list of inferred classification for each image, returns
@@ -126,11 +130,12 @@ def _get_classification_metrics_for_group(
     count = y_truths.size
     assert count == y_inferences.size
 
-    group_truths = numpy.array([False for i in range(count)])
-    group_inferences = numpy.array([False for i in range(count)])
+    group_truths = numpy.array([False for _ in range(count)])
+    group_inferences = numpy.array([False for _ in range(count)])
     for i, idx in enumerate(idxs):
         confidences = numpy.array([y[idx] for y in y_confidences])
-        cond = confidences >= confidence_level
+        threshold = optimised_thresholds[int(idx)]
+        cond = confidences >= threshold
         inferences = numpy.array([y[idx] for y in y_inferences])
         truths = numpy.array([y[idx] for y in y_truths])
         re_inferences = inferences & cond
@@ -177,41 +182,17 @@ def _get_classification_metrics_for_group(
         print("Accuracy:  {:.1f}".format(accuracy * 100))
         print("\n")
 
-    return precision, recall, f1, accuracy, confidence_level
+    return precision, recall, f1, accuracy
 
 
-def _get_binary_classification_metrics_for_idx(
-    df: pandas.DataFrame,
-    idx: int,
-    to_console: bool = False,
-    confidence_level: float = 0.15,
-) -> Tuple[float, float, float, float, float]:
-    """
-    A simple interface for binary metrics that passes through to the more
-    generalised function to assess model metrics.
-
-    """
-    if isinstance(idx, int):
-        idx = [idx]  # Convert to list
-    elif isinstance(idx, list):
-        pass  # This is okay too
-    else:
-        raise Exception("idx should be an int")
-    return _get_classification_metrics_for_group(
-        df=df, idxs=idx, to_console=to_console, confidence_level=confidence_level
-    )
-
-
-def optimise_model_binary_metrics_for_groups(
+def get_groups_classification_metrics(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
     classes_map: Dict[int, str],
-    groupings: Dict[
-        str, List[int]
-    ],  # E.g. {"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 11, 16]}
+    groupings: Dict[str, List[int]],
+    optimised_thresholds: Dict[int, float],
     dst_csv: Optional[Path] = None,
-    confidence_level: Optional[float] = None,
     print_table: bool = True,
 ) -> pandas.DataFrame:
     """
@@ -237,27 +218,16 @@ def optimise_model_binary_metrics_for_groups(
     )
     if dst_csv:
         df.to_csv(dst_csv, index=False)
-    if confidence_level is None:
-        confidence_levels = CONF_TEST_LEVELS
-    else:
-        confidence_levels = [confidence_level]
+
     results = {}
     for group_name, group_members in groupings.items():
-        f1_optimum = recall = precision = optimum_conf = 0
-        for confidence_level in confidence_levels:
-            p, r, f1, _, conf = _get_classification_metrics_for_group(
-                df=df, idxs=group_members, confidence_level=confidence_level
-            )
-            if f1 > f1_optimum:
-                recall = r
-                precision = p
-                f1_optimum = f1
-                optimum_conf = conf
+        p, r, f1, _ = _get_classification_metrics_for_group(
+            df=df, idxs=group_members, optimised_thresholds=optimised_thresholds
+        )
         results[group_name] = {
-            "P": "{:.2f}".format(precision),
-            "R": "{:.2f}".format(recall),
-            "F1": "{:.2f}".format(f1_optimum),
-            "@conf": "{:.2f}".format(optimum_conf),
+            "P": "{:.2f}".format(p),
+            "R": "{:.2f}".format(r),
+            "F1": "{:.2f}".format(f1),
         }
     df = pandas.DataFrame(results)
     if print_table:
@@ -272,14 +242,15 @@ def optimise_model_binary_metrics_for_groups(
     return df
 
 
-def save_binary_and_group_classification_performance(
+def binary_and_group_classification_performance(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
     classes_map: Dict[int, str],
     print_first_n: Optional[int] = None,
     groupings: Dict[str, List[int]] = None,
-    output_path: Path = None,
+    base_dir: Path = None,
+    dataset_label: str = None,
 ):
     df = optimise_analyse_model_binary_metrics(
         images_root=images_root,
@@ -296,52 +267,81 @@ def save_binary_and_group_classification_performance(
         tablefmt="pretty",
     )
     table_str += "\n"
-    df = optimise_model_binary_metrics_for_groups(
-        images_root=images_root,
-        root_ground_truths=root_ground_truths,
-        root_inferred_bounding_boxes=root_inferred_bounding_boxes,
-        classes_map=classes_map,
-        groupings=groupings,
-        dst_csv=None,
-    )
-    table_str += "\n"
-    table_str += tabulate(
-        df.transpose(),
-        headers="keys",
-        showindex="always",
-        tablefmt="pretty",
-    )
-    if output_path:
-        with open(str(output_path), "w") as file_out:
-            file_out.write(table_str)
+    thresholds = {
+        class_name: float(metrics_dict["@conf"])
+        for class_name, metrics_dict in df.to_dict().items()
+    }
+    conf_dict = {
+        i: conf_threshold for i, conf_threshold in enumerate(thresholds.values())
+    }
+    if groupings:
+        df = get_groups_classification_metrics(
+            images_root=images_root,
+            root_ground_truths=root_ground_truths,
+            root_inferred_bounding_boxes=root_inferred_bounding_boxes,
+            classes_map=classes_map,
+            groupings=groupings,
+            optimised_thresholds=conf_dict,
+            dst_csv=None,
+        )
+        table_str += "\n"
+        table_str += tabulate(
+            df.transpose(),
+            headers="keys",
+            showindex="always",
+            tablefmt="pretty",
+        )
+    if base_dir:
+        if dataset_label is None:
+            dataset_label = root_ground_truths.parents[1].name
+        file_name = f"{dataset_label}_performance_for_optimum_conf.txt"
+        save_output_to_text_file(
+            content=table_str, base_dir=base_dir, file_name=file_name, commit=False
+        )
     else:
-        pass
+        print(table_str)
     return table_str
 
 
-def get_average_individual_classification_metrics(
+def classification_metrics_for_cross_validation_set(
     base_dir: Path,
     dataset_prefix: str,  # E.g. 14.4  - do not include patch
     print_table: bool = False,
+    groupings: Dict[str, List[int]] = None,
 ):
+    """
+    Loops through cross_validation training and inferences data in the configured
+    yolo_root folder, and find the conf threshold which leads to the optimised
+    classification F1_score.
+
+    Does this individual for each cross validation part, and then calculates the
+    average results for the set of cross validation parts.
+
+    Saves the individual and averaged classification results for the cross validation
+    set of training and detection runs as pretty tables in text files.
+
+    Also serialises the average F1 and minimum optimum conf values in an accumulating
+    json file for use in plotting performance ratcheting over time (e.g in GUI
+    interface).
+
+    """
     from yo_ratchet.workflow import K_FOLDS, CONF_PCNT  # To prevent circular references
 
     _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
         base_dir=base_dir
     )
-
+    classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
     f1_scores = []
     confidences = []
     for i in range(K_FOLDS):
-        dataset_label = f"{dataset_prefix}.{str(i+1)}"
-        inferences_path = Path(
-            f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{CONF_PCNT}pcnt/labels"
-        ).resolve()
-        detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
-        ground_truth_path = Path(
-            f"{yolo_root}/datasets/{dataset_label}/val/labels"
-        ).resolve()
-        classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
+        dataset_label = f"{dataset_prefix}.{str(i + 1)}"
+        (
+            inferences_path,
+            detect_images_root,
+            ground_truth_path,
+        ) = get_paths_for_cross_validation_part(
+            yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=CONF_PCNT
+        )
         if print_table:
             print(f"\nDataset: {dataset_label}")
         df = optimise_analyse_model_binary_metrics(
@@ -355,18 +355,13 @@ def get_average_individual_classification_metrics(
 
         f1_scores.append(df.loc[[F1]])
         confidences.append(df.loc[["@conf"]])
-        output_path = (
-            base_dir
-            / RESULTS_FOLDER
-            / f"{dataset_label}_performance_for_optimum_conf.txt"
-        )
-        save_binary_and_group_classification_performance(
+        binary_and_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
             root_inferred_bounding_boxes=inferences_path,
             classes_map=classes_map,
-            groupings={"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 16]},
-            output_path=output_path,
+            groupings=groupings,
+            base_dir=base_dir,
         )
 
     df = pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float)
@@ -379,7 +374,13 @@ def get_average_individual_classification_metrics(
     )
     new_df["min"] = df.min(axis=0)
     new_df["max"] = df.max(axis=0)
-    new_df["conf_min"] = df_conf.min(axis=0)
+    new_df["conf_min"] = conf_min = df_conf.min(axis=0)
+    update_performance_json(
+        base_dir, version=dataset_prefix, label=CONF_MIN_STR, performance=conf_min
+    )
+    conf_thresholds = {
+        i: val for i, val in enumerate(df_conf.mean(axis=0).to_dict().values())
+    }
     new_df["conf_max"] = df_conf.max(axis=0)
     new_df = new_df.applymap(lambda x: round(x, 3))
     tbl_str = tabulate(
@@ -388,13 +389,100 @@ def get_average_individual_classification_metrics(
         showindex="always",
         tablefmt="pretty",
     )
-    output_path = (
-        base_dir
-        / PERFORMANCE_FOLDER
-        / f"{dataset_prefix}_classification_f1_summary.txt"
+    if groupings:
+        df = get_average_group_metrics_for_cv_set(
+            dataset_prefix=dataset_prefix,
+            yolo_root=yolo_root,
+            k_folds=K_FOLDS,
+            conf_pcnt=CONF_PCNT,
+            classes_map=classes_map,
+            groupings=groupings,
+            optimised_thresholds=conf_thresholds,
+        )
+        tbl_str += "\n"
+        tbl_str += tabulate(
+            df,
+            headers="keys",
+            showindex="always",
+            tablefmt="pretty",
+            floatfmt=".2f",
+        )
+    output_file = f"{dataset_prefix}_classification_f1_summary.txt"
+    save_output_to_text_file(
+        content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True
     )
-    with open(str(output_path), "w") as file_out:
-        file_out.write(tbl_str)
+
+
+def get_average_group_metrics_for_cv_set(
+    dataset_prefix: str,
+    yolo_root: str,
+    k_folds: int,
+    conf_pcnt: int,
+    classes_map: Dict[int, str],
+    groupings: Dict[str, List[int]],
+    optimised_thresholds: Dict[int, float],
+) -> pandas.DataFrame:
+    f1_scores = []
+    precision_scores = []
+    recall_scores = []
+    for i in range(k_folds):
+        dataset_label = f"{dataset_prefix}.{str(i + 1)}"
+        (
+            inferences_path,
+            images_path,
+            ground_truths_path,
+        ) = get_paths_for_cross_validation_part(
+            yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=conf_pcnt
+        )
+        df = get_groups_classification_metrics(
+            images_root=images_path,
+            root_ground_truths=ground_truths_path,
+            root_inferred_bounding_boxes=inferences_path,
+            classes_map=classes_map,
+            groupings=groupings,
+            optimised_thresholds=optimised_thresholds,
+            dst_csv=None,
+        )
+        f1_scores.append(df.loc[[F1]])
+        precision_scores.append(df.loc[[PRECISION]])
+        recall_scores.append(df.loc[[RECALL]])
+    precision_series = (
+        pandas.concat(precision_scores, axis=0, ignore_index=True)
+        .astype(float)
+        .mean(axis=0)
+    )
+    precision_series.name = PRECISION
+    recall_series = (
+        pandas.concat(recall_scores, axis=0, ignore_index=True)
+        .astype(float)
+        .mean(axis=0)
+    )
+    recall_series.name = RECALL
+    f1_scores_series = (
+        pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float).mean(axis=0)
+    )
+    f1_scores_series.name = F1
+    results_df = pandas.concat(
+        [precision_series, recall_series, f1_scores_series], axis=1
+    ).round(decimals=2)
+    return results_df
+
+
+def get_paths_for_cross_validation_part(
+    yolo_root: str, dataset_label: str, conf_pcnt: int
+) -> Tuple[Path, Path, Path]:
+    """
+    Using conventions, provides Pathlib paths to the root of the inference annotations files,
+    the root of the image paths and the root of the ground truth annotation files.
+    """
+    inferences_path = Path(
+        f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels"
+    ).resolve()
+    detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
+    ground_truth_path = Path(
+        f"{yolo_root}/datasets/{dataset_label}/val/labels"
+    ).resolve()
+    return inferences_path, detect_images_root, ground_truth_path
 
 
 def update_performance_json(
@@ -404,14 +492,18 @@ def update_performance_json(
     output_path = base_dir / PERFORMANCE_FOLDER / F1_PERFORMANCE_JSON
     if output_path.exists():
         with open(str(output_path), "r") as file_obj:
-            performance_dict = json.load(file_obj)
+            serialising_dict = json.load(file_obj)
     else:
-        performance_dict = {}
-    latest_performance = performance.to_dict()
-    latest_performance = {label: latest_performance}
-    performance_dict[version] = latest_performance
+        serialising_dict = {}
+    data_to_add_under_version = performance.to_dict()
+    existing_data_under_version = serialising_dict.get(version, None)
+    if existing_data_under_version:
+        version_dict = {**existing_data_under_version, label: data_to_add_under_version}
+    else:
+        version_dict = {label: data_to_add_under_version}
+    serialising_dict.update({version: version_dict})
     with open(str(output_path), "w") as file_obj:
-        json.dump(performance_dict, fp=file_obj, indent=4)
+        json.dump(serialising_dict, fp=file_obj, indent=4)
 
 
 def optimise_analyse_model_binary_metrics(
