@@ -10,10 +10,14 @@ from pathlib import Path
 from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     get_id_to_label_map,
-    get_config_items, PERFORMANCE_FOLDER, save_output_to_text_file, RESULTS_FOLDER,
+    get_config_items,
+    PERFORMANCE_FOLDER,
+    save_output_to_text_file,
+    RESULTS_FOLDER,
 )
 
 F1 = "F1"
+CONF_MIN_STR = "conf_min"
 
 CONF_TEST_LEVELS = [
     0.1,
@@ -104,9 +108,9 @@ def get_truth_vs_inferred_dict_by_photo(
 def _get_classification_metrics_for_group(
     df: pandas.DataFrame,
     idxs: List[int],
+    optimised_thresholds: Dict[int, float],
     to_console: bool = False,
-    confidence_level: float = 0.35,
-) -> Tuple[float, float, float, float, float]:
+) -> Tuple[float, float, float, float]:
     """
     Given a dataframe that contains a list of actual classifications, and
     a list of inferred classification for each image, returns
@@ -124,11 +128,12 @@ def _get_classification_metrics_for_group(
     count = y_truths.size
     assert count == y_inferences.size
 
-    group_truths = numpy.array([False for i in range(count)])
-    group_inferences = numpy.array([False for i in range(count)])
+    group_truths = numpy.array([False for _ in range(count)])
+    group_inferences = numpy.array([False for _ in range(count)])
     for i, idx in enumerate(idxs):
         confidences = numpy.array([y[idx] for y in y_confidences])
-        cond = confidences >= confidence_level
+        threshold = optimised_thresholds[int(idx)]
+        cond = confidences >= threshold
         inferences = numpy.array([y[idx] for y in y_inferences])
         truths = numpy.array([y[idx] for y in y_truths])
         re_inferences = inferences & cond
@@ -175,41 +180,17 @@ def _get_classification_metrics_for_group(
         print("Accuracy:  {:.1f}".format(accuracy * 100))
         print("\n")
 
-    return precision, recall, f1, accuracy, confidence_level
+    return precision, recall, f1, accuracy
 
 
-def _get_binary_classification_metrics_for_idx(
-    df: pandas.DataFrame,
-    idx: int,
-    to_console: bool = False,
-    confidence_level: float = 0.15,
-) -> Tuple[float, float, float, float, float]:
-    """
-    A simple interface for binary metrics that passes through to the more
-    generalised function to assess model metrics.
-
-    """
-    if isinstance(idx, int):
-        idx = [idx]  # Convert to list
-    elif isinstance(idx, list):
-        pass  # This is okay too
-    else:
-        raise Exception("idx should be an int")
-    return _get_classification_metrics_for_group(
-        df=df, idxs=idx, to_console=to_console, confidence_level=confidence_level
-    )
-
-
-def optimise_model_binary_metrics_for_groups(
+def get_groups_classification_metrics(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
     classes_map: Dict[int, str],
-    groupings: Dict[
-        str, List[int]
-    ],  # E.g. {"Risk Defects": [3, 4], "Cracking": [0, 1, 2, 11, 16]}
+    groupings: Dict[str, List[int]],
+    optimised_thresholds: Dict[int, float],
     dst_csv: Optional[Path] = None,
-    confidence_level: Optional[float] = None,
     print_table: bool = True,
 ) -> pandas.DataFrame:
     """
@@ -235,27 +216,16 @@ def optimise_model_binary_metrics_for_groups(
     )
     if dst_csv:
         df.to_csv(dst_csv, index=False)
-    if confidence_level is None:
-        confidence_levels = CONF_TEST_LEVELS
-    else:
-        confidence_levels = [confidence_level]
+
     results = {}
     for group_name, group_members in groupings.items():
-        f1_optimum = recall = precision = optimum_conf = 0
-        for confidence_level in confidence_levels:
-            p, r, f1, _, conf = _get_classification_metrics_for_group(
-                df=df, idxs=group_members, confidence_level=confidence_level
-            )
-            if f1 > f1_optimum:
-                recall = r
-                precision = p
-                f1_optimum = f1
-                optimum_conf = conf
+        p, r, f1, _ = _get_classification_metrics_for_group(
+            df=df, idxs=group_members, optimised_thresholds=optimised_thresholds
+        )
         results[group_name] = {
-            "P": "{:.2f}".format(precision),
-            "R": "{:.2f}".format(recall),
-            "F1": "{:.2f}".format(f1_optimum),
-            "@conf": "{:.2f}".format(optimum_conf),
+            "P": "{:.2f}".format(p),
+            "R": "{:.2f}".format(r),
+            "F1": "{:.2f}".format(f1),
         }
     df = pandas.DataFrame(results)
     if print_table:
@@ -294,13 +264,21 @@ def binary_and_group_classification_performance(
         tablefmt="pretty",
     )
     table_str += "\n"
+    thresholds = {
+        class_name: float(metrics_dict["@conf"])
+        for class_name, metrics_dict in df.to_dict().items()
+    }
+    conf_dict = {
+        i: conf_threshold for i, conf_threshold in enumerate(thresholds.values())
+    }
     if groupings:
-        df = optimise_model_binary_metrics_for_groups(
+        df = get_groups_classification_metrics(
             images_root=images_root,
             root_ground_truths=root_ground_truths,
             root_inferred_bounding_boxes=root_inferred_bounding_boxes,
             classes_map=classes_map,
             groupings=groupings,
+            optimised_thresholds=conf_dict,
             dst_csv=None,
         )
         table_str += "\n"
@@ -318,12 +296,28 @@ def binary_and_group_classification_performance(
     return table_str
 
 
-def get_average_individual_classification_metrics(
+def classification_metrics_for_cross_validation_set(
     base_dir: Path,
     dataset_prefix: str,  # E.g. 14.4  - do not include patch
     print_table: bool = False,
     groupings: Dict[str, List[int]] = None,
 ):
+    """
+    Loops through cross_validation training and inferences data in the configured
+    yolo_root folder, and find the conf threshold which leads to the optimised
+    classification F1_score.
+
+    Does this individual for each cross validation part, and then calculates the
+    average results for the set of cross validation parts.
+
+    Saves the individual and averaged classification results for the cross validation
+    set of training and detection runs as pretty tables in text files.
+
+    Also serialises the average F1 and minimum optimum conf values in an accumulating
+    json file for use in plotting performance ratcheting over time (e.g in GUI
+    interface).
+
+    """
     from yo_ratchet.workflow import K_FOLDS, CONF_PCNT  # To prevent circular references
 
     _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
@@ -379,7 +373,10 @@ def get_average_individual_classification_metrics(
     )
     new_df["min"] = df.min(axis=0)
     new_df["max"] = df.max(axis=0)
-    new_df["conf_min"] = df_conf.min(axis=0)
+    new_df["conf_min"] = conf_min = df_conf.min(axis=0)
+    update_performance_json(
+        base_dir, version=dataset_prefix, label=CONF_MIN_STR, performance=conf_min
+    )
     new_df["conf_max"] = df_conf.max(axis=0)
     new_df = new_df.applymap(lambda x: round(x, 3))
     tbl_str = tabulate(
@@ -389,7 +386,9 @@ def get_average_individual_classification_metrics(
         tablefmt="pretty",
     )
     output_file = f"{dataset_prefix}_classification_f1_summary.txt"
-    save_output_to_text_file(content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True)
+    save_output_to_text_file(
+        content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True
+    )
 
 
 def update_performance_json(

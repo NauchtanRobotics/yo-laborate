@@ -27,7 +27,7 @@ from yo_ratchet.modelling import (
 )
 from yo_ratchet.yo_valuate.as_classification import (
     binary_and_group_classification_performance,
-    get_average_individual_classification_metrics,
+    classification_metrics_for_cross_validation_set,
 )
 
 K_FOLDS = 6
@@ -281,7 +281,7 @@ def cross_validation_combinations_training(base_dir: Path):
         candidate_subset=None,
         export_to_json=True,
     )
-    get_average_individual_classification_metrics(
+    classification_metrics_for_cross_validation_set(
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
         groupings=GROUPINGS,
