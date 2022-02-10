@@ -146,7 +146,7 @@ def run_prepare_dataset_and_train(
         classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
-        output_path=Path(output_filename).resolve(),
+        base_dir=Path(output_filename).resolve(),
     )
 
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)

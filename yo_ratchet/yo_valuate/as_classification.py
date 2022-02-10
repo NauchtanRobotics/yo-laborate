@@ -16,6 +16,8 @@ from yo_ratchet.yo_wrangle.common import (
     RESULTS_FOLDER,
 )
 
+RECALL = "R"
+PRECISION = "P"
 F1 = "F1"
 CONF_MIN_STR = "conf_min"
 
@@ -247,7 +249,8 @@ def binary_and_group_classification_performance(
     classes_map: Dict[int, str],
     print_first_n: Optional[int] = None,
     groupings: Dict[str, List[int]] = None,
-    output_path: Path = None,
+    base_dir: Path = None,
+    dataset_label: str = None,
 ):
     df = optimise_analyse_model_binary_metrics(
         images_root=images_root,
@@ -288,9 +291,13 @@ def binary_and_group_classification_performance(
             showindex="always",
             tablefmt="pretty",
         )
-    if output_path:
-        with open(str(output_path), "w") as file_out:
-            file_out.write(table_str)
+    if base_dir:
+        if dataset_label is None:
+            dataset_label = root_ground_truths.parents[1].name
+        file_name = f"{dataset_label}_performance_for_optimum_conf.txt"
+        save_output_to_text_file(
+            content=table_str, base_dir=base_dir, file_name=file_name, commit=False
+        )
     else:
         print(table_str)
     return table_str
@@ -323,19 +330,18 @@ def classification_metrics_for_cross_validation_set(
     _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
         base_dir=base_dir
     )
-
+    classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
     f1_scores = []
     confidences = []
     for i in range(K_FOLDS):
-        dataset_label = f"{dataset_prefix}.{str(i+1)}"
-        inferences_path = Path(
-            f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{CONF_PCNT}pcnt/labels"
-        ).resolve()
-        detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
-        ground_truth_path = Path(
-            f"{yolo_root}/datasets/{dataset_label}/val/labels"
-        ).resolve()
-        classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
+        dataset_label = f"{dataset_prefix}.{str(i + 1)}"
+        (
+            inferences_path,
+            detect_images_root,
+            ground_truth_path,
+        ) = get_paths_for_cross_validation_part(
+            yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=CONF_PCNT
+        )
         if print_table:
             print(f"\nDataset: {dataset_label}")
         df = optimise_analyse_model_binary_metrics(
@@ -349,18 +355,13 @@ def classification_metrics_for_cross_validation_set(
 
         f1_scores.append(df.loc[[F1]])
         confidences.append(df.loc[["@conf"]])
-        output_path = (
-            base_dir
-            / RESULTS_FOLDER
-            / f"{dataset_label}_performance_for_optimum_conf.txt"
-        )
         binary_and_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
             root_inferred_bounding_boxes=inferences_path,
             classes_map=classes_map,
             groupings=groupings,
-            output_path=output_path,
+            base_dir=base_dir,
         )
 
     df = pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float)
@@ -377,6 +378,9 @@ def classification_metrics_for_cross_validation_set(
     update_performance_json(
         base_dir, version=dataset_prefix, label=CONF_MIN_STR, performance=conf_min
     )
+    conf_thresholds = {
+        i: val for i, val in enumerate(df_conf.mean(axis=0).to_dict().values())
+    }
     new_df["conf_max"] = df_conf.max(axis=0)
     new_df = new_df.applymap(lambda x: round(x, 3))
     tbl_str = tabulate(
@@ -385,10 +389,100 @@ def classification_metrics_for_cross_validation_set(
         showindex="always",
         tablefmt="pretty",
     )
+    if groupings:
+        df = get_average_group_metrics_for_cv_set(
+            dataset_prefix=dataset_prefix,
+            yolo_root=yolo_root,
+            k_folds=K_FOLDS,
+            conf_pcnt=CONF_PCNT,
+            classes_map=classes_map,
+            groupings=groupings,
+            optimised_thresholds=conf_thresholds,
+        )
+        tbl_str += "\n"
+        tbl_str += tabulate(
+            df,
+            headers="keys",
+            showindex="always",
+            tablefmt="pretty",
+            floatfmt=".2f",
+        )
     output_file = f"{dataset_prefix}_classification_f1_summary.txt"
     save_output_to_text_file(
         content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True
     )
+
+
+def get_average_group_metrics_for_cv_set(
+    dataset_prefix: str,
+    yolo_root: str,
+    k_folds: int,
+    conf_pcnt: int,
+    classes_map: Dict[int, str],
+    groupings: Dict[str, List[int]],
+    optimised_thresholds: Dict[int, float],
+) -> pandas.DataFrame:
+    f1_scores = []
+    precision_scores = []
+    recall_scores = []
+    for i in range(k_folds):
+        dataset_label = f"{dataset_prefix}.{str(i + 1)}"
+        (
+            inferences_path,
+            images_path,
+            ground_truths_path,
+        ) = get_paths_for_cross_validation_part(
+            yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=conf_pcnt
+        )
+        df = get_groups_classification_metrics(
+            images_root=images_path,
+            root_ground_truths=ground_truths_path,
+            root_inferred_bounding_boxes=inferences_path,
+            classes_map=classes_map,
+            groupings=groupings,
+            optimised_thresholds=optimised_thresholds,
+            dst_csv=None,
+        )
+        f1_scores.append(df.loc[[F1]])
+        precision_scores.append(df.loc[[PRECISION]])
+        recall_scores.append(df.loc[[RECALL]])
+    precision_series = (
+        pandas.concat(precision_scores, axis=0, ignore_index=True)
+        .astype(float)
+        .mean(axis=0)
+    )
+    precision_series.name = PRECISION
+    recall_series = (
+        pandas.concat(recall_scores, axis=0, ignore_index=True)
+        .astype(float)
+        .mean(axis=0)
+    )
+    recall_series.name = RECALL
+    f1_scores_series = (
+        pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float).mean(axis=0)
+    )
+    f1_scores_series.name = F1
+    results_df = pandas.concat(
+        [precision_series, recall_series, f1_scores_series], axis=1
+    ).round(decimals=2)
+    return results_df
+
+
+def get_paths_for_cross_validation_part(
+    yolo_root: str, dataset_label: str, conf_pcnt: int
+) -> Tuple[Path, Path, Path]:
+    """
+    Using conventions, provides Pathlib paths to the root of the inference annotations files,
+    the root of the image paths and the root of the ground truth annotation files.
+    """
+    inferences_path = Path(
+        f"{yolo_root}/runs/detect/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels"
+    ).resolve()
+    detect_images_root = Path(f"{yolo_root}/datasets/{dataset_label}/val").resolve()
+    ground_truth_path = Path(
+        f"{yolo_root}/datasets/{dataset_label}/val/labels"
+    ).resolve()
+    return inferences_path, detect_images_root, ground_truth_path
 
 
 def update_performance_json(
@@ -398,14 +492,18 @@ def update_performance_json(
     output_path = base_dir / PERFORMANCE_FOLDER / F1_PERFORMANCE_JSON
     if output_path.exists():
         with open(str(output_path), "r") as file_obj:
-            performance_dict = json.load(file_obj)
+            serialising_dict = json.load(file_obj)
     else:
-        performance_dict = {}
-    latest_performance = performance.to_dict()
-    latest_performance = {label: latest_performance}
-    performance_dict[version] = latest_performance
+        serialising_dict = {}
+    data_to_add_under_version = performance.to_dict()
+    existing_data_under_version = serialising_dict.get(version, None)
+    if existing_data_under_version:
+        version_dict = {**existing_data_under_version, label: data_to_add_under_version}
+    else:
+        version_dict = {label: data_to_add_under_version}
+    serialising_dict.update({version: version_dict})
     with open(str(output_path), "w") as file_obj:
-        json.dump(performance_dict, fp=file_obj, indent=4)
+        json.dump(serialising_dict, fp=file_obj, indent=4)
 
 
 def optimise_analyse_model_binary_metrics(
