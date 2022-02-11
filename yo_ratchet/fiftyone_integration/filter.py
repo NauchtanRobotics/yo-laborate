@@ -19,7 +19,7 @@ def _extract_filenames_by_tag(
     limit: int = 100,
     processed: bool = True,
     reverse: bool = True,
-    label_filter: Optional[str] = "WS",  # e.g. 'CD'
+    label_filters: Optional[List[str]] = None,  # e.g. ['D40', 'PP]
 ) -> Tuple[List[str], DatasetView]:
     """Loops through a FiftyOne dataset (corresponding to the dataset_label param) and
     finds all of the images tagged "error". Alternatively, can filters for the top
@@ -35,9 +35,11 @@ def _extract_filenames_by_tag(
     else:
         raise Exception(f"Dataset not found: {dataset_label} ")
 
-    if label_filter:
-        dataset = dataset.filter_labels(
-            "ground_truth", ViewField("label") == label_filter
+    if label_filters:
+        dataset = (
+            dataset
+            .filter_labels("ground_truth", ViewField("label").is_in(label_filters))
+            .filter_labels("prediction", ViewField("label").is_in(label_filters))
         )
     else:
         pass
@@ -52,6 +54,12 @@ def _extract_filenames_by_tag(
         filtered_dataset = dataset.limit(limit)
     elif tag == "error":
         filtered_dataset = dataset.match_tags("error").limit(limit)
+    elif tag == "group":
+        filtered_dataset = (
+            dataset
+            .filter_labels("prediction", ViewField("eval_id") == "")
+            .sort_by(ViewField("prediction.detections").map(ViewField("confidence")).max(), reverse=True)
+        )
     else:
         filtered_dataset = dataset
         split_tag = tag.split("_")
@@ -146,7 +154,7 @@ def find_errors(
     limit: int = 25,
     processed: bool = True,
     reverse: bool = True,
-    label_filter: Optional[str] = "WS",
+    label_filters: Optional[List[str]] = None,
     base_dir: Path = None,
 ):
     """Filters a FiftyOne Dataset according to the tag and other parameters
@@ -168,7 +176,7 @@ def find_errors(
         limit=limit,
         processed=processed,
         reverse=reverse,
-        label_filter=label_filter,
+        label_filters=label_filters,
     )
     file_names = [Path(file_name).resolve() for file_name in file_names]
     file_names = [str(file_name) for file_name in file_names if file_name.exists()]
