@@ -166,7 +166,7 @@ def launch_find_errors_config_window(base_dir: Path = None):
                 limit=86,  # make this an input field. Cannot handle >= 90 images in Windows for some reason
                 processed=True,
                 reverse=True,
-                label_filter=selected_class,
+                label_filters=selected_class,
                 base_dir=base_dir,
             )
         else:

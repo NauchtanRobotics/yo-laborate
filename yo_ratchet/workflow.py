@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 from open_labeling import launcher
 from yo_ratchet.fiftyone_integration import (
@@ -308,7 +308,7 @@ def test_init_fiftyone_ds(candidate_subset: Path = None):
 
 def run_find_errors(
     tag: str = "mistakenness",
-    label_filter: str = "WS",
+    label_filters: Optional[List[str]] = None,
     limit: int = 64,
     dataset_label: str = None,
 ):
@@ -323,5 +323,5 @@ def run_find_errors(
         limit=limit,
         processed=True,
         reverse=True,
-        label_filter=label_filter,
+        label_filters=label_filters,
     )

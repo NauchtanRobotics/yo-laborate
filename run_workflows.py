@@ -76,9 +76,10 @@ def test_import():
 def test_errors():
     set_globals(base_dir=Path(__file__).parent, workbook_ptr=dataset_workbook)
     run_find_errors(
-        tag="mistakenness",
-        label_filter="WS",
+        tag="group",
+        label_filters=["Str", "Stp1", "Stp2", "D40", "PP"],
         limit=64,
+        dataset_label="srd20.1",
     )
 
 
