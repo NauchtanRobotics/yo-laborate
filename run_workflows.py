@@ -13,7 +13,7 @@ from yo_ratchet.workflow import (
 )
 import wrangling_example as dataset_workbook
 from yo_valuate.as_classification import (
-    binary_and_group_classification_performance,
+    optimise_binary_and_get_group_classification_performance,
     classification_metrics_for_cross_validation_set,
 )
 from yo_valuate.reference_csv import (
@@ -220,7 +220,7 @@ def test_group_performance():
     )
     classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
 
-    binary_and_group_classification_performance(
+    optimise_binary_and_get_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,

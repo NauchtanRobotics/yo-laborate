@@ -242,7 +242,7 @@ def get_groups_classification_metrics(
     return df
 
 
-def binary_and_group_classification_performance(
+def optimise_binary_and_get_group_classification_performance(
     images_root: Path,
     root_ground_truths: Path,
     root_inferred_bounding_boxes: Path,
@@ -355,7 +355,7 @@ def classification_metrics_for_cross_validation_set(
 
         f1_scores.append(df.loc[[F1]])
         confidences.append(df.loc[["@conf"]])
-        binary_and_group_classification_performance(
+        optimise_binary_and_get_group_classification_performance(
             images_root=detect_images_root,
             root_ground_truths=ground_truth_path,
             root_inferred_bounding_boxes=inferences_path,
