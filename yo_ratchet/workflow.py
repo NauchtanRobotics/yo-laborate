@@ -44,6 +44,7 @@ CONF_PCNT = int(CONF * 100)
 TEST_SET_LABEL = ""
 BASE_DIR = Path()
 GROUPINGS = {}
+RECODE_MAP = {}
 
 SUBSETS_INCLUDED = []
 EVERY_NTH_TO_VAL = 0
@@ -56,7 +57,7 @@ def set_globals(base_dir: Path, workbook_ptr):
     global YOLO_ROOT, DATASET_ROOT, CLASSES_JSON_PATH, CLASSES_MAP
     global DST_ROOT, CONF_PCNT
     global BASE_DIR, CONF, GROUPINGS, SUBSETS_INCLUDED, EVERY_NTH_TO_VAL
-    global KEEP_CLASS_IDS, SKIP_CLASS_IDS, DATASET_LABEL
+    global KEEP_CLASS_IDS, SKIP_CLASS_IDS, RECODE_MAP, DATASET_LABEL
 
     CONF = workbook_ptr.CONF
     SUBSETS_INCLUDED = workbook_ptr.SUBSETS_INCLUDED
@@ -64,6 +65,7 @@ def set_globals(base_dir: Path, workbook_ptr):
     KEEP_CLASS_IDS = workbook_ptr.KEEP_CLASS_IDS
     SKIP_CLASS_IDS = workbook_ptr.SKIP_CLASS_IDS
     DATASET_LABEL = workbook_ptr.DATASET_LABEL
+    RECODE_MAP = workbook_ptr.RECODE_MAP
 
     GROUPINGS = workbook_ptr.GROUPINGS
     BASE_DIR = base_dir
@@ -122,6 +124,7 @@ def run_prepare_dataset_and_train(
         skip_class_ids=SKIP_CLASS_IDS,
         base_dir=BASE_DIR,
         run_training=run_training,
+        recode_map=RECODE_MAP,
         cross_validation_index=cross_validation_index,
     )
     detect_images_root = DST_ROOT / "val" / "images"
@@ -256,6 +259,7 @@ def cross_validation_combinations_training(base_dir: Path):
             skip_class_ids=SKIP_CLASS_IDS,
             base_dir=base_dir,
             run_training=True,
+            recode_map=RECODE_MAP,
             cross_validation_index=cv_index,
         )
         commit_and_push(

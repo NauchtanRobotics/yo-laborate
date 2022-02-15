@@ -31,13 +31,14 @@ Standard dataset building steps::
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 
 from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
 )
+from yo_ratchet.yo_wrangle.recode import recode_using_class_mapping
 
 
 def copy_images_recursive_inc_yolo_annotations_by_reference_dir(
@@ -357,6 +358,7 @@ def collate_and_split(
     every_n_th: int = 1,  # for the validation subset.
     keep_class_ids: Optional[List] = None,  # None actually means keep all classes
     skip_class_ids: Optional[List] = None,
+    recode_map: Optional[Dict[int, int]] = None,
     cross_validation_index: int = 0,
 ):
     if dst_root.exists():
@@ -368,6 +370,13 @@ def collate_and_split(
         skip_class_ids=skip_class_ids,
         keep_class_ids=keep_class_ids,
     )
+    if recode_map is not None:
+        annotations_root = Path(temp_dir) / YOLO_ANNOTATIONS_FOLDER_NAME
+        recode_using_class_mapping(
+            annotations_dir=annotations_root,
+            recode_map=recode_map,
+            only_retain_mapped_keys=False,
+        )
     split_yolo_train_dataset_every_nth(
         src_images_root=Path(temp_dir),
         dst_dataset_root=dst_root,

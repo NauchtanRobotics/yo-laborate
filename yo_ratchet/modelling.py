@@ -18,6 +18,7 @@ def prepare_dataset_and_train(
     keep_class_ids: Optional[List[int]],
     skip_class_ids: Optional[List[int]],
     base_dir: Path,
+    recode_map: Optional[Dict[int, int]] = None,
     run_training: bool = True,
     cross_validation_index: int = 0,
     fine_tune_patience: int = 5,
@@ -34,6 +35,7 @@ def prepare_dataset_and_train(
         every_n_th=every_n_th,
         keep_class_ids=keep_class_ids,
         skip_class_ids=skip_class_ids,
+        recode_map=recode_map,
         cross_validation_index=cross_validation_index,
     )
     """Add actual classes support after filtering"""

@@ -4,18 +4,23 @@ from typing import Dict
 from yo_ratchet.yo_wrangle.common import get_all_txt_recursive
 
 
-def recode_and_filter(
+def recode_using_class_mapping(
     annotations_dir: Path,
-    recode_map: Dict[str, str],
+    recode_map: Dict[int, int],
+    only_retain_mapped_keys: bool = False,
 ):
     """
-    Recodes from recode_map key to the corresponding recode_map value.
+    Recodes class_id values in all annotation files recursively in some
+    root directory, according to the recode map provided. For example, if
 
-    Filters out any annotations that are not represented by any of the keys.
+        recode_map={10: 0}
 
-    The keys and values of recode_map are represented as strings, e.g.::
+    then all annotation files in annotations_dir will have lines corresponding
+    to a class id of 10 changed to a class id of 0.
 
-        recode_map={"10": "0"}
+    Any class_id not included in recode_map.keys() will be retained unchanged,
+    unless the only_retain_mapped_keys param is set to True in which case all other
+    class ids will be dropped.
 
     """
     for annotations_file in get_all_txt_recursive(root_dir=annotations_dir):
@@ -24,24 +29,34 @@ def recode_and_filter(
         new_lines = []
         for line in lines:
             line_list = line.strip().split(" ")
-            class_id = line_list[0]
-            if class_id not in list(recode_map.keys()):
-                continue
-            new_class_id = recode_map[class_id]
-            line_list[0] = new_class_id
-            new_line = " ".join(line_list[0:6])
-            new_line = new_line + "\n"
+            class_id = int(line_list[0])
+            if class_id in list(recode_map.keys()):
+                new_class_id = recode_map[class_id]
+                line_list[0] = str(new_class_id)
+                new_line = " ".join(line_list[0:6])
+                new_line = new_line + "\n"
+            else:
+                if only_retain_mapped_keys:
+                    continue
+                new_line = line
             new_lines.append(new_line)
         with open(annotations_file, "w") as f:
             f.writelines(new_lines)
 
 
 def test_recode_and_filter():
-    recode_and_filter(
+    """
+    Class 10 predictions are often 'Signs'. To process a dataset to filter and retain only
+    class 10 recoding to a value of 0 so that a single model class can be trained just to
+    detect 'Signs' as follows:
+
+    """
+    recode_using_class_mapping(
         annotations_dir=Path(
             "/home/david/RACAS/boosted/600_x_600/unmasked/Signs_Central_Coast_2021/YOLO_darknet"
         ),
         recode_map={
-            "10": "0",  # AP predictions were often Signs. I wanted to model only signs hence 0 class id.
+            10: 0,
         },
+        only_retain_mapped_keys=True,
     )
