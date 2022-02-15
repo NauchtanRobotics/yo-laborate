@@ -36,11 +36,9 @@ def _extract_filenames_by_tag(
         raise Exception(f"Dataset not found: {dataset_label} ")
 
     if label_filters:
-        dataset = (
-            dataset
-            .filter_labels("ground_truth", ViewField("label").is_in(label_filters))
-            .filter_labels("prediction", ViewField("label").is_in(label_filters))
-        )
+        dataset = dataset.filter_labels(
+            "ground_truth", ViewField("label").is_in(label_filters)
+        ).filter_labels("prediction", ViewField("label").is_in(label_filters))
     else:
         pass
 
@@ -55,10 +53,11 @@ def _extract_filenames_by_tag(
     elif tag == "error":
         filtered_dataset = dataset.match_tags("error").limit(limit)
     elif tag == "group":
-        filtered_dataset = (
-            dataset
-            .filter_labels("prediction", ViewField("eval_id") == "")
-            .sort_by(ViewField("prediction.detections").map(ViewField("confidence")).max(), reverse=True)
+        filtered_dataset = dataset.filter_labels(
+            "prediction", ViewField("eval_id") == ""
+        ).sort_by(
+            ViewField("prediction.detections").map(ViewField("confidence")).max(),
+            reverse=True,
         )
     else:
         filtered_dataset = dataset

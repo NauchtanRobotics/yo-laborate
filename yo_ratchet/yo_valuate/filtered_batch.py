@@ -31,7 +31,9 @@ def get_truth_vs_inferred_for_batch(
 
     """
     results_dict = {}
-    inferences_df = pandas.read_csv(batch_inferences_file, sep=" ", header=None, usecols=[0, 1, 9])
+    inferences_df = pandas.read_csv(
+        batch_inferences_file, sep=" ", header=None, usecols=[0, 1, 9]
+    )
 
     for image_path in get_all_jpg_recursive(img_root=images_root):
         ground_truth_path = root_ground_truths / f"{image_path.stem}.txt"
@@ -85,7 +87,7 @@ def measure_group_classification_performance_for_batch(
     df_raw = get_truth_vs_inferred_for_batch(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
-        batch_inferences_file=batch_inferences_file
+        batch_inferences_file=batch_inferences_file,
     )
     results = {}
     for group_name, group_members in groupings.items():
@@ -104,30 +106,45 @@ def measure_group_classification_performance_for_batch(
 def test_measure_group_classification_performance_for_batch():
     df = measure_group_classification_performance_for_batch(
         images_root=Path("/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix"),
-        root_ground_truths=Path("/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix/YOLO_darknet"),
+        root_ground_truths=Path(
+            "/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix/YOLO_darknet"
+        ),
         batch_inferences_file=Path(
-            "/home/david/defect_detection/defect_detection/evaluate/Charters_Towers_subsamples_mix.ai"),
+            "/home/david/defect_detection/defect_detection/evaluate/Charters_Towers_subsamples_mix.ai"
+        ),
         classes_json=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
         groupings={
             "Risk Defects": [3, 4],
             "Potholes Big/Small": [3, 18],
             "Cracking": [0, 1, 2, 11, 16],
-            "Stripping": [12, 17, 18, 19, 20, ]
-        }
+            "Stripping": [
+                12,
+                17,
+                18,
+                19,
+                20,
+            ],
+        },
     )
     tbl_str = tabulate(
-                df.transpose(),
-                headers="keys",
-                showindex="always",
-                tablefmt="pretty",
+        df.transpose(),
+        headers="keys",
+        showindex="always",
+        tablefmt="pretty",
     )
     print(tbl_str)
 
 
 def test_get_truth_vs_inferred_for_batch():
     results_df = get_truth_vs_inferred_for_batch(
-        images_root=Path("/home/david/RACAS/sealed_roads_dataset/CT_EB_D40_Cracking_hard_pos"), # 640_x_640/Scenic_Rim_2021_sealed"),
-        root_ground_truths=Path("/home/david/RACAS/sealed_roads_dataset/CT_EB_D40_Cracking_hard_pos/YOLO_darknet"),
-        batch_inferences_file=Path("/home/david/defect_detection/defect_detection/evaluate/ChartersTowers_combined_20conf.ai")
+        images_root=Path(
+            "/home/david/RACAS/sealed_roads_dataset/CT_EB_D40_Cracking_hard_pos"
+        ),  # 640_x_640/Scenic_Rim_2021_sealed"),
+        root_ground_truths=Path(
+            "/home/david/RACAS/sealed_roads_dataset/CT_EB_D40_Cracking_hard_pos/YOLO_darknet"
+        ),
+        batch_inferences_file=Path(
+            "/home/david/defect_detection/defect_detection/evaluate/ChartersTowers_combined_20conf.ai"
+        ),
     )
     print(results_df)

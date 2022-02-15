@@ -22,7 +22,7 @@ def resize_pad_image(img: numpy.ndarray, scale: float, final_size: int = 640):
         x_border_pixels,
         x_border_pixels,
         cv2.BORDER_CONSTANT,
-        value=[127, 127, 127]
+        value=[127, 127, 127],
     )
     return padded
 
@@ -48,7 +48,6 @@ def resize_pad_all_images_recursively(
 def un_transform_resized_padded_box(
     box_coords: List[float],
     scale: float,
-
 ):
     """
     Reverse transforms a single box that was resized and padded, back to the
@@ -56,10 +55,10 @@ def un_transform_resized_padded_box(
 
     """
     [x_centre, y_centre, width, height] = box_coords[0:4]
-    width = width/scale
-    height = height/scale
-    x_centre = 0.5 - (0.5 - x_centre)/scale
-    y_centre = 0.5 - (0.5 - y_centre)/scale
+    width = width / scale
+    height = height / scale
+    x_centre = 0.5 - (0.5 - x_centre) / scale
+    y_centre = 0.5 - (0.5 - y_centre) / scale
     return [x_centre, y_centre, width, height]
 
 
@@ -96,7 +95,9 @@ def un_transform_resize_pad_recursively(
             if len(line_list) == 6:
                 prob = line_list[5]
                 new_line += f" {prob}"
-            new_line = new_line + "\n"  # Assume data not directly used on Windows machine
+            new_line = (
+                new_line + "\n"
+            )  # Assume data not directly used on Windows machine
             new_lines.append(new_line)
         dst_path = dst_labels_root / annotations_path.name
         with open(str(dst_path), "w") as f:
@@ -111,7 +112,9 @@ def test_resize_pad():
     """
     resize_pad_all_images_recursively(
         images_root=Path("/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix"),
-        resize_dst=Path("/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix_resized_padded"),
+        resize_dst=Path(
+            "/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix_resized_padded"
+        ),
     )
 
 
@@ -120,6 +123,8 @@ def test_un_transform_resize_pad_recursively():
         src_labels_root=Path(
             "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_subsamples_mix_resized_padded__srd19.1_conf10pcnt"
         ),
-        dst_labels_root=Path("/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix_resized_padded/YOLO_darknet"),
+        dst_labels_root=Path(
+            "/home/david/RACAS/640_x_640/Charters_Towers_subsamples_mix_resized_padded/YOLO_darknet"
+        ),
         scale=0.5,
     )

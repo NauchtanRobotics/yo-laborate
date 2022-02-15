@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from yo_ratchet.evaluate_binary import analyse_model_binary_metrics
+from yo_ratchet.yo_valuate.as_classification import analyse_model_binary_metrics
 
 
 def test_analyse_performance():
