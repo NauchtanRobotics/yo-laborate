@@ -258,7 +258,11 @@ def cross_validation_combinations_training(base_dir: Path):
             run_training=True,
             cross_validation_index=cv_index,
         )
-
+        commit_and_push(
+            dataset_label=dataset_label,
+            base_dir=base_dir,
+            description="Bump patch/pre-artifacts.",
+        )
         detect_images_root = dst_root / "val" / "images"
         test_set_str = "val"
         test_set_part_label = f"{dataset_label}_{test_set_str}"
@@ -291,6 +295,7 @@ def cross_validation_combinations_training(base_dir: Path):
     commit_and_push(
         dataset_label=fiftyone_dataset_label,
         base_dir=base_dir,
+        description="Post-training artifacts.",
     )
 
 
