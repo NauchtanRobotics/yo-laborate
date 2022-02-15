@@ -107,4 +107,5 @@ GROUPINGS = {
     "Cracking": [0, 1, 2, 11, 14, 16],
     "Stripping": [12, 17, 18, 19, 20, 24, 25],
 }
+RECODE_MAP = {24: 12}
 CONF = 0.1
