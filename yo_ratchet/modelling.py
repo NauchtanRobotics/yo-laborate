@@ -184,7 +184,7 @@ def run_detections(
     model_version: str,
     base_dir: Path,
     conf_thres: float = 0.1,
-    device: int = 0,
+    device: int = 1,
 ):
     results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
     python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
@@ -203,6 +203,7 @@ def run_detections(
         "--agnostic-nms",
         f"--iou-thres=0.55",
         f"--conf-thres={conf_thres}",
+        "--half",
     ]
     print(
         subprocess.check_output(
