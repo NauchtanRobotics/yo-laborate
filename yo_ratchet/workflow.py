@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Optional, List
 
 from open_labeling import launcher
+
+from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.fiftyone_integration import (
     init_fifty_one_dataset,
     delete_fiftyone_dataset,
@@ -285,6 +287,10 @@ def cross_validation_combinations_training(base_dir: Path):
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
         groupings=GROUPINGS,
+    )
+    commit_and_push(
+        dataset_label=fiftyone_dataset_label,
+        base_dir=base_dir,
     )
 
 

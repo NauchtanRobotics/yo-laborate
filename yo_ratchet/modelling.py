@@ -5,10 +5,9 @@ from typing import Optional, List, Dict
 
 from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
-from yo_ratchet.yo_wrangle.common import get_config_items
+from yo_ratchet.yo_wrangle.common import get_config_items, save_output_to_text_file
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
-from yo_ratchet.yo_valuate.as_classification import RESULTS_FOLDER
 
 
 def prepare_dataset_and_train(
@@ -29,11 +28,6 @@ def prepare_dataset_and_train(
         class_ids=class_ids,
         class_id_to_name_map=classes_map,
     )
-    model_instance = dst_root.name
-
-    with open(f"{model_instance}_classes_support.txt", "w") as f_out:
-        f_out.write(output_str)
-
     collate_and_split(
         subsets_included=subsets_included,
         dst_root=dst_root,
@@ -47,30 +41,26 @@ def prepare_dataset_and_train(
         ((dst_root / "train"), None),
         ((dst_root / "val"), None),
     ]
-    output_str = count_class_instances_in_datasets(
+    output_str += "\n"
+    output_str += count_class_instances_in_datasets(
         data_samples=final_subsets_included,
         class_ids=class_ids,
         class_id_to_name_map=classes_map,
     )
-    output_str = "\n" + output_str
-    with open(f"{model_instance}_classes_support.txt", "a") as f_out:
-        f_out.write(output_str)
+    model_instance = dst_root.name
+    file_name = f"{model_instance}_classes_support.txt"
+    save_output_to_text_file(
+        content=output_str,
+        base_dir=base_dir,
+        file_name=file_name,
+        commit=False,
+    )
 
     class_names = [classes_map[class_id] for class_id in class_ids]
     yaml_text = f"""train: {str(dst_root)}/train/images/
 val: {str(dst_root)}/val/images/
 nc: {len(class_ids)}
 names: {class_names}"""
-
-    """ Write dataset.yaml locally. """
-    output_path = base_dir / RESULTS_FOLDER / f"{model_instance}_dataset_yaml.yaml"
-    with open(str(output_path), "w") as f_out:
-        f_out.write(yaml_text)
-
-    commit_and_push(
-        dataset_label=dst_root.name,
-        base_dir=base_dir,
-    )
 
     """ Write dataset.yaml in DST folder."""
     dst_dataset_path = dst_root / "dataset.yaml"
@@ -116,9 +106,13 @@ names: {class_names}"""
         pass
 
     train_cmd_str = " ".join(pytorch_cmd)
-    output_path = base_dir / RESULTS_FOLDER / f"{model_instance}_train_cmd.txt"
-    with open(str(output_path), "w") as f_out:
-        f_out.write(train_cmd_str)
+    file_name = f"{model_instance}_train_cmd.txt"
+    save_output_to_text_file(
+        content=train_cmd_str,
+        base_dir=base_dir,
+        file_name=file_name,
+        commit=False,
+    )
 
     if run_training:
         subprocess.check_call(
