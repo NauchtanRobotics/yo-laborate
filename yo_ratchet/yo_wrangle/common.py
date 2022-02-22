@@ -2,7 +2,7 @@ import configparser
 import json
 import sys
 from pathlib import Path
-from typing import Iterable, Dict, Optional, List
+from typing import Iterable, Dict, Optional, List, Tuple
 
 CONFIG_INI = "config.ini"
 
@@ -104,6 +104,17 @@ def get_config_items(base_dir: Path):
         dataset_root,
         classes_json_path,
     )
+
+
+def get_yolo_detect_paths(base_dir: Path) -> Tuple[Path, Path]:
+    config = configparser.ConfigParser()
+    config_path = base_dir / CONFIG_INI
+    if not config_path.exists():
+        raise RuntimeError(f"{str(config_path)} does not exist.")
+    config.read(str(config_path))
+    python_path = config.get(YOLO, PYTHON_EXE)
+    yolo_root = config.get(YOLO, YOLO_ROOT)
+    return Path(python_path), Path(yolo_root)
 
 
 def get_classes_list(base_dir: Path) -> List[str]:

@@ -12,16 +12,16 @@ from yo_ratchet.workflow import (
     run_find_errors,
 )
 import wrangling_example as dataset_workbook
-from yo_valuate.as_classification import (
+from yo_ratchet.yo_valuate.as_classification import (
     optimise_binary_and_get_group_classification_performance,
     classification_metrics_for_cross_validation_set,
 )
-from yo_valuate.reference_csv import (
+from yo_ratchet.yo_valuate.reference_csv import (
     get_classification_performance,
     get_actual_vs_inferred_df,
     get_severity_dict,
 )
-from yo_wrangle.common import get_id_to_label_map, get_config_items
+from yo_ratchet.yo_wrangle.common import get_id_to_label_map, get_config_items
 
 
 def test_prepare_dataset_and_train():

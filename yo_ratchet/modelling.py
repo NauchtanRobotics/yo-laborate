@@ -5,7 +5,7 @@ from typing import Optional, List, Dict
 
 from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
-from yo_ratchet.yo_wrangle.common import get_config_items, save_output_to_text_file
+from yo_ratchet.yo_wrangle.common import get_config_items, save_output_to_text_file, get_yolo_detect_paths
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
 
@@ -187,8 +187,8 @@ def run_detections(
     device: int = 1,
 ):
     results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
-    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
-    detect_script = Path(yolo_root) / "detect.py"
+    python_path, yolo_path = get_yolo_detect_paths(base_dir)
+    detect_script = yolo_path / "detect.py"
     pytorch_cmd = [
         python_path,
         f"{str(detect_script)}",
@@ -200,7 +200,7 @@ def run_detections(
         "--save-txt",
         "--save-conf",
         "--nosave",
-        "--agnostic-nms",
+        # "--agnostic-nms",
         f"--iou-thres=0.55",
         f"--conf-thres={conf_thres}",
         "--half",
