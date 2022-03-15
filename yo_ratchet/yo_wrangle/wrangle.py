@@ -41,6 +41,32 @@ from yo_ratchet.yo_wrangle.common import (
 from yo_ratchet.yo_wrangle.recode import recode_using_class_mapping
 
 
+def flatten_images_dir(
+    src_root: str,
+    dst_root: str,
+    subfolders_to_skip: Optional[List[str]] = None,
+    every_n_th: int = 1,
+):
+    """
+    Takes a collection of folders containing images recursively nested within <src_dir>
+    and copies all the images into <dst_root> which is a flat structure that is suitable
+    to use as the --source parameter for calls to yolov5.
+
+    """
+    imgs_root_dir = Path(src_root)
+    destination_dir = Path(dst_root)
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    for i, path_image in enumerate(
+        sorted(get_all_jpg_recursive(img_root=imgs_root_dir))
+    ):
+        if subfolders_to_skip and path_image.parent.name in subfolders_to_skip:
+            continue
+        if i % every_n_th != 0:
+            continue
+        new_image_path = destination_dir / path_image.name
+        shutil.copyfile(path_image, new_image_path)
+
+
 def copy_images_recursive_inc_yolo_annotations_by_reference_dir(
     reference_dir: Path,  # Can be the same as the original_images_dir when moving imgs
     original_images_dir: Path,

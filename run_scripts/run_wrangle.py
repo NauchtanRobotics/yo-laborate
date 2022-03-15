@@ -35,8 +35,16 @@ from yo_ratchet.yo_wrangle.wrangle import (
     split_yolo_train_dataset_every_nth,
     prepare_unique_dataset_from_detections,
     copy_detect_folder_recursively_as_reference_then_subsample,
-    delete_redundant_samples, collate_additional_sample, add_subset_folder_unique_images_only,
+    delete_redundant_samples, collate_additional_sample, add_subset_folder_unique_images_only, flatten_images_dir,
 )
+
+
+def test_flatten_images_dir():
+    src_root = "/media/david/Samsung_T8/Scenic_Rim_2022"
+    dst_root = "/media/david/Samsung_T8/Scenic_Rim_2022_flat"  # "/home/david/RACAS/boosted/600_x_600/unmasked/RACAS_Gladstone_2020_mined"
+    flatten_images_dir(
+        src_root=src_root, dst_root=dst_root, subfolders_to_skip=[], every_n_th=1
+    )
 
 
 def test_copy_recursive_images_and_yolo_annotations_by_cropped_image_reference():
@@ -56,18 +64,18 @@ def test_copy_recursive_images_and_yolo_annotations_by_cropped_image_reference()
     """
     copy_images_recursive_inc_yolo_annotations_by_reference_dir(
         reference_dir=Path(
-            # "/home/david/RACAS/CT_Errors_10pcnt/CT_EB_D40_Cracking_hard_pos"
-            "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_potholes__srd18.3_conf5pcnt",
+            "/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_25_0"
+            # "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_potholes__srd18.3_conf5pcnt",
         ),
         original_images_dir=Path(
-            "/home/david/RACAS/640_x_640/RACAS_CTRC_2021_sealed"
+            "/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_25_0"
         ),
         dst_sample_dir=Path(
-            "/home/david/RACAS/640_x_640/CT_D40_SD"
+            "/home/david/RACAS/sealed_roads_dataset/Scenic_Rim_2021_mined_1"
         ),
-        num=None,
-        move=False,
-        annotations_location="labels",  # "ref_yolo",
+        num=550,
+        move=True,
+        annotations_location="yolo",  # "ref_yolo",
     )
 
 
