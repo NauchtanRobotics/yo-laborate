@@ -209,7 +209,7 @@ def run_detections(
         subprocess.check_output(
             pytorch_cmd,
             stderr=subprocess.STDOUT,
-            cwd=yolo_root,
+            cwd=str(yolo_path),
         )
     )
     return results_name
@@ -259,3 +259,63 @@ def run_detections_using_cv_ensemble(
         )
     )
     return results_name
+
+
+def run_detections_using_cv_ensemble_given_paths(
+    images_path: Path,
+    detection_dataset_name: str,
+    model_version: str,  # e.g. srd26.0
+    k_folds: int,  # How many folder were used when cv modeling for <model_version>?
+    python_path: Path,
+    yolo_root: Path,
+    conf_thres: float = 0.1,
+    device: int = 0,
+) -> Path:
+    """
+    Returns pathlib.Path to inferences directory for this run (this folder will contain
+    a directory called "labels".
+
+    This version of the function works with the Google Cloud file watcher
+    in defect_detection repo which is configured for calling
+    this function from any python_path and yolo_root, which don't change anyway...
+
+    Ahh, this function is almost completely redundant except is returns a full path
+    to the 'detect' run inferences folder instead of just the folder name. This is useful
+    as it alleviates the need to reconstruct the path elsewhere.
+
+    """
+    detections_folder_name = (
+        f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    )
+    detect_script = yolo_root / "detect.py"
+    models_root = yolo_root / "runs" / "train"
+    model_paths = [
+        models_root / f"{model_version}.{str(i+1)}" / "weights" / "best.pt"
+        for i in range(k_folds)
+    ]
+    model_paths = [str(model_path) for model_path in model_paths]
+    pytorch_cmd = [
+        python_path,
+        f"{str(detect_script)}",
+        f"--source={str(images_path)}",
+        "--img=640",
+        f"--device={device}",
+        f"--name={detections_folder_name}",
+        "--save-txt",
+        "--save-conf",
+        # "--nosave",
+        # "--agnostic-nms",
+        f"--iou-thres=0.55",
+        f"--conf-thres={conf_thres}",
+        f"--weights",
+    ]
+    pytorch_cmd.extend(model_paths)
+    print(
+        subprocess.check_output(
+            pytorch_cmd,
+            stderr=subprocess.STDOUT,
+            cwd=str(yolo_root),
+        )
+    )
+    inferences_path = yolo_root / "runs" / "detect" / detections_folder_name
+    return inferences_path
