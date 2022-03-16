@@ -195,7 +195,9 @@ def save_bounding_boxes_on_images(
     images in dst_root.
 
     """
-    if foot_banner_path:
+    if foot_banner_path is not None:
+        if not foot_banner_path.exists():
+            raise RuntimeError("Cannot find banner file")
         foot_banner = cv2.imread(str(foot_banner_path))
         banner_height, banner_width, _ = foot_banner.shape
         foot_banner = cv2.resize(foot_banner, (1920, int(1920 * banner_height / 1904)))
@@ -206,7 +208,12 @@ def save_bounding_boxes_on_images(
     df_has_probabilities, df = get_dataframe_from_ai_file(ai_file_path=ai_file_path)
     images_with_defects = df["Photo_Name"].unique()
     print("\nCount images with defects = ", len(images_with_defects))
-    assert dst_root.exists() is False, "Destination directory already exists"
+    path_adjuster = 0
+    while dst_root.exists():
+        old_name = dst_root.name.replace(f"_{path_adjuster}", "")
+        path_adjuster += 1
+        dst_root = dst_root.parent / f"{old_name}_{path_adjuster}"
+
     dst_root.mkdir(parents=True)
 
     for img_path in get_all_jpg_recursive(img_root=images_root):
@@ -214,7 +221,9 @@ def save_bounding_boxes_on_images(
         image_data = df.loc[df["Photo_Name"] == photo_name].reset_index()
         if len(image_data) == 0:
             continue
-        image = cv2.imread(str(img_path))
+        orig_image = cv2.imread(str(img_path))
+        # orig_height, banner_width, _ = orig_image.shape
+        image = cv2.resize(orig_image, (1920, 1080))
         if hasattr(foot_banner, "shape"):
             image = np.concatenate((image, foot_banner), axis=0)
         else:
@@ -240,8 +249,13 @@ def save_bounding_boxes_on_images(
                 [series["x4"], series["y4"]],
             ]
             dst_path = dst_root / f"{img_path.stem}{img_path.suffix}"
-            label = LABEL_MAPPING[class_id].get("label", "")
-            colour = LABEL_MAPPING[class_id].get("colour", GREEN)
+            if class_id in LABEL_MAPPING:
+                label = LABEL_MAPPING[class_id].get("label", "")
+                colour = LABEL_MAPPING[class_id].get("colour", GREEN)
+            else:
+                label = ""
+                colour = GREEN
+
             if df_has_probabilities:
                 probability = row["prob"]
                 if probability < MARGINAL_PROB_THRESH:
