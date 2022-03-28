@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas
 
-from yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
+from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
 
 
 def copy_detections_and_images(
@@ -68,9 +68,9 @@ def copy_detections_and_images(
 
 def test_copy_detections_and_images():
     copy_detections_and_images(
-        src_images_dir=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2021_sealed"),
+        src_images_dir=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2022"),
         filtered_annotations_file=Path(
-            "/home/david/defect_detection/defect_detection/evaluate/Scenic_Rim_threshold_2b.txt"
+            "/home/david/defect_detection/defect_detection/evaluate/Scenic_Rim_2022.txt"
         ),
-        dst_images_dir=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined"),
+        dst_images_dir=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2022_mined"),
     )
