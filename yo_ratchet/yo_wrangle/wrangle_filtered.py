@@ -18,7 +18,9 @@ def copy_detections_and_images(
     """
     Copy images into a sample folder based on a single file containing all
     YOLO detections. These likely have been filtered based on probability
-    thresholds, size and location filters.
+    thresholds, size and location filters. Only copies image if there is a
+    corresponding annotations file; i.e. no detections, not mined. This
+    keeps the dataset economically sized.
 
     Copies a sample of original images from <src_images_dir> to::
         <dst_sample_dir>/*
