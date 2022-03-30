@@ -5,7 +5,11 @@ from typing import Optional, List, Dict
 
 from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
-from yo_ratchet.yo_wrangle.common import get_config_items, save_output_to_text_file, get_yolo_detect_paths
+from yo_ratchet.yo_wrangle.common import (
+    get_config_items,
+    save_output_to_text_file,
+    get_yolo_detect_paths,
+)
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
 
