@@ -7,13 +7,14 @@ from typing import List, Optional
 import pandas
 from yo_ratchet.yo_filter.filter_central import calculate_wedge_envelop
 from yo_ratchet.yo_filter.filters import apply_filters
-from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
+from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME, get_all_jpg_recursive
 
 
 def copy_detections_and_images(
     src_images_dir: Path,
     filtered_annotations_file: Path,
     dst_images_dir: Path,
+    copy_all_src_images: bool = False,
 ):
     """
     Copy images into a sample folder based on a single file containing all
@@ -65,11 +66,17 @@ def copy_detections_and_images(
         if not original_image_path.exists():
             print(f"Image not found: {str(original_image_path)}")
             continue
-        dst_image_path = dst_images_dir / original_image_path.name
-        shutil.copy(src=original_image_path, dst=dst_image_path)
+        if not copy_all_src_images:
+            dst_image_path = dst_images_dir / original_image_path.name
+            shutil.copy(src=original_image_path, dst=dst_image_path)
         df_filtered = df.loc[df[0] == photo_name, [1, 2, 3, 4, 5, 6]]
         dst_annotations_path = dst_annotations_dir / f"{original_image_path.stem}.txt"
         df_filtered.to_csv(dst_annotations_path, index=False, sep=" ", header=None)
+
+    if copy_all_src_images:
+        for image_path in get_all_jpg_recursive(img_root=src_images_dir):
+            dst_image_path = dst_images_dir / image_path.name
+            shutil.copy(src=str(image_path), dst=dst_image_path)
 
 
 def filter_detections(
@@ -160,6 +167,7 @@ def mine_filtered_detections(
     filter_horizon=0.0,
     y_wedge_apex=-0.2,
     classes_to_remove=None,
+    copy_all_src_images: bool = False,
 ):
     """
     Function to mine new images after a yolov5 detection run.
@@ -187,6 +195,7 @@ def mine_filtered_detections(
         src_images_dir=Path(src_images_dir),
         filtered_annotations_file=Path(filtered_annotations_path),
         dst_images_dir=Path(dst_images_dir),
+        copy_all_src_images=copy_all_src_images,
     )
     os.unlink(filtered_annotations_path)
 
@@ -204,11 +213,12 @@ CLASSES_TO_REMOVE = [
 
 def test_mine_filtered_detections():
     mine_filtered_detections(
-        src_images_dir="/home/david/RACAS/640_x_640/Scenic_Rim_2022",
-        annotations_dir="/home/david/addn_repos/yolov5/runs/detect/Scenic_Rim_2022_srd26.0_conf10pcnt/labels",
+        src_images_dir="/home/david/defect_detection/temp_images/aaa_oopsies_uploads/Sealed",  # "/home/david/RACAS/640_x_640/Scenic_Rim_2022",
+        annotations_dir="/home/david/addn_repos/yolov5/runs/detect/1649047228_aaa_oopsies_uploads__srd26.0_conf8pcnt/labels",
         classes_json_path="/home/david/RACAS/sealed_roads_dataset/classes.json",
-        dst_images_dir="/home/david/RACAS/640_x_640/Scenic_Rim_2022_mined_TEST_12",
+        dst_images_dir="/home/david/defect_detection/temp_images/aaa_oopsies_uploads/dataset",
         classes_to_remove=CLASSES_TO_REMOVE,
+        copy_all_src_images=True,
     )
 
 
