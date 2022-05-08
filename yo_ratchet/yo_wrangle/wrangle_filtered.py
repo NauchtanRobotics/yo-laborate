@@ -7,7 +7,10 @@ from typing import List, Optional
 import pandas
 from yo_ratchet.yo_filter.filter_central import calculate_wedge_envelop
 from yo_ratchet.yo_filter.filters import apply_filters
-from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME, get_all_jpg_recursive
+from yo_ratchet.yo_wrangle.common import (
+    YOLO_ANNOTATIONS_FOLDER_NAME,
+    get_all_jpg_recursive,
+)
 
 
 def copy_detections_and_images(
@@ -201,14 +204,14 @@ def mine_filtered_detections(
 
 
 CLASSES_TO_REMOVE = [
-        5,
-        7,
-        8,
-        9,
-        10,
-        13,
-        23,
-    ]  # 5=P, 7=FC, 8=LO, 9=LG, 10=AP, 13=RK, 23=Pt
+    5,
+    7,
+    8,
+    9,
+    10,
+    13,
+    23,
+]  # 5=P, 7=FC, 8=LO, 9=LG, 10=AP, 13=RK, 23=Pt
 
 
 def test_mine_filtered_detections():
@@ -232,7 +235,7 @@ def test_filter_detections():
         output_path=output_dir / "Scenic_Rim_25_0_transformed.ai",
         filter_horizon=0.0,
         y_wedge_apex=-0.2,
-        classes_to_remove=CLASSES_TO_REMOVE
+        classes_to_remove=CLASSES_TO_REMOVE,
     )
 
 

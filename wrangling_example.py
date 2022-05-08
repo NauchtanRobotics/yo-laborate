@@ -20,11 +20,11 @@ SUBSETS_INCLUDED = [
     (Path("Train_Moira_2020_sample_1"), None),
     (Path("YOLO_Moira_2020_sample_val"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
     (Path("YOLO_Hobart_2021_sample"), None),
-    (Path("YOLO_Isaac_2021_pothole_sample_val"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
+    (Path("YOLO_Isaac_2021_pothole_sample_val"), None),  # Done
     (Path("Train_Weddin_2019_samples"), None),  # Done
     (Path("Train_WDRC_2021_sample_1"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
     (Path("Train_Whitsunday_2018_samples"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
-    (Path("Train_Charters_Towers_2021_subsample"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
+    (Path("Train_Charters_Towers_2021_subsample"), None),  # Done
     (Path("Train_Charters_Towers_2021_WS"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
     (Path("Isaac_stripping"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
     (Path("WDRC_Stripping"), None),  # Done Stp, Stp2, PP, PPF, Scf, Stp1
