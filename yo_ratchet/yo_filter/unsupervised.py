@@ -70,12 +70,12 @@ def visualise_clusters_comparing_subsets(path_training_subset: Path, path_test_d
     ss_train_test_features_array = ss.transform(aggregated_feature_arrays)
     # expanded_df = pd.DataFrame(list(ss_train_test_features_array))
     # new_df = pd.concat([concatenated_df, expanded_df], axis=1)
-    distances = np.square(ss_train_test_features_array)
-    distances = distances.sum(axis=1)
-    distances = np.sqrt(distances)
-    concatenated_df["All_Dist"] = list(distances)
+    rmsd = np.square(ss_train_test_features_array)
+    rmsd = rmsd.mean(axis=1)
+    rmsd = np.sqrt(rmsd)
+    concatenated_df["RMS_Dist"] = list(rmsd)
     concatenated_df["Outlier"] = concatenated_df.apply(
-        lambda x: 1 if x["All_Dist"] > 65 else 0,
+        lambda x: True if x["RMS_Dist"] > 2.5 else False,
         axis=1
     )
 
@@ -233,7 +233,7 @@ def _extract_features_for_patch(
     y2 = np.clip(int((y + h / 2 + PATCH_MARGIN) * img_h), a_min=0, a_max=img_h)
     crop = img[y1:y2, x1:x2, :]
     crop = cv2.resize(crop, (new_h, new_w))
-    if path_to_image.name == "Photo_2021_Dec_02_11_44_24_165_b.jpg":
+    if show_crops and path_to_image.name == "Photo_2021_Dec_02_11_44_24_165_b.jpg":
         cv2.imshow("Blah", crop)
         cv2.waitKey(0)
     crop = np.expand_dims(crop, 0)
