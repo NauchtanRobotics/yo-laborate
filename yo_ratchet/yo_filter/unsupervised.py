@@ -50,7 +50,69 @@ def test_visualise():
     print()
 
 
-def visualise_clusters_comparing_subsets(path_training_subset: Path, path_test_data: Path):  # , n_clusters: int = 2):
+def get_standardiser(path_training_subset: Path):
+    data_training_subset = get_feature_maps_for_patches(images_root=path_training_subset)
+    training_df = pd.DataFrame(data_training_subset)
+    training_features_list = list(training_df["features"])
+    training_features_array = np.array(training_features_list, dtype="float64")
+
+    # Standardizing the features
+    ss = StandardScaler()
+    ss.fit_transform(training_features_array)
+    return ss
+
+
+def view_outliers(path_training_subset: Path, path_test_data: Path):
+    ss = get_standardiser(path_training_subset=path_training_subset)
+
+    data_test_subset = get_feature_maps_for_patches(images_root=path_test_data)
+    num_results = len(data_test_subset)
+    row_num = 0
+
+    while True:
+        row = data_test_subset[row_num]
+        image_features = row["features"]
+        ss_row_features_array = ss.transform(image_features.reshape(1, -1))
+        rmsd = np.square(ss_row_features_array)
+        rmsd = rmsd.mean(axis=1)
+        rmsd = np.sqrt(rmsd)
+        delta = "{:.1f}".format(np.round_(rmsd, 1)[0])
+        if rmsd[0] > 2.7:
+
+            label = "Outlier"
+        else:
+            label = "Normal"
+        photo_name = row["image_name"]
+        label += f" ({delta}) - {row_num + 1} of {num_results}"
+        patch = row["crop"]
+        cv2.imshow(label, patch)
+        key_pressed = cv2.waitKey(0)
+        if key_pressed == 81:
+            if row_num > 0:
+                row_num -= 1
+            else:  # Roll around - go to the end of the list
+                row_num = num_results - 1
+        elif key_pressed == 27:
+            break
+        elif key_pressed == 83 or key_pressed == 32:
+            if row_num < num_results-1:
+                row_num += 1
+            else:
+                row_num = 0
+        else:  # Undefined cmd - do nothing
+            pass
+
+        cv2.destroyWindow(label)
+
+
+def test_find_outliers():
+    view_outliers(
+        path_training_subset=Path("/home/david/RACAS/640_x_640/Clustering/Charters_Towers_subsample"),
+        path_test_data=Path("/home/david/RACAS/640_x_640/Clustering/Leopard_blossoms"),
+    )
+
+
+def visualise_clusters_comparing_subsets(path_training_subset: Path, path_test_data: Path):
     data_training_subset = get_feature_maps_for_patches(images_root=path_training_subset)
     training_df = pd.DataFrame(data_training_subset)
     training_features_list = list(training_df["features"])
@@ -175,6 +237,7 @@ def get_feature_maps_for_patches(
         image_path = images_root / f"{file_path.stem}.jpg"
         if not image_path.exists():
             continue
+        lines = set(lines)
         for seq, line in enumerate(lines):
             line_split = line.strip().split(" ")
             patch_ref = f"{image_path.stem}_{seq}"
@@ -184,13 +247,14 @@ def get_feature_maps_for_patches(
             # class_name = class_info.get(int(class_id))
             # new_w, new_h = average_patch_sizes.get(class_id)
             x, y, w, h = line_split[1:5]  # Ignores class_id which is line[0] and probability which is line[5]
-            _extracted_features = _extract_features_for_patch(
+            _extracted_features, crop = _extract_features_for_patch(
                 MyModel, image_path, float(x), float(y), float(w), float(h), PATCH_W, PATCH_H
             )
             results.append({
                 "patch_ref": patch_ref,
                 "image_name": image_path.name,
                 "features": _extracted_features,
+                "crop": crop,
                 "class_id": int(class_id),
                 "subset": annotations_dir.parent.name,
             })
@@ -236,9 +300,9 @@ def _extract_features_for_patch(
     if show_crops and path_to_image.name == "Photo_2021_Dec_02_11_44_24_165_b.jpg":
         cv2.imshow("Blah", crop)
         cv2.waitKey(0)
-    crop = np.expand_dims(crop, 0)
-    crop = tf.keras.applications.resnet50.preprocess_input(crop)
-    extractedFeatures = model.predict(crop)
+    expanded_crop = np.expand_dims(crop, 0)
+    expanded_crop = tf.keras.applications.resnet50.preprocess_input(expanded_crop)
+    extractedFeatures = model.predict(expanded_crop)
     extractedFeatures = np.array(extractedFeatures)
     extractedFeatures = extractedFeatures.flatten()
-    return extractedFeatures
+    return extractedFeatures, crop
