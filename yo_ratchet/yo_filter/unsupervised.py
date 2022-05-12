@@ -7,7 +7,9 @@ import seaborn as sb
 
 from pathlib import Path
 from typing import List, Dict, Optional
+from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.preprocessing import StandardScaler
 
 from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME, LABELS_FOLDER_NAME
 
@@ -48,34 +50,53 @@ def test_visualise():
     print()
 
 
-def visualise_clusters_comparing_subsets(path_subset_1: Path, path_subset_2: Path):  # , n_clusters: int = 2):
-    data_subset_1 = get_feature_maps_for_patches(images_root=path_subset_1)
-    df_subset_1 = pd.DataFrame(data_subset_1)
-    features_list = list(df_subset_1["features"])
-    feature_vector_subset_1 = np.array(features_list, dtype="float64")
+def visualise_clusters_comparing_subsets(path_training_subset: Path, path_test_data: Path):  # , n_clusters: int = 2):
+    data_training_subset = get_feature_maps_for_patches(images_root=path_training_subset)
+    training_df = pd.DataFrame(data_training_subset)
+    training_features_list = list(training_df["features"])
+    training_features_array = np.array(training_features_list, dtype="float64")
 
-    data_subset_2 = get_feature_maps_for_patches(images_root=path_subset_2)
-    df_subset_2 = pd.DataFrame(data_subset_2)
-    features_list_2 = list(df_subset_2["features"])
-    feature_vector_subset_2 = np.array(features_list_2, dtype="float64")
+    data_test_subset = get_feature_maps_for_patches(images_root=path_test_data)
+    test_df = pd.DataFrame(data_test_subset)
+    test_features_list = list(test_df["features"])
+    test_features_array = np.array(test_features_list, dtype="float64")
 
-    aggregated_feature_vector = np.concatenate([feature_vector_subset_1, feature_vector_subset_2])
-    concatenated_df = pd.concat([df_subset_1, df_subset_2], ignore_index=True, sort=False)
+    concatenated_df = pd.concat([test_df, training_df], ignore_index=True, sort=False)
+    aggregated_feature_arrays = np.concatenate([test_features_array, training_features_array])
+    # Standardizing the features
+    ss = StandardScaler()
+    ss_train_features_array = ss.fit_transform(training_features_array)
+    ss_test_features_array = ss.transform(test_features_array)
+    ss_train_test_features_array = ss.transform(aggregated_feature_arrays)
+    # expanded_df = pd.DataFrame(list(ss_train_test_features_array))
+    # new_df = pd.concat([concatenated_df, expanded_df], axis=1)
+    distances = np.square(ss_train_test_features_array)
+    distances = distances.sum(axis=1)
+    distances = np.sqrt(distances)
+    concatenated_df["All_Dist"] = list(distances)
+    concatenated_df["Outlier"] = concatenated_df.apply(
+        lambda x: 1 if x["All_Dist"] > 65 else 0,
+        axis=1
+    )
 
-    kmeans = AgglomerativeClustering(compute_distances=True)
-    kmeans.fit(aggregated_feature_vector)
-    predictions = kmeans.labels_
+    pca = PCA()
+    pc_array_train = pca.fit_transform(ss_train_features_array)
+    pc_array_test = pca.transform(ss_test_features_array)
+    aggregated_pc_arrays = np.concatenate([pc_array_test, pc_array_train])
+    principal_df = pd.DataFrame(
+        data=aggregated_pc_arrays,
+    )
+    principal_df["Subset"] = list(concatenated_df["subset"])
 
-    dimReducedDataFrame = pd.DataFrame(aggregated_feature_vector)
-    dimReducedDataFrame = dimReducedDataFrame.rename(columns={0: "V1", 1: "V2", 2: "V3"})
-    plt.figure(figsize=(10, 5))
+    # # Identify cluster associations then compare to known classifications
+    # kmeans = AgglomerativeClustering(compute_distances=True)
+    # kmeans.fit(distances)
+    # principal_df["Cluster"] = list(kmeans.labels_)
 
-    # Apply colour to markers according to known class membership
-    dimReducedDataFrame["Subset"] = list(concatenated_df["subset"])
-
-    sb.scatterplot(data=dimReducedDataFrame, x="V1", y="V2", hue="Subset")
-    plt.grid(True)
-    plt.show()
+    # plt.figure(figsize=(10, 5))
+    # sb.scatterplot(data=principal_df, x="0", y="1", hue="Subset")
+    # plt.grid(True)
+    # plt.show()
     print()
 
 
@@ -83,8 +104,8 @@ def test_visualise_clusters_comparing_subsets():
     """ Test on Scenic Rim 2021 to see if the leopard tree are flagged as outliers"""
 
     visualise_clusters_comparing_subsets(
-        path_subset_1=Path("/home/david/RACAS/640_x_640/Clustering/Scenic_clustering_stp2"),
-        path_subset_2=Path("/home/david/RACAS/640_x_640/Clustering/Train_Charters_Towers_2021_subsample"),
+        path_training_subset=Path("/home/david/RACAS/640_x_640/Clustering/Charters_Towers_subsample"),
+        path_test_data=Path("/home/david/RACAS/640_x_640/Clustering/Leopard_blossoms"),
     )
     print()
 
@@ -158,7 +179,7 @@ def get_feature_maps_for_patches(
             line_split = line.strip().split(" ")
             patch_ref = f"{image_path.stem}_{seq}"
             class_id = int(line_split[0])
-            if class_id not in [12]:
+            if class_id not in [17]:
                 continue
             # class_name = class_info.get(int(class_id))
             # new_w, new_h = average_patch_sizes.get(class_id)
@@ -212,7 +233,7 @@ def _extract_features_for_patch(
     y2 = np.clip(int((y + h / 2 + PATCH_MARGIN) * img_h), a_min=0, a_max=img_h)
     crop = img[y1:y2, x1:x2, :]
     crop = cv2.resize(crop, (new_h, new_w))
-    if show_crops:
+    if path_to_image.name == "Photo_2021_Dec_02_11_44_24_165_b.jpg":
         cv2.imshow("Blah", crop)
         cv2.waitKey(0)
     crop = np.expand_dims(crop, 0)
