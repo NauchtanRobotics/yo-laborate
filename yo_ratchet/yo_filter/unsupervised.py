@@ -1,14 +1,10 @@
 from cv2 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import seaborn as sb
 
 from pathlib import Path
 from typing import List, Dict, Optional
-from sklearn.decomposition import PCA
-from sklearn.cluster import AgglomerativeClustering
 from sklearn.preprocessing import StandardScaler
 
 from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME, LABELS_FOLDER_NAME
@@ -18,8 +14,8 @@ PATCH_W = 200
 PATCH_H = 200
 
 
-def get_2048_features_standardiser(path_training_subset: Path):
-    data_training_subset = get_patches_features_data_dict(images_root=path_training_subset)
+def get_2048_features_standardiser(path_training_subset: Path, class_id: int):
+    data_training_subset = get_patches_features_data_dict_list(dataset_root=path_training_subset, class_id=class_id)
     training_df = pd.DataFrame(data_training_subset)
     training_features_list = list(training_df["features"])
     training_features_array = np.array(training_features_list, dtype="float64")
@@ -28,58 +24,17 @@ def get_2048_features_standardiser(path_training_subset: Path):
     return ss, ss_train_features_array, training_df
 
 
-def view_outliers(path_training_subset: Path, path_test_data: Path):
-    ss, ss_train_features_array, training_df = get_2048_features_standardiser(
-        path_training_subset=path_training_subset
-    )
-    test_features_data_dict = get_patches_features_data_dict(images_root=path_test_data)
-    num_results = len(test_features_data_dict)
-    row_num = 0
-
-    while True:
-        row = test_features_data_dict[row_num]
-        image_features = row["features"]
-        ss_row_features_array = ss.transform(image_features.reshape(1, -1))
-        rmsd = np.square(ss_row_features_array)
-        rmsd = rmsd.mean(axis=1)
-        rmsd = np.sqrt(rmsd)
-        delta = "{:.1f}".format(np.round_(rmsd, 1)[0])
-        if rmsd[0] > 2.7:
-            label = "Outlier"
-        else:
-            label = "Normal"
-        photo_name = row["image_name"]
-        label += f" ({delta}) - {row_num + 1} of {num_results}"
-        patch = row["crop"]
-        cv2.imshow(label, patch)
-        key_pressed = cv2.waitKey(0)
-        if key_pressed == 81:
-            if row_num > 0:
-                row_num -= 1
-            else:  # Roll around - go to the end of the list
-                row_num = num_results - 1
-        elif key_pressed == 27:
-            break
-        elif key_pressed == 83 or key_pressed == 32:
-            if row_num < num_results-1:
-                row_num += 1
-            else:
-                row_num = 0
-        else:  # Undefined cmd - do nothing
-            pass
-
-        cv2.destroyWindow(label)
+def get_distance(ss: StandardScaler, image_features):
+    ss_row_features_array = ss.transform(image_features.reshape(1, -1))
+    rmsd = np.square(ss_row_features_array)
+    rmsd = rmsd.mean(axis=1)
+    rmsd = np.sqrt(rmsd)
+    return rmsd
 
 
-def test_find_outliers():
-    view_outliers(
-        path_training_subset=Path("/home/david/RACAS/640_x_640/Clustering/Charters_Towers_subsample"),
-        path_test_data=Path("/home/david/RACAS/640_x_640/Clustering/Leopard_blossoms"),
-    )
-
-
-def get_patches_features_data_dict(
-    images_root: Path,
+def get_patches_features_data_dict_list(
+    dataset_root: Path,
+    class_id: int,
     annotations_dir: Optional[Path] = None,
     limit: Optional[int] = None
 ) -> List[Dict]:
@@ -100,8 +55,10 @@ def get_patches_features_data_dict(
             {
                 "patch_ref": <patch_id>,
                 "image_name": <image_filename>,
+                "crop": <np.ndarray of cropped patch>,
                 "features": <extracted_features_for_patch>
                 "class_id": <class_id>
+                "subset": <name of the parent folder to the annotations_dir>,
             },
         ]
         where <patch_id> = f"{image_path.stem}_{<seq patch # for patch in image>}"
@@ -122,16 +79,23 @@ def get_patches_features_data_dict(
     MyModel.layers[0].trainable = False
 
     if annotations_dir is None:
-        if (images_root / LABELS_FOLDER_NAME).exists():
-            annotations_dir = images_root / LABELS_FOLDER_NAME
-        elif (images_root / YOLO_ANNOTATIONS_FOLDER_NAME).exists():
-            annotations_dir = images_root / YOLO_ANNOTATIONS_FOLDER_NAME
+        if (dataset_root / LABELS_FOLDER_NAME).exists():
+            annotations_dir = dataset_root / LABELS_FOLDER_NAME
+        elif (dataset_root / YOLO_ANNOTATIONS_FOLDER_NAME).exists():
+            annotations_dir = dataset_root / YOLO_ANNOTATIONS_FOLDER_NAME
         else:
             raise RuntimeError("Please provide an argument for the annotations_dir parameter.")
 
     annotation_files: List = sorted(annotations_dir.rglob("*.txt"))
     if len(annotation_files) == 0:
         print(f"\nNo files found in {annotations_dir}")
+
+    potential_images_subdir = dataset_root / "images"
+    if potential_images_subdir.exists() and potential_images_subdir.is_dir():
+        images_root = potential_images_subdir
+    else:
+        images_root = dataset_root
+
     if limit is not None and limit < len(annotation_files):
         annotation_files = annotation_files[: limit]
     # average_patch_sizes = {}  # = get_average_patch_sizes(annotations)
@@ -147,8 +111,8 @@ def get_patches_features_data_dict(
         for seq, line in enumerate(lines):
             line_split = line.strip().split(" ")
             patch_ref = f"{image_path.stem}_{seq}"
-            class_id = int(line_split[0])
-            if class_id not in [17]:
+            line_class_id = int(line_split[0])
+            if line_class_id not in [class_id]:
                 continue
             # class_name = class_info.get(int(class_id))
             # new_w, new_h = average_patch_sizes.get(class_id)
@@ -165,15 +129,6 @@ def get_patches_features_data_dict(
                 "subset": annotations_dir.parent.name,
             })
     return results
-
-
-def test_get_feature_maps_for_patches():
-    """ Test on Scenic Rim 2021 to see if the leopard tree are flagged as outliers"""
-    features_map = get_patches_features_data_dict(
-        images_root=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_19.1"),
-        annotations_dir=None
-    )
-    print(features_map)
 
 
 def _extract_features_for_patch(
