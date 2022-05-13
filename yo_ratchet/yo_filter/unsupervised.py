@@ -15,8 +15,8 @@ PATCH_H = 200
 
 
 def get_2048_features_standardiser(path_training_subset: Path, class_id: int):
-    data_training_subset = get_patches_features_data_dict_list(dataset_root=path_training_subset, class_id=class_id)
-    training_df = pd.DataFrame(data_training_subset)
+    train_data_dict_list = get_patches_features_data_dict_list(dataset_root=path_training_subset, class_id=class_id)
+    training_df = pd.DataFrame(train_data_dict_list)
     training_features_list = list(training_df["features"])
     training_features_array = np.array(training_features_list, dtype="float64")
     ss = StandardScaler()
@@ -68,16 +68,24 @@ def get_patches_features_data_dict_list(
         wrangle_filtered.filter_detections().
 
     """
-    MyModel = tf.keras.models.Sequential()
-    MyModel.add(
-        tf.keras.applications.ResNet50(
-            include_top=False,
-            weights="imagenet",
-            pooling="avg",
-        )
+    resnet50 = tf.keras.applications.ResNet50(
+        include_top=False,
+        weights="imagenet",
+        pooling="avg",
     )
-    MyModel.layers[0].trainable = False
+    resnet50.layers[0].trainable = False
 
+    intermediate_model = tf.keras.Model(
+        inputs=resnet50.input,
+        outputs=resnet50.layers[112].output  # layer 80 also good.
+    )
+    # x = tf.keras.layers.Flatten(name="flatten")(intermediate_model.output)
+    # x = tf.keras.layers.Dense(512, activation='relu')(x)
+    x = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(intermediate_model.output)
+    o = tf.keras.layers.Activation('sigmoid', name='loss')(x)
+
+    MyModel = tf.keras.Model(inputs=resnet50.input, outputs=[o])
+    MyModel.layers[0].trainable = False
     if annotations_dir is None:
         if (dataset_root / LABELS_FOLDER_NAME).exists():
             annotations_dir = dataset_root / LABELS_FOLDER_NAME
@@ -132,7 +140,7 @@ def get_patches_features_data_dict_list(
 
 
 def _extract_features_for_patch(
-    model: tf.keras.models.Sequential,
+    model:  tf.keras.models.Sequential,
     path_to_image: Path,
     x: float,
     y: float,
