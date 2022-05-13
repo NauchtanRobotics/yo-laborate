@@ -19,7 +19,7 @@ PATCH_H = 200
 
 
 def visualise_clusters(images_root: Path, limit: Optional[int] = 1000):  # , n_clusters: int = 2):
-    data_list = get_feature_maps_for_patches(images_root=images_root, limit=limit)
+    data_list = get_patches_features_data_dict(images_root=images_root, limit=limit)
     df = pd.DataFrame(data_list)
     features_list = list(df["features"])
     feature_vector = np.array(features_list, dtype="float64")
@@ -50,27 +50,37 @@ def test_visualise():
     print()
 
 
-def get_standardiser(path_training_subset: Path):
-    data_training_subset = get_feature_maps_for_patches(images_root=path_training_subset)
+def get_2048_features_standardiser(path_training_subset: Path):
+    data_training_subset = get_patches_features_data_dict(images_root=path_training_subset)
     training_df = pd.DataFrame(data_training_subset)
     training_features_list = list(training_df["features"])
     training_features_array = np.array(training_features_list, dtype="float64")
 
     # Standardizing the features
     ss = StandardScaler()
-    ss.fit_transform(training_features_array)
-    return ss
+    ss_train_features_array = ss.fit_transform(training_features_array)
+    return ss, ss_train_features_array, training_df
+
+
+def get_2048_features_pca_transformer(path_training_subset: Path):
+    ss, ss_train_features_array, _ = get_2048_features_standardiser(
+        path_training_subset=path_training_subset
+    )
+    pca = PCA()
+    pca.fit_transform(ss_train_features_array)
+    return pca, ss
 
 
 def view_outliers(path_training_subset: Path, path_test_data: Path):
-    ss = get_standardiser(path_training_subset=path_training_subset)
-
-    data_test_subset = get_feature_maps_for_patches(images_root=path_test_data)
-    num_results = len(data_test_subset)
+    ss, ss_train_features_array, training_df = get_2048_features_standardiser(
+        path_training_subset=path_training_subset
+    )
+    test_features_data_dict = get_patches_features_data_dict(images_root=path_test_data)
+    num_results = len(test_features_data_dict)
     row_num = 0
 
     while True:
-        row = data_test_subset[row_num]
+        row = test_features_data_dict[row_num]
         image_features = row["features"]
         ss_row_features_array = ss.transform(image_features.reshape(1, -1))
         rmsd = np.square(ss_row_features_array)
@@ -78,7 +88,6 @@ def view_outliers(path_training_subset: Path, path_test_data: Path):
         rmsd = np.sqrt(rmsd)
         delta = "{:.1f}".format(np.round_(rmsd, 1)[0])
         if rmsd[0] > 2.7:
-
             label = "Outlier"
         else:
             label = "Normal"
@@ -112,67 +121,7 @@ def test_find_outliers():
     )
 
 
-def visualise_clusters_comparing_subsets(path_training_subset: Path, path_test_data: Path):
-    data_training_subset = get_feature_maps_for_patches(images_root=path_training_subset)
-    training_df = pd.DataFrame(data_training_subset)
-    training_features_list = list(training_df["features"])
-    training_features_array = np.array(training_features_list, dtype="float64")
-
-    data_test_subset = get_feature_maps_for_patches(images_root=path_test_data)
-    test_df = pd.DataFrame(data_test_subset)
-    test_features_list = list(test_df["features"])
-    test_features_array = np.array(test_features_list, dtype="float64")
-
-    concatenated_df = pd.concat([test_df, training_df], ignore_index=True, sort=False)
-    aggregated_feature_arrays = np.concatenate([test_features_array, training_features_array])
-    # Standardizing the features
-    ss = StandardScaler()
-    ss_train_features_array = ss.fit_transform(training_features_array)
-    ss_test_features_array = ss.transform(test_features_array)
-    ss_train_test_features_array = ss.transform(aggregated_feature_arrays)
-    # expanded_df = pd.DataFrame(list(ss_train_test_features_array))
-    # new_df = pd.concat([concatenated_df, expanded_df], axis=1)
-    rmsd = np.square(ss_train_test_features_array)
-    rmsd = rmsd.mean(axis=1)
-    rmsd = np.sqrt(rmsd)
-    concatenated_df["RMS_Dist"] = list(rmsd)
-    concatenated_df["Outlier"] = concatenated_df.apply(
-        lambda x: True if x["RMS_Dist"] > 2.5 else False,
-        axis=1
-    )
-
-    pca = PCA()
-    pc_array_train = pca.fit_transform(ss_train_features_array)
-    pc_array_test = pca.transform(ss_test_features_array)
-    aggregated_pc_arrays = np.concatenate([pc_array_test, pc_array_train])
-    principal_df = pd.DataFrame(
-        data=aggregated_pc_arrays,
-    )
-    principal_df["Subset"] = list(concatenated_df["subset"])
-
-    # # Identify cluster associations then compare to known classifications
-    # kmeans = AgglomerativeClustering(compute_distances=True)
-    # kmeans.fit(distances)
-    # principal_df["Cluster"] = list(kmeans.labels_)
-
-    # plt.figure(figsize=(10, 5))
-    # sb.scatterplot(data=principal_df, x="0", y="1", hue="Subset")
-    # plt.grid(True)
-    # plt.show()
-    print()
-
-
-def test_visualise_clusters_comparing_subsets():
-    """ Test on Scenic Rim 2021 to see if the leopard tree are flagged as outliers"""
-
-    visualise_clusters_comparing_subsets(
-        path_training_subset=Path("/home/david/RACAS/640_x_640/Clustering/Charters_Towers_subsample"),
-        path_test_data=Path("/home/david/RACAS/640_x_640/Clustering/Leopard_blossoms"),
-    )
-    print()
-
-
-def get_feature_maps_for_patches(
+def get_patches_features_data_dict(
     images_root: Path,
     annotations_dir: Optional[Path] = None,
     limit: Optional[int] = None
@@ -263,7 +212,7 @@ def get_feature_maps_for_patches(
 
 def test_get_feature_maps_for_patches():
     """ Test on Scenic Rim 2021 to see if the leopard tree are flagged as outliers"""
-    features_map = get_feature_maps_for_patches(
+    features_map = get_patches_features_data_dict(
         images_root=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_19.1"),
         annotations_dir=None
     )
