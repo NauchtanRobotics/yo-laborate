@@ -18,57 +18,14 @@ PATCH_W = 200
 PATCH_H = 200
 
 
-def visualise_clusters(images_root: Path, limit: Optional[int] = 1000):  # , n_clusters: int = 2):
-    data_list = get_patches_features_data_dict(images_root=images_root, limit=limit)
-    df = pd.DataFrame(data_list)
-    features_list = list(df["features"])
-    feature_vector = np.array(features_list, dtype="float64")
-
-    kmeans = AgglomerativeClustering(compute_distances=True)
-    kmeans.fit(feature_vector)
-    predictions = kmeans.labels_
-
-    dimReducedDataFrame = pd.DataFrame(feature_vector)
-    dimReducedDataFrame = dimReducedDataFrame.rename(columns={0: "V1", 1: "V2", 2: "V3"})
-    plt.figure(figsize=(10, 5))
-
-    # Apply colour to markers according to known class membership
-    dimReducedDataFrame["Category"] = list(df["class_id"])
-
-    sb.scatterplot(data=dimReducedDataFrame, x="V2", y="V3", hue="Category")
-    plt.grid(True)
-    plt.show()
-    print()
-
-
-def test_visualise():
-    """ Test on Scenic Rim 2021 to see if the leopard tree are flagged as outliers"""
-    visualise_clusters(
-        images_root=Path("/home/david/RACAS/sealed_roads_dataset/Scenic_Rim_2021_mined_1"),
-        #n_clusters=26,
-    )
-    print()
-
-
 def get_2048_features_standardiser(path_training_subset: Path):
     data_training_subset = get_patches_features_data_dict(images_root=path_training_subset)
     training_df = pd.DataFrame(data_training_subset)
     training_features_list = list(training_df["features"])
     training_features_array = np.array(training_features_list, dtype="float64")
-
-    # Standardizing the features
     ss = StandardScaler()
     ss_train_features_array = ss.fit_transform(training_features_array)
     return ss, ss_train_features_array, training_df
-
-
-def get_2048_features_pca_transformer(path_training_subset: Path):
-    ss, ss_train_features_array, _ = get_2048_features_standardiser(
-        path_training_subset=path_training_subset
-    )
-    pca = PCA()
-    pca.fit_transform(ss_train_features_array)
-    return pca, ss
 
 
 def view_outliers(path_training_subset: Path, path_test_data: Path):
