@@ -16,10 +16,72 @@ PATCH_MARGIN = 0.01
 PATCH_W = 200
 PATCH_H = 200
 
+FEATURES_STR = "features"
+IMAGE_NAME_STR = "image_name"
+SUBSET_STR = "subset"
+DELTA_STR = "delta"
 
-def get_features_matrix(subset_path: Path, class_id: int):
+
+def find_n_most_distant_outliers_in_batch(
+    train_data: Path,
+    test_data: Path,
+    class_id: int,
+    layer_number: int,
+    n_outliers: int = 5,
+):
+    """
+    Returns a list of image names in a given subset, test_data, for the least central
+    patches for a given class. This is achieved by normalising features found test_data
+    based on the sample of features provided by train_data. Features are extracted from
+    the output of layer <layer_number> for a resnet50 model trained for 1000 classes.
+
+    The length of the returned list will be n_outliers unless there was a very small
+    set of patches found in the test_data subset associated with class_id, in which
+    case the length of returned list will be at most a third of the number of images containing
+    class=<class_id>.
+
+    Only processes one class at a time.
+
+    Ideally it would process all classes at same time,
+    but at this stage get_patches_features_data_dict_list()
+    only does one class at a time.
+
+    """
+    train_features_matrix, training_df = get_features_matrix(
+        subset_path=train_data,
+        class_id=class_id,
+        layer_number=layer_number,
+    )
+    ss = StandardScaler()
+    _ = ss.fit_transform(train_features_matrix)
+    train_rmsd = get_rms_distance_vector_for_matrix(ss=ss, image_features_matrix=train_features_matrix)
+    mean = train_rmsd.mean(axis=0)
+    stddev = train_rmsd.std(axis=0)
+    test_features_matrix, test_df = get_features_matrix(
+        subset_path=test_data,
+        class_id=class_id,
+        layer_number=layer_number
+    )
+    rmsd = get_rms_distance_vector_for_matrix(ss=ss, image_features_matrix=test_features_matrix)
+    delta = (rmsd - mean) / stddev
+    test_df[DELTA_STR] = delta
+    # Now get the image names for the n most distant patches
+    test_df = test_df.sort_values(by=[DELTA_STR], ascending=False)
+    image_names = list(test_df[IMAGE_NAME_STR])
+    len_results = len(test_df)
+    if len_results == 0:
+        return []
+    elif len_results < n_outliers * 3:
+        n_outliers = min(int(round(len_results / 3, 0)), 1)
+    else:  # Just return the first n_outliers results as requested
+        pass
+    image_names = image_names[:n_outliers]
+    return image_names
+
+
+def get_features_matrix(subset_path: Path, class_id: int, layer_number: int):
     data_dict_list = get_patches_features_data_dict_list(
-        dataset_root=subset_path, class_id=class_id
+        dataset_root=subset_path, class_id=class_id, layer_number=layer_number
     )
     df = pd.DataFrame(data_dict_list)
     features_list = list(df["features"])
@@ -27,7 +89,7 @@ def get_features_matrix(subset_path: Path, class_id: int):
     return features_matrix, df
 
 
-def get_distance(ss: StandardScaler, image_features: np.ndarray):
+def get_distance_for_vector(ss: StandardScaler, image_features: np.ndarray):
     ss_row_features_array = ss.transform(image_features.reshape(1, -1))
     rmsd = np.square(ss_row_features_array)
     rmsd = rmsd.mean(axis=1)
@@ -35,13 +97,12 @@ def get_distance(ss: StandardScaler, image_features: np.ndarray):
     return rmsd
 
 
-def get_mean_and_stddev_of_rms_distance(input_matrix: np.ndarray):
-    rmsd = np.square(input_matrix)
+def get_rms_distance_vector_for_matrix(ss: StandardScaler, image_features_matrix: np.ndarray):
+    standardised_features_matrix = ss.transform(image_features_matrix)
+    rmsd = np.square(standardised_features_matrix)
     rmsd = rmsd.mean(axis=1)
     rmsd = np.sqrt(rmsd)
-    mean = rmsd.mean(axis=0)
-    stddev = rmsd.std(axis=0)
-    return mean, stddev
+    return rmsd
 
 
 def get_patches_features_data_dict_list(
@@ -155,7 +216,7 @@ def get_patches_features_data_dict_list(
             results.append(
                 {
                     "patch_ref": patch_ref,
-                    "image_name": image_path.name,
+                    IMAGE_NAME_STR: image_path.name,
                     "features": _extracted_features,
                     "crop": crop,
                     "class_id": int(class_id),
