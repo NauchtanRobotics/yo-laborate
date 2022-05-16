@@ -7,24 +7,27 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from sklearn.preprocessing import StandardScaler
 
-from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME, LABELS_FOLDER_NAME
+from yo_ratchet.yo_wrangle.common import (
+    YOLO_ANNOTATIONS_FOLDER_NAME,
+    LABELS_FOLDER_NAME,
+)
 
 PATCH_MARGIN = 0.01
 PATCH_W = 200
 PATCH_H = 200
 
 
-def get_2048_features_standardiser(path_training_subset: Path, class_id: int):
-    train_data_dict_list = get_patches_features_data_dict_list(dataset_root=path_training_subset, class_id=class_id)
-    training_df = pd.DataFrame(train_data_dict_list)
-    training_features_list = list(training_df["features"])
-    training_features_array = np.array(training_features_list, dtype="float64")
-    ss = StandardScaler()
-    ss_train_features_array = ss.fit_transform(training_features_array)
-    return ss, ss_train_features_array, training_df
+def get_features_matrix(subset_path: Path, class_id: int):
+    data_dict_list = get_patches_features_data_dict_list(
+        dataset_root=subset_path, class_id=class_id
+    )
+    df = pd.DataFrame(data_dict_list)
+    features_list = list(df["features"])
+    features_matrix = np.array(features_list, dtype="float64")
+    return features_matrix, df
 
 
-def get_distance(ss: StandardScaler, image_features):
+def get_distance(ss: StandardScaler, image_features: np.ndarray):
     ss_row_features_array = ss.transform(image_features.reshape(1, -1))
     rmsd = np.square(ss_row_features_array)
     rmsd = rmsd.mean(axis=1)
@@ -32,11 +35,21 @@ def get_distance(ss: StandardScaler, image_features):
     return rmsd
 
 
+def get_mean_and_stddev_of_rms_distance(input_matrix: np.ndarray):
+    rmsd = np.square(input_matrix)
+    rmsd = rmsd.mean(axis=1)
+    rmsd = np.sqrt(rmsd)
+    mean = rmsd.mean(axis=0)
+    stddev = rmsd.std(axis=0)
+    return mean, stddev
+
+
 def get_patches_features_data_dict_list(
     dataset_root: Path,
     class_id: int,
     annotations_dir: Optional[Path] = None,
-    limit: Optional[int] = None
+    limit: Optional[int] = None,
+    layer_number: int = 50,  # Tested on: 80 | 112
 ) -> List[Dict]:
     """
     Feature extractor that takes a labels/ directory as input; i.e. only works on training
@@ -77,12 +90,12 @@ def get_patches_features_data_dict_list(
 
     intermediate_model = tf.keras.Model(
         inputs=resnet50.input,
-        outputs=resnet50.layers[112].output  # layer 80 also good.
+        outputs=resnet50.layers[layer_number].output,  # layer 80 also good.
     )
     # x = tf.keras.layers.Flatten(name="flatten")(intermediate_model.output)
     # x = tf.keras.layers.Dense(512, activation='relu')(x)
     x = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(intermediate_model.output)
-    o = tf.keras.layers.Activation('sigmoid', name='loss')(x)
+    o = tf.keras.layers.Activation("sigmoid", name="loss")(x)
 
     MyModel = tf.keras.Model(inputs=resnet50.input, outputs=[o])
     MyModel.layers[0].trainable = False
@@ -92,7 +105,9 @@ def get_patches_features_data_dict_list(
         elif (dataset_root / YOLO_ANNOTATIONS_FOLDER_NAME).exists():
             annotations_dir = dataset_root / YOLO_ANNOTATIONS_FOLDER_NAME
         else:
-            raise RuntimeError("Please provide an argument for the annotations_dir parameter.")
+            raise RuntimeError(
+                "Please provide an argument for the annotations_dir parameter."
+            )
 
     annotation_files: List = sorted(annotations_dir.rglob("*.txt"))
     if len(annotation_files) == 0:
@@ -105,7 +120,7 @@ def get_patches_features_data_dict_list(
         images_root = dataset_root
 
     if limit is not None and limit < len(annotation_files):
-        annotation_files = annotation_files[: limit]
+        annotation_files = annotation_files[:limit]
     # average_patch_sizes = {}  # = get_average_patch_sizes(annotations)
     class_centroids = {}  # {<class_id>: {"v1": <v1>, "v2": <v2>}
     results = []
@@ -124,23 +139,34 @@ def get_patches_features_data_dict_list(
                 continue
             # class_name = class_info.get(int(class_id))
             # new_w, new_h = average_patch_sizes.get(class_id)
-            x, y, w, h = line_split[1:5]  # Ignores class_id which is line[0] and probability which is line[5]
+            x, y, w, h = line_split[
+                1:5
+            ]  # Ignores class_id which is line[0] and probability which is line[5]
             _extracted_features, crop = _extract_features_for_patch(
-                MyModel, image_path, float(x), float(y), float(w), float(h), PATCH_W, PATCH_H
+                MyModel,
+                image_path,
+                float(x),
+                float(y),
+                float(w),
+                float(h),
+                PATCH_W,
+                PATCH_H,
             )
-            results.append({
-                "patch_ref": patch_ref,
-                "image_name": image_path.name,
-                "features": _extracted_features,
-                "crop": crop,
-                "class_id": int(class_id),
-                "subset": annotations_dir.parent.name,
-            })
+            results.append(
+                {
+                    "patch_ref": patch_ref,
+                    "image_name": image_path.name,
+                    "features": _extracted_features,
+                    "crop": crop,
+                    "class_id": int(class_id),
+                    "subset": annotations_dir.parent.name,
+                }
+            )
     return results
 
 
 def _extract_features_for_patch(
-    model:  tf.keras.models.Sequential,
+    model: tf.keras.models.Sequential,
     path_to_image: Path,
     x: float,
     y: float,
@@ -148,7 +174,7 @@ def _extract_features_for_patch(
     h: float,
     new_h: float,
     new_w: float,
-    show_crops: bool = False
+    show_crops: bool = False,
 ):
     """
     Gets the features for each padded patch.
