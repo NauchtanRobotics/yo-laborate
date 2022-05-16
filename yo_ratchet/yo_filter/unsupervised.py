@@ -54,15 +54,17 @@ def find_n_most_distant_outliers_in_batch(
     )
     ss = StandardScaler()
     _ = ss.fit_transform(train_features_matrix)
-    train_rmsd = get_rms_distance_vector_for_matrix(ss=ss, image_features_matrix=train_features_matrix)
+    train_rmsd = get_rms_distance_vector_for_matrix(
+        ss=ss, image_features_matrix=train_features_matrix
+    )
     mean = train_rmsd.mean(axis=0)
     stddev = train_rmsd.std(axis=0)
     test_features_matrix, test_df = get_features_matrix(
-        subset_path=test_data,
-        class_id=class_id,
-        layer_number=layer_number
+        subset_path=test_data, class_id=class_id, layer_number=layer_number
     )
-    rmsd = get_rms_distance_vector_for_matrix(ss=ss, image_features_matrix=test_features_matrix)
+    rmsd = get_rms_distance_vector_for_matrix(
+        ss=ss, image_features_matrix=test_features_matrix
+    )
     delta = (rmsd - mean) / stddev
     test_df[DELTA_STR] = delta
     # Now get the image names for the n most distant patches
@@ -72,7 +74,7 @@ def find_n_most_distant_outliers_in_batch(
     if len_results == 0:
         return []
     elif len_results < n_outliers * 3:
-        n_outliers = min(int(round(len_results / 3, 0)), 1)
+        n_outliers = max(int(round(len_results / 3, 0)), 1)
     else:  # Just return the first n_outliers results as requested
         pass
     image_names = image_names[:n_outliers]
@@ -97,7 +99,9 @@ def get_distance_for_vector(ss: StandardScaler, image_features: np.ndarray):
     return rmsd
 
 
-def get_rms_distance_vector_for_matrix(ss: StandardScaler, image_features_matrix: np.ndarray):
+def get_rms_distance_vector_for_matrix(
+    ss: StandardScaler, image_features_matrix: np.ndarray
+):
     standardised_features_matrix = ss.transform(image_features_matrix)
     rmsd = np.square(standardised_features_matrix)
     rmsd = rmsd.mean(axis=1)
