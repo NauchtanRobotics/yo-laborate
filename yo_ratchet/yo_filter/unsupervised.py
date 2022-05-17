@@ -28,7 +28,7 @@ def find_n_most_distant_outliers_in_batch(
     class_id: int,
     layer_number: int,
     n_outliers: int = 5,
-):
+) -> List[str]:
     """
     Returns a list of image names in a given subset, test_data, for the least central
     patches for a given class. This is achieved by normalising features found test_data
@@ -69,12 +69,12 @@ def find_n_most_distant_outliers_in_batch(
     test_df[DELTA_STR] = delta
     # Now get the image names for the n most distant patches
     test_df = test_df.sort_values(by=[DELTA_STR], ascending=False)
-    image_names = list(test_df[IMAGE_NAME_STR])
+    image_names = list(set(test_df[IMAGE_NAME_STR]))
     len_results = len(test_df)
     if len_results == 0:
         return []
-    elif len_results < n_outliers * 3:
-        n_outliers = max(int(round(len_results / 3, 0)), 1)
+    elif len_results < n_outliers * 2:
+        n_outliers = max(int(round(len_results / 2, 0)), 1)
     else:  # Just return the first n_outliers results as requested
         pass
     image_names = image_names[:n_outliers]
@@ -164,6 +164,14 @@ def get_patches_features_data_dict_list(
 
     MyModel = tf.keras.Model(inputs=resnet50.input, outputs=[o])
     MyModel.layers[0].trainable = False
+    if (
+        dataset_root.name == YOLO_ANNOTATIONS_FOLDER_NAME
+        and (dataset_root.parent / YOLO_ANNOTATIONS_FOLDER_NAME).exists()
+    ):  # For when accidental double-click down to the next folder.
+        dataset_root = dataset_root.parent
+    else:
+        pass
+
     if annotations_dir is None:
         if (dataset_root / LABELS_FOLDER_NAME).exists():
             annotations_dir = dataset_root / LABELS_FOLDER_NAME
