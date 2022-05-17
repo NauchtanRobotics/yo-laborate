@@ -84,13 +84,15 @@ def get_label_to_id_map(base_dir: Path):
     config.read(str(config_path))
     classes_json_path = config.get(DATASET, CLASSES_JSON)
     if (
-            classes_json_path is None
-            or classes_json_path == ""
-            or classes_json_path == "./"
+        classes_json_path is None
+        or classes_json_path == ""
+        or classes_json_path == "./"
     ):
         classes_json_path = base_dir / CLASSES_JSON_FILENAME
         id_to_label_map = get_id_to_label_map(classes_json_path)
-        label_to_id = {class_label: class_id for class_id, class_label in id_to_label_map.items()}
+        label_to_id = {
+            class_label: class_id for class_id, class_label in id_to_label_map.items()
+        }
         return label_to_id
 
 
