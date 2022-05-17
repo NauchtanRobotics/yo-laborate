@@ -2,11 +2,17 @@ from pathlib import Path
 
 import PySimpleGUI as sg
 
+
 from yo_ratchet.fiftyone_integration import start
-from yo_ratchet.user_interface.find_errors_gui import launch_find_errors_config_window
 from yo_ratchet.yo_wrangle.common import get_classes_list, inferred_base_dir
 from yo_ratchet.user_interface.backup_train_gui import backup_train_window
+from yo_ratchet.user_interface.find_errors_gui import launch_find_errors_config_window
+from yo_ratchet.user_interface.find_outliers_gui import (
+    launch_find_outliers_config_window,
+)
 from open_labeling.launcher import main as open_labeling_launcher
+
+FIND_OUTLIERS = "Find Outliers"
 
 LOG_PANE_SIZE = (120, 25)
 
@@ -27,7 +33,15 @@ def launch_main_gui(base_dir: Path = None):
     menu_def = [
         [
             "Actions",
-            [LABEL_FOLDER, BACKUP_TRAIN_VCS, EXPLORE_DS, FIND_ERRORS, "---", "Exit"],
+            [
+                LABEL_FOLDER,
+                BACKUP_TRAIN_VCS,
+                EXPLORE_DS,
+                FIND_ERRORS,
+                FIND_OUTLIERS,
+                "---",
+                "Exit",
+            ],
         ],
         ["Help", "About..."],
     ]
@@ -83,6 +97,8 @@ def launch_main_gui(base_dir: Path = None):
             open_labeling_launcher(args=Args())
         elif event == FIND_ERRORS:
             launch_find_errors_config_window(base_dir=base_dir)
+        elif event == FIND_OUTLIERS:
+            launch_find_outliers_config_window(base_dir=base_dir)
         elif event == EXPLORE_DS:
             start()
         else:
