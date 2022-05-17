@@ -1,22 +1,26 @@
-import os
-os.environ["FIFTYONE_DISABLE_SERVICES"] = "1"
-
 import PySimpleGUI as sg
 from pathlib import Path
 
-from fiftyone_integration import edit_labels
+from yo_ratchet.open_labeling_integration.launcher import edit_labels
 from yo_ratchet.yo_filter.unsupervised import find_n_most_distant_outliers_in_batch
-from yo_ratchet.yo_wrangle.common import inferred_base_dir, get_classes_list, get_yolo_detect_paths, \
-    get_label_to_id_map
+from yo_ratchet.yo_wrangle.common import (
+    inferred_base_dir,
+    get_classes_list,
+    get_yolo_detect_paths,
+    get_label_to_id_map,
+)
 
+FEATURE_LAYER = "Feature Layer"
+LAYER_ = "-LAYER-"
 MAX_NUM_OUTLIERS = "Max Num Outliers"
-
 N_ = "-N-"
 CLASS_ID_ = "-CLASS_ID-"
 TEST_ = "-TEST-"
 TRAIN_ = "-TRAIN-"
 CLASS_ = "-CLASS-"
 GO_ = "-GO-"
+
+INPUT_FIELD_WIDTH = 50
 
 
 def launch_find_outliers_config_window(base_dir: Path = None):
@@ -40,16 +44,27 @@ def launch_find_outliers_config_window(base_dir: Path = None):
     file_list_column = [
         [
             sg.Text(MAX_NUM_OUTLIERS, size=(17, 1)),
-            sg.In(default_text=5, size=(40, 1), enable_events=True, key=N_),
+            sg.In(
+                default_text=5, size=(INPUT_FIELD_WIDTH, 1), enable_events=True, key=N_
+            ),
+        ],
+        [
+            sg.Text(FEATURE_LAYER, size=(17, 1)),
+            sg.In(
+                default_text=80,
+                size=(INPUT_FIELD_WIDTH, 1),
+                enable_events=True,
+                key=LAYER_,
+            ),
         ],
         [
             sg.Text("Test Data", size=(17, 1)),
-            sg.In(size=(40, 1), enable_events=True, key=TEST_),
+            sg.In(size=(INPUT_FIELD_WIDTH, 1), enable_events=True, key=TEST_),
             sg.FolderBrowse(initial_folder=str(base_dir)),
         ],
         [
             sg.Text("Training Data", size=(17, 1)),
-            sg.In(size=(40, 1), enable_events=True, key=TRAIN_),
+            sg.In(size=(INPUT_FIELD_WIDTH, 1), enable_events=True, key=TRAIN_),
             sg.FolderBrowse(initial_folder=str(datasets_root)),
         ],
         [
@@ -57,7 +72,7 @@ def launch_find_outliers_config_window(base_dir: Path = None):
             sg.Listbox(
                 values=class_names_list,
                 select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
-                size=(38, 12),
+                size=(INPUT_FIELD_WIDTH - 2, 12),
                 enable_events=True,
                 visible=True,
                 change_submits=True,
@@ -85,9 +100,21 @@ def launch_find_outliers_config_window(base_dir: Path = None):
                 continue
             else:
                 try:
-                    n_outliers = int(values[N_])
+                    n_outliers = int(values[N_].strip())
                 except:
-                    sg.popup("Please enter an integer value for '%s'" % MAX_NUM_OUTLIERS)
+                    sg.popup(
+                        "Please enter an integer value for '%s'" % MAX_NUM_OUTLIERS
+                    )
+                    continue
+
+            if len(values[LAYER_]) == 0:
+                sg.popup("Please select Resnet50 output layer")
+                continue
+            else:
+                try:
+                    layer_number = int(values[LAYER_].strip())
+                except:
+                    sg.popup("Please enter an integer value for '%s'" % FEATURE_LAYER)
                     continue
 
             if len(values[TRAIN_]) == 0:
@@ -113,22 +140,29 @@ def launch_find_outliers_config_window(base_dir: Path = None):
                 class_id = int(class_id)
             except:
                 if class_id is None:
-                    sg.popup(f"Could not find class '{selected_class_label}' in classes.json")
+                    sg.popup(
+                        f"Could not find class '{selected_class_label}' in classes.json"
+                    )
                 else:
                     sg.popup(f"Could not convert class_id '{class_id}' to int")
                 continue
             sg.popup("This will probably take a few minutes. Time for a coffee!")
+            print(
+                "Cropping defects, calculating norms based on training data... please wait."
+            )
             image_names = find_n_most_distant_outliers_in_batch(
                 train_data=train_data,
                 test_data=test_data,
                 class_id=class_id,
-                layer_number=80,  # ADD A DROPDOWN WITH SEVERAL WORKABLE OPTIONS
+                layer_number=layer_number,  # ADD A DROPDOWN WITH SEVERAL WORKABLE OPTIONS
                 n_outliers=n_outliers,
             )
             image_paths = [test_data / image_name for image_name in image_names]
             image_paths = [str(image_path) for image_path in image_paths]
             print(image_paths)
-            edit_labels(filenames=image_paths, class_names=class_names_list, base_dir=base_dir)
+            edit_labels(
+                filenames=image_paths, class_names=class_names_list, base_dir=base_dir
+            )
         else:
             print("Event: ", event, "; Selected: ", values[event])
 
