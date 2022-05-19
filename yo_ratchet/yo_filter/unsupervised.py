@@ -4,7 +4,7 @@ import pandas as pd
 import tensorflow as tf
 
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from sklearn.preprocessing import StandardScaler
 
 from yo_ratchet.yo_wrangle.common import (
@@ -20,6 +20,40 @@ FEATURES_STR = "features"
 IMAGE_NAME_STR = "image_name"
 SUBSET_STR = "subset"
 DELTA_STR = "delta"
+
+
+class OutlierDetectionConfig:
+    def __init__(
+        self,
+        training_data_path: Path,
+        control_limits_coefficient: float,
+        feature_layer_number: int,
+    ):
+        self.training_data_path = training_data_path
+        self.control_limit_coefficient = control_limits_coefficient
+        self.feature_layer_number = feature_layer_number
+
+
+class FeatureNormalisingParams:
+    def __init__(self, ss, mean, stddev):
+        self.ss: StandardScaler = ss
+        self.mean: float = mean
+        self.stddev: float = stddev
+
+
+class OutlierParams:
+    def __init__(
+        self, outlier_config: OutlierDetectionConfig, classes_info: Dict[str, Dict]
+    ):
+        self.feature_extraction_model = get_feature_extraction_model(
+            layer_number=outlier_config.feature_layer_number
+        )
+        self.outlier_config: OutlierDetectionConfig = outlier_config
+        self.normalising_params: Dict[
+            int, FeatureNormalisingParams
+        ] = get_all_outlier_normalising_parameters(
+            classes_info=classes_info, config=outlier_config
+        )
 
 
 def find_n_most_distant_outliers_in_batch(
@@ -47,19 +81,10 @@ def find_n_most_distant_outliers_in_batch(
     only does one class at a time.
 
     """
-    train_features_matrix, training_df = get_features_matrix(
-        subset_path=train_data,
-        class_id=class_id,
-        layer_number=layer_number,
+    ss, mean, stddev = get_outlier_normalising_parameters(
+        train_data=train_data, class_id=class_id, layer_number=layer_number
     )
-    ss = StandardScaler()
-    _ = ss.fit_transform(train_features_matrix)
-    train_rmsd = get_rms_distance_vector_for_matrix(
-        ss=ss, image_features_matrix=train_features_matrix
-    )
-    mean = train_rmsd.mean(axis=0)
-    stddev = train_rmsd.std(axis=0)
-    test_features_matrix, test_df = get_features_matrix(
+    test_features_matrix, test_df = get_features_matrix_and_df(
         subset_path=test_data, class_id=class_id, layer_number=layer_number
     )
     rmsd = get_rms_distance_vector_for_matrix(
@@ -81,14 +106,85 @@ def find_n_most_distant_outliers_in_batch(
     return image_names
 
 
-def get_features_matrix(subset_path: Path, class_id: int, layer_number: int):
+def get_outlier_normalising_parameters(
+    train_data: Path,
+    class_id: int,
+    layer_number: int = 80,
+) -> Optional[FeatureNormalisingParams]:
+    train_features_matrix, training_df = get_features_matrix_and_df(
+        subset_path=train_data, class_id=class_id, layer_number=layer_number
+    )
+
+    if train_features_matrix is None or len(training_df) < 100:
+        raise RuntimeError(
+            f"Insufficient data for class_id {class_id} to generate normalising parameters."
+        )
+
+    ss = StandardScaler()
+    _ = ss.fit_transform(train_features_matrix)
+
+    train_rmsd = get_rms_distance_vector_for_matrix(
+        ss=ss, image_features_matrix=train_features_matrix
+    )
+    mean = train_rmsd.mean(axis=0)
+    stddev = train_rmsd.std(axis=0)
+    return FeatureNormalisingParams(ss=ss, mean=mean, stddev=stddev)
+
+
+def get_all_outlier_normalising_parameters(
+    classes_info: Dict[str, Dict],
+    config: OutlierDetectionConfig,
+) -> Dict[int, FeatureNormalisingParams]:
+    """
+    Do I want to have different layer numbers for each class?
+
+    NEED TO MAKE ROBUST - what if there is no data for one class?
+
+    Returns a dict conforming to:
+    {
+        <class_id>: {
+            "ss": standard_scalar,
+            "mean": mean,
+            "stddev": stddev,
+        },
+        ...
+    }
+    """
+    normalising_parameters_dict = {}
+    for class_id in classes_info.keys():
+        try:
+            feature_normaliser = get_outlier_normalising_parameters(
+                train_data=config.training_data_path,
+                class_id=int(class_id),
+                layer_number=config.feature_layer_number,
+            )
+        except:
+            continue
+
+        if not feature_normaliser.stddev or feature_normaliser.stddev == 0.0:
+            continue
+        normalising_parameters_dict[int(class_id)] = feature_normaliser
+    return normalising_parameters_dict
+
+
+def get_features_matrix_and_df(
+    subset_path: Path, class_id: int, layer_number: int
+) -> Tuple[Optional[np.ndarray], Optional[pd.DataFrame]]:
+    """
+    A dataframe is required when later when processing test data and we wish
+    to match the photo name to an outlier set of features.
+
+    """
     data_dict_list = get_patches_features_data_dict_list(
         dataset_root=subset_path, class_id=class_id, layer_number=layer_number
     )
     df = pd.DataFrame(data_dict_list)
-    features_list = list(df["features"])
-    features_matrix = np.array(features_list, dtype="float64")
-    return features_matrix, df
+    if len(df) == 0:
+        return None, None
+    else:
+        features_list = list(df[FEATURES_STR])
+        features_matrix = np.array(features_list, dtype="float64")
+        return features_matrix, df
 
 
 def get_distance_for_vector(ss: StandardScaler, image_features: np.ndarray):
@@ -99,6 +195,27 @@ def get_distance_for_vector(ss: StandardScaler, image_features: np.ndarray):
     return rmsd
 
 
+def get_delta_for_patch(
+    class_id: int,
+    yolo_box: List[float],
+    image_path: Path,
+    outlier_params: OutlierParams,
+) -> float:
+    x, y, w, h = yolo_box
+    patch_features, _ = _extract_features_for_patch(
+        model=outlier_params.feature_extraction_model,
+        path_to_image=image_path,
+        x=float(x),
+        y=float(y),
+        w=float(w),
+        h=float(h),
+        new_h=PATCH_H,
+        new_w=PATCH_W,
+    )
+    ss = outlier_params.normalising_params[int(class_id)].ss
+    return get_distance_for_vector(ss=ss, image_features=patch_features)[0]
+
+
 def get_rms_distance_vector_for_matrix(
     ss: StandardScaler, image_features_matrix: np.ndarray
 ):
@@ -107,6 +224,28 @@ def get_rms_distance_vector_for_matrix(
     rmsd = rmsd.mean(axis=1)
     rmsd = np.sqrt(rmsd)
     return rmsd
+
+
+def get_feature_extraction_model(layer_number: int = 80) -> tf.keras.Model:
+    resnet50 = tf.keras.applications.ResNet50(
+        include_top=False,
+        weights="imagenet",
+        pooling="avg",
+    )
+    resnet50.layers[0].trainable = False
+
+    intermediate_model = tf.keras.Model(
+        inputs=resnet50.input,
+        outputs=resnet50.layers[layer_number].output,  # layer 80 also good.
+    )
+    # x = tf.keras.layers.Flatten(name="flatten")(intermediate_model.output)
+    # x = tf.keras.layers.Dense(512, activation='relu')(x)
+    x = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(intermediate_model.output)
+    o = tf.keras.layers.Activation("sigmoid", name="loss")(x)
+
+    feature_extraction_model = tf.keras.Model(inputs=resnet50.input, outputs=[o])
+    feature_extraction_model.layers[0].trainable = False
+    return feature_extraction_model
 
 
 def get_patches_features_data_dict_list(
@@ -146,24 +285,7 @@ def get_patches_features_data_dict_list(
         wrangle_filtered.filter_detections().
 
     """
-    resnet50 = tf.keras.applications.ResNet50(
-        include_top=False,
-        weights="imagenet",
-        pooling="avg",
-    )
-    resnet50.layers[0].trainable = False
-
-    intermediate_model = tf.keras.Model(
-        inputs=resnet50.input,
-        outputs=resnet50.layers[layer_number].output,  # layer 80 also good.
-    )
-    # x = tf.keras.layers.Flatten(name="flatten")(intermediate_model.output)
-    # x = tf.keras.layers.Dense(512, activation='relu')(x)
-    x = tf.keras.layers.GlobalAveragePooling2D(keepdims=True)(intermediate_model.output)
-    o = tf.keras.layers.Activation("sigmoid", name="loss")(x)
-
-    MyModel = tf.keras.Model(inputs=resnet50.input, outputs=[o])
-    MyModel.layers[0].trainable = False
+    MyModel = get_feature_extraction_model(layer_number)
     if (
         dataset_root.name == YOLO_ANNOTATIONS_FOLDER_NAME
         and (dataset_root.parent / YOLO_ANNOTATIONS_FOLDER_NAME).exists()
@@ -229,7 +351,7 @@ def get_patches_features_data_dict_list(
                 {
                     "patch_ref": patch_ref,
                     IMAGE_NAME_STR: image_path.name,
-                    "features": _extracted_features,
+                    FEATURES_STR: _extracted_features,
                     "crop": crop,
                     "class_id": int(class_id),
                     "subset": annotations_dir.parent.name,

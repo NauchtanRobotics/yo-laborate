@@ -1,8 +1,10 @@
 import shutil
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import pandas
+
+from yo_ratchet.yo_filter.unsupervised import OutlierParams
 from yo_ratchet.yo_filter.filter_central import calculate_wedge_envelop
 from yo_ratchet.yo_filter.filters import apply_filters
 from yo_ratchet.yo_wrangle.common import (
@@ -10,12 +12,15 @@ from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
 )
 
+MIN_COUNT_MARGINAL = 5
 
-def copy_images_and_annotations_listed_in_aggregated_annotations_file(
+
+def copy_training_data_listed_in_aggregated_annotations_file(
     src_images_dir: Path,
     filtered_annotations_file: Path,
     dst_images_dir: Path,
     copy_all_src_images: bool = False,
+    move: bool = False,
 ):
     """
     Copy images into a sample folder based on a single file containing all
@@ -69,7 +74,10 @@ def copy_images_and_annotations_listed_in_aggregated_annotations_file(
             continue
         if not copy_all_src_images:
             dst_image_path = dst_images_dir / original_image_path.name
-            shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
+            if move:
+                shutil.move(src=str(original_image_path), dst=str(dst_image_path))
+            else:
+                shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
         df_filtered = df.loc[df[0] == photo_name, [1, 2, 3, 4, 5, 6]]
         dst_annotations_path = dst_annotations_dir / f"{original_image_path.stem}.txt"
         df_filtered.to_csv(dst_annotations_path, index=False, sep=" ", header=None)
@@ -80,15 +88,18 @@ def copy_images_and_annotations_listed_in_aggregated_annotations_file(
             shutil.copy(src=str(image_path), dst=str(dst_image_path))
 
 
-def filter_and_aggregated_annotations(
+def filter_and_aggregate_annotations(
     annotations_dir: Path,
-    classes_json_path: Path,
+    classes_info: Dict[str, Dict],
+    lower_probability_coefficient: float = 0.7,
+    upper_probability_coefficient: Optional[float] = None,
     output_path: Optional[Path] = Path.cwd() / "annotations.ai",
     filter_horizon: Optional[float] = None,
     y_wedge_apex: Optional[float] = None,
-    classes_to_remove: Optional[List[int]] = None,
-    global_object_width_threshold: float = 0.0,
-    looseness: float = 1.0,
+    marginal_classes: Optional[List[int]] = None,
+    outlier_params: Optional[OutlierParams] = None,
+    images_root: Optional[Path] = None,
+    global_object_width_threshold: Optional[float] = 0.0,
 ) -> List[str]:
     """
     Combines multiple multi-line annotation files into one big annotations file
@@ -128,28 +139,39 @@ def filter_and_aggregated_annotations(
         wedge_constants, wedge_gradients = None, None
 
     aggregated_detections = []
-    for file_path in annotation_files:
-        with open(str(file_path), "r") as f:
+    for annotation_path in annotation_files:
+        with open(str(annotation_path), "r") as f:
             lines = f.readlines()
+
+        if outlier_params and images_root:
+            image_path = images_root / f"{annotation_path.stem}.jpg"
+            if not image_path.exists():
+                print("Image not found: " + str(image_path.name))
+                image_path = None
+        else:
+            image_path = None
 
         lines = apply_filters(
             lines=lines,
-            classes_json_path=classes_json_path,
+            classes_info=classes_info,
+            lower_probability_coefficient=lower_probability_coefficient,
+            upper_probability_coefficient=upper_probability_coefficient,
             object_threshold_width=global_object_width_threshold,
             filter_horizon=filter_horizon,
             wedge_constants=wedge_constants,
             wedge_gradients=wedge_gradients,
-            classes_to_remove=classes_to_remove,
-            marginal_classes=None,
-            min_count_marginal=None,
-            looseness=looseness,
+            classes_to_remove=None,
+            marginal_classes=marginal_classes,
+            min_count_marginal=MIN_COUNT_MARGINAL,
+            outlier_params=outlier_params,
+            image_path=image_path,
         )
 
         new_lines = []
         for line in lines:
             line = [str(element) for element in line]
             line = " ".join(line)
-            new_lines.append(f"{file_path.stem}.jpg {line}\n")
+            new_lines.append(f"{annotation_path.stem}.jpg {line}\n")
         if output_path is not None:
             with open(output_path, "a") as f_out:
                 f_out.writelines(new_lines)

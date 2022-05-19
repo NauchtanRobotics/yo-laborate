@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from yo_filter.unsupervised import (
     get_patches_features_data_dict_list,
     get_distance_for_vector,
-    get_features_matrix,
+    get_features_matrix_and_df,
     get_rms_distance_vector_for_matrix,
     find_n_most_distant_outliers_in_batch,
 )
@@ -21,13 +21,13 @@ from yo_filter.unsupervised import (
 
 def test_find_n_most_distant_outliers_in_batch():
     find_n_most_distant_outliers_in_batch(
-        train_data=Path("/home/david/addn_repos/yolov5/datasets/srd25.0.1/train"),
+        train_data=Path("/home/david/addn_repos/yolov5/datasets/srd26.0.1/train"),
         test_data=Path(
             "/home/david/RACAS/sealed_roads_dataset/Scenic_Rim_2022_mined_1"
         ),
-        class_id=3,
+        class_id=4,
         layer_number=80,
-        n_outliers=3,
+        n_outliers=6,
     )
 
 
@@ -38,7 +38,7 @@ def save_cropped_defect_according_to_outlier_status(
     dst_root: Path,
     control_limit: float = 2.7,
 ):
-    train_features_matrix, training_df = get_features_matrix(
+    train_features_matrix, training_df = get_features_matrix_and_df(
         subset_path=train_data, class_id=class_id, layer_number=80
     )
     ss = StandardScaler()
@@ -117,7 +117,7 @@ def step_through_show_outliers_vs_normal(
     Use the forward and backward arrows to index through the test images.
 
     """
-    features_matrix, training_df = get_features_matrix(
+    features_matrix, training_df = get_features_matrix_and_df(
         subset_path=path_training_subset,
         class_id=class_id,
         layer_number=80,
@@ -243,7 +243,7 @@ def compare_pca_ss_distances_by_subset():
         "/home/david/RACAS/640_x_640/Clustering/Charters_Towers_subsample"
     )
     path_test_data = Path("/home/david/RACAS/640_x_640/Clustering/Leopard_blossoms")
-    features_matrix, training_df = get_features_matrix(
+    features_matrix, training_df = get_features_matrix_and_df(
         subset_path=path_training_subset, class_id=class_id, layer_number=80
     )
     ss = StandardScaler()

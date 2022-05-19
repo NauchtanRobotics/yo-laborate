@@ -4,11 +4,16 @@ from pathlib import Path
 from tempfile import mkstemp
 from typing import Optional, List
 
+from yo_ratchet.yo_filter.filters import get_classes_info
 from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
 from yo_ratchet.yo_wrangle.wrangle import _get_hits_for_annotations_in_classes
 from yo_ratchet.yo_wrangle.aggregated_annotations import (
-    filter_and_aggregated_annotations,
-    copy_images_and_annotations_listed_in_aggregated_annotations_file,
+    filter_and_aggregate_annotations,
+    copy_training_data_listed_in_aggregated_annotations_file,
+)
+from yo_ratchet.yo_filter.unsupervised import (
+    OutlierParams,
+    OutlierDetectionConfig,
 )
 
 
@@ -21,8 +26,10 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
     upper_probability_coefficient: Optional[float] = None,
     filter_horizon: float = 0.0,
     y_wedge_apex: float = -0.2,
-    classes_to_remove: Optional[List[int]] = None,
+    marginal_classes: Optional[List[int]] = None,
     copy_all_src_images: bool = False,
+    outlier_config: Optional[OutlierDetectionConfig] = None,
+    move: bool = False,
 ):
     """
     Function to selectively copy images and annotations from a yolov5 detection run.
@@ -61,32 +68,48 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
           according to a wedge shape. You can choose the position of the apex.
           See docstring TODO: XXXX for more explanation.
 
-        * classes_to_remove: Remove any images that ONLY contain this selection of
+        * marginal_classes: Remove any images that ONLY contain this selection of
           class_ids.
+
+        * outlier_params: Removes outliers if this dict is provided.
+
+        * global_object_width_threshold: TODO: Also, apply area and diagonal length filters?
 
     By default, only images associated with the filtered annotations will be copied to
     dst_images_dir. Optionally, all images in src_images_dir can be copied to dst_images_dir.
     Set copy_all_src_images = True when you wish to increase the weight of hard negatives.
 
     """
-    filtered_detections = filter_and_aggregated_annotations(
+    classes_info = get_classes_info(classes_json_path=classes_json_path)
+    if outlier_config:
+        outlier_params = OutlierParams(
+            classes_info=classes_info, outlier_config=outlier_config
+        )
+    else:
+        outlier_params = None
+
+    filtered_detections = filter_and_aggregate_annotations(
         annotations_dir=annotations_dir,
-        classes_json_path=classes_json_path,
+        classes_info=classes_info,
+        lower_probability_coefficient=lower_probability_coefficient,
+        upper_probability_coefficient=upper_probability_coefficient,
         output_path=None,
         filter_horizon=filter_horizon,
         y_wedge_apex=y_wedge_apex,
-        classes_to_remove=classes_to_remove,
+        marginal_classes=marginal_classes,
+        outlier_params=outlier_params,
     )
 
     fd, filtered_annotations_path = mkstemp(suffix=".txt")
     with open(filtered_annotations_path, "w") as fd:
         fd.writelines(filtered_detections)
 
-    copy_images_and_annotations_listed_in_aggregated_annotations_file(
+    copy_training_data_listed_in_aggregated_annotations_file(
         src_images_dir=src_images_dir,
         filtered_annotations_file=Path(filtered_annotations_path),
         dst_images_dir=dst_images_dir,
         copy_all_src_images=copy_all_src_images,
+        move=move,
     )
     os.unlink(filtered_annotations_path)
 
