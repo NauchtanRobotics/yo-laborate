@@ -283,6 +283,11 @@ def cross_validation_combinations_training(base_dir: Path):
         inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
         val_inferences_roots.append(inferences_path.resolve())
 
+    classification_metrics_for_cross_validation_set(
+        dataset_prefix=fiftyone_dataset_label,
+        base_dir=base_dir,
+        groupings=GROUPINGS,
+    )
     init_fifty_one_dataset_for_cross_validation_combinations(
         dataset_label=fiftyone_dataset_label,
         classes_map=CLASSES_MAP,
@@ -290,11 +295,6 @@ def cross_validation_combinations_training(base_dir: Path):
         dataset_root=DATASET_ROOT,
         candidate_subset=None,
         export_to_json=True,
-    )
-    classification_metrics_for_cross_validation_set(
-        dataset_prefix=fiftyone_dataset_label,
-        base_dir=base_dir,
-        groupings=GROUPINGS,
     )
     commit_and_push(
         dataset_label=fiftyone_dataset_label,
