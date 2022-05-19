@@ -64,17 +64,17 @@ def test_copy_recursive_images_and_yolo_annotations_by_cropped_image_reference()
     """
     copy_images_recursive_inc_yolo_annotations_by_reference_dir(
         reference_dir=Path(
-            "/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_25_0"
+            "/home/david/RACAS/640_x_640/Scenic_test_clustering"
             # "/home/david/addn_repos/yolov5/runs/detect/Charters_Towers_potholes__srd18.3_conf5pcnt",
         ),
         original_images_dir=Path(
-            "/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_25_0"
+            "/home/david/RACAS/640_x_640/Scenic_Rim_2021_mined_19.1"
         ),
         dst_sample_dir=Path(
-            "/home/david/RACAS/sealed_roads_dataset/Scenic_Rim_2021_mined_1"
+            "/home/david/RACAS/sealed_roads_dataset/Scenic_clustering_stp2"
         ),
-        num=550,
-        move=True,
+        num=None,
+        move=False,
         annotations_location="yolo",  # "ref_yolo",
     )
 

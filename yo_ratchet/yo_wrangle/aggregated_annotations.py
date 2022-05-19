@@ -1,7 +1,5 @@
-import os
 import shutil
 from pathlib import Path
-from tempfile import mkstemp
 from typing import List, Optional
 
 import pandas
@@ -13,7 +11,7 @@ from yo_ratchet.yo_wrangle.common import (
 )
 
 
-def copy_detections_and_images(
+def copy_images_and_annotations_listed_in_aggregated_annotations_file(
     src_images_dir: Path,
     filtered_annotations_file: Path,
     dst_images_dir: Path,
@@ -71,7 +69,7 @@ def copy_detections_and_images(
             continue
         if not copy_all_src_images:
             dst_image_path = dst_images_dir / original_image_path.name
-            shutil.copy(src=original_image_path, dst=dst_image_path)
+            shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
         df_filtered = df.loc[df[0] == photo_name, [1, 2, 3, 4, 5, 6]]
         dst_annotations_path = dst_annotations_dir / f"{original_image_path.stem}.txt"
         df_filtered.to_csv(dst_annotations_path, index=False, sep=" ", header=None)
@@ -79,10 +77,10 @@ def copy_detections_and_images(
     if copy_all_src_images:
         for image_path in get_all_jpg_recursive(img_root=src_images_dir):
             dst_image_path = dst_images_dir / image_path.name
-            shutil.copy(src=str(image_path), dst=dst_image_path)
+            shutil.copy(src=str(image_path), dst=str(dst_image_path))
 
 
-def filter_detections(
+def filter_and_aggregated_annotations(
     annotations_dir: Path,
     classes_json_path: Path,
     output_path: Optional[Path] = Path.cwd() / "annotations.ai",
@@ -160,90 +158,3 @@ def filter_detections(
     if output_path is not None:
         print(f"See results at {str(output_path)}")
     return aggregated_detections
-
-
-def mine_filtered_detections(
-    src_images_dir: str,
-    annotations_dir: str,
-    classes_json_path: str,
-    dst_images_dir: str,
-    filter_horizon=0.0,
-    y_wedge_apex=-0.2,
-    classes_to_remove=None,
-    copy_all_src_images: bool = False,
-):
-    """
-    Function to mine new images after a yolov5 detection run.
-
-    Reads annotations files from yolov5/runs/detect/<run_name> and filters the objects
-    detected as per ...
-
-    Copies all images from <src_images_dir> to <dst_images_dir>, then writes the filtered
-    annotations into <dst_images_dir>/YOLO_darknet/*
-
-    """
-    filtered_detections = filter_detections(
-        annotations_dir=Path(annotations_dir),
-        classes_json_path=Path(classes_json_path),
-        output_path=None,
-        filter_horizon=filter_horizon,
-        y_wedge_apex=y_wedge_apex,
-        classes_to_remove=classes_to_remove,
-    )
-
-    fd, filtered_annotations_path = mkstemp(suffix=".txt")
-    with open(filtered_annotations_path, "w") as fd:
-        fd.writelines(filtered_detections)
-    copy_detections_and_images(
-        src_images_dir=Path(src_images_dir),
-        filtered_annotations_file=Path(filtered_annotations_path),
-        dst_images_dir=Path(dst_images_dir),
-        copy_all_src_images=copy_all_src_images,
-    )
-    os.unlink(filtered_annotations_path)
-
-
-CLASSES_TO_REMOVE = [
-    5,
-    7,
-    8,
-    9,
-    10,
-    13,
-    23,
-]  # 5=P, 7=FC, 8=LO, 9=LG, 10=AP, 13=RK, 23=Pt
-
-
-def test_mine_filtered_detections():
-    mine_filtered_detections(
-        src_images_dir="/home/david/defect_detection/temp_images/aaa_oopsies_uploads/Sealed",  # "/home/david/RACAS/640_x_640/Scenic_Rim_2022",
-        annotations_dir="/home/david/addn_repos/yolov5/runs/detect/1649047228_aaa_oopsies_uploads__srd26.0_conf8pcnt/labels",
-        classes_json_path="/home/david/RACAS/sealed_roads_dataset/classes.json",
-        dst_images_dir="/home/david/defect_detection/temp_images/aaa_oopsies_uploads/dataset",
-        classes_to_remove=CLASSES_TO_REMOVE,
-        copy_all_src_images=True,
-    )
-
-
-def test_filter_detections():
-    output_dir = Path(__file__).parents[1]
-    filter_detections(
-        annotations_dir=Path(
-            "/home/david/addn_repos/yolov5/runs/detect/Scenic_Rim__srd25.0_conf10pcnt/labels"
-        ),
-        classes_json_path=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
-        output_path=output_dir / "Scenic_Rim_25_0_transformed.ai",
-        filter_horizon=0.0,
-        y_wedge_apex=-0.2,
-        classes_to_remove=CLASSES_TO_REMOVE,
-    )
-
-
-def test_copy_detections_and_images():
-    copy_detections_and_images(
-        src_images_dir=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2022"),
-        filtered_annotations_file=Path(
-            "/home/david/defect_detection/defect_detection/evaluate/Scenic_Rim_2022.txt"
-        ),
-        dst_images_dir=Path("/home/david/RACAS/640_x_640/Scenic_Rim_2022_mined"),
-    )
