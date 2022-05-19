@@ -64,7 +64,7 @@ def flatten_images_dir(
         if i % every_n_th != 0:
             continue
         new_image_path = destination_dir / path_image.name
-        shutil.copyfile(path_image, new_image_path)
+        shutil.copyfile(str(path_image), str(new_image_path))
 
 
 def copy_images_recursive_inc_yolo_annotations_by_reference_dir(
@@ -149,9 +149,9 @@ def copy_images_recursive_inc_yolo_annotations_by_reference_dir(
 
         dst_image_path = dst_sample_dir / original_image_path.name
         if move:
-            shutil.move(src=original_image_path, dst=dst_image_path)
+            shutil.move(src=str(original_image_path), dst=str(dst_image_path))
         else:
-            shutil.copy(src=original_image_path, dst=dst_image_path)
+            shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
 
         src_annotations_path = src_annotations_dir / f"{original_image_path.stem}.txt"
         if not src_annotations_path.exists():
@@ -163,9 +163,9 @@ def copy_images_recursive_inc_yolo_annotations_by_reference_dir(
             / f"{original_image_path.stem}.txt"
         )
         if move:
-            shutil.move(src=src_annotations_path, dst=dst_annotations_path)
+            shutil.move(src=str(src_annotations_path), dst=str(dst_annotations_path))
         else:
-            shutil.copy(src=src_annotations_path, dst=dst_annotations_path)
+            shutil.copy(src=str(src_annotations_path), dst=str(dst_annotations_path))
 
     if annotations_location == "labels":
         for annotations_path in get_all_txt_recursive(root_dir=dst_annotations_dir):
@@ -293,7 +293,7 @@ def collate_image_and_annotation_subsets(
             if dst_image_path.exists():
                 print(f"File name is not unique, skipping {str(dst_image_path.name)}")
                 continue
-            shutil.copy(src=original_image_path, dst=dst_image_path)
+            shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
 
             src_annotations_path = (
                 src_annotations_dir / f"{original_image_path.stem}.txt"
@@ -304,7 +304,9 @@ def collate_image_and_annotation_subsets(
                 / f"{original_image_path.stem}.txt"
             )
             if src_annotations_path.exists():
-                shutil.copy(src=src_annotations_path, dst=dst_annotations_path)
+                shutil.copy(
+                    src=str(src_annotations_path), dst=str(dst_annotations_path)
+                )
             else:
                 print(f"Annotation file not found: {str(src_annotations_path)}")
 
