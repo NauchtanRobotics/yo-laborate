@@ -250,7 +250,7 @@ def run_detections_using_cv_ensemble(
         "--save-conf",
         "--nosave",
         "--agnostic-nms",
-        f"--iou-thres=0.55",
+        f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
         f"--weights",
     ]
@@ -309,7 +309,7 @@ def run_detections_using_cv_ensemble_given_paths(
         "--save-conf",
         "--nosave",
         "--agnostic-nms",
-        f"--iou-thres=0.55",
+        f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
         f"--weights",
     ]
