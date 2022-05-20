@@ -27,6 +27,7 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
     filter_horizon: float = 0.0,
     y_wedge_apex: float = -0.2,
     marginal_classes: Optional[List[int]] = None,
+    min_marginal_count: Optional[int] = None,
     copy_all_src_images: bool = False,
     outlier_config: Optional[OutlierDetectionConfig] = None,
     move: bool = False,
@@ -97,7 +98,10 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
         filter_horizon=filter_horizon,
         y_wedge_apex=y_wedge_apex,
         marginal_classes=marginal_classes,
+        min_marginal_count=min_marginal_count,
+        images_root=src_images_dir,
         outlier_params=outlier_params,
+        remove_probability=True,
     )
 
     fd, filtered_annotations_path = mkstemp(suffix=".txt")

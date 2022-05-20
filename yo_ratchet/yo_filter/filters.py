@@ -33,6 +33,7 @@ def apply_filters(
     outlier_params: Optional[OutlierParams] = None,
     image_path: Optional[Path] = None,
     min_count_marginal: Optional[int] = None,
+    remove_probability: bool = False,
 ) -> List[List]:
     """
     Takes a list of predictions strings (class, yolo coordinates (scaled 0-1) plus probability)
@@ -66,7 +67,7 @@ def apply_filters(
         class_id = line[0]
         line = line[1:]
         line = [float(el) for el in line]
-        yolo_box = line[0:5]
+        yolo_box = line[0:4]
         centroid_y = yolo_box[1]
         prob = line[4] if len(line) >= 5 else None
         width = yolo_box[2]
@@ -110,17 +111,25 @@ def apply_filters(
             > outlier_params.outlier_config.control_limit_coefficient
         ):  # expensive operation, so do this test last.
             print("Outlier of class " + class_id + " found in " + image_path.name)
-            shutil.copy(src=str(image_path), dst=f"/home/david/RACAS/southern_downs_outliers_from_mining/{image_path.name}")
+            shutil.copy(
+                src=str(image_path),
+                dst=f"/home/david/RACAS/southern_downs_outliers_from_mining/{image_path.name}",
+            )
             continue
         else:
             pass  # At this point, all filters have been passed so append data to result
 
-        line.insert(0, int(class_id))
-        new_lines.append(line)
+        if remove_probability:
+            yolo_box.insert(0, int(class_id))
+            new_lines.append(yolo_box)
+        else:
+            line.insert(0, int(class_id))
+            new_lines.append(line)
 
     if (
         marginal_classes
         and min_count_marginal
+        and len(new_lines) > 0
         and insufficient_expectation(
             new_lines=new_lines,
             marginal_classes=marginal_classes,

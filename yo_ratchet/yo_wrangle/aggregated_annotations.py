@@ -78,7 +78,8 @@ def copy_training_data_listed_in_aggregated_annotations_file(
                 shutil.move(src=str(original_image_path), dst=str(dst_image_path))
             else:
                 shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
-        df_filtered = df.loc[df[0] == photo_name, [1, 2, 3, 4, 5, 6]]
+
+        df_filtered = df.loc[df[0] == photo_name, df.columns.values[1:]]  # [1, 2, 3, 4, 5, 6] removed col0 (photo_name)
         dst_annotations_path = dst_annotations_dir / f"{original_image_path.stem}.txt"
         df_filtered.to_csv(dst_annotations_path, index=False, sep=" ", header=None)
 
@@ -97,9 +98,11 @@ def filter_and_aggregate_annotations(
     filter_horizon: Optional[float] = None,
     y_wedge_apex: Optional[float] = None,
     marginal_classes: Optional[List[int]] = None,
+    min_marginal_count: Optional[int] = MIN_COUNT_MARGINAL,
     outlier_params: Optional[OutlierParams] = None,
     images_root: Optional[Path] = None,
     global_object_width_threshold: Optional[float] = 0.0,
+    remove_probability: bool = False,
 ) -> List[str]:
     """
     Combines multiple multi-line annotation files into one big annotations file
@@ -162,9 +165,10 @@ def filter_and_aggregate_annotations(
             wedge_gradients=wedge_gradients,
             classes_to_remove=None,
             marginal_classes=marginal_classes,
-            min_count_marginal=MIN_COUNT_MARGINAL,
+            min_count_marginal=min_marginal_count,
             outlier_params=outlier_params,
             image_path=image_path,
+            remove_probability=remove_probability,
         )
 
         new_lines = []
