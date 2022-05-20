@@ -13,7 +13,7 @@ def count_marginal_objects(
     count_marginal = 0
     for line in lines:
         class_id = str(line[0]).strip()
-        if class_id in marginal_classes:
+        if class_id in marginal_classes or int(class_id) in marginal_classes:
             count_marginal += 1
     return count_marginal
 
