@@ -79,7 +79,9 @@ def copy_training_data_listed_in_aggregated_annotations_file(
             else:
                 shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
 
-        df_filtered = df.loc[df[0] == photo_name, df.columns.values[1:]]  # [1, 2, 3, 4, 5, 6] removed col0 (photo_name)
+        df_filtered = df.loc[
+            df[0] == photo_name, df.columns.values[1:]
+        ]  # [1, 2, 3, 4, 5, 6] removed col0 (photo_name)
         dst_annotations_path = dst_annotations_dir / f"{original_image_path.stem}.txt"
         df_filtered.to_csv(dst_annotations_path, index=False, sep=" ", header=None)
 
