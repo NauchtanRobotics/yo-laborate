@@ -253,6 +253,7 @@ def run_detections_using_cv_ensemble(
         f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
         f"--weights",
+        "--augment",
     ]
     pytorch_cmd.extend(model_paths)
     print(
@@ -312,6 +313,7 @@ def run_detections_using_cv_ensemble_given_paths(
         f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
         f"--weights",
+        "--augment",
     ]
     pytorch_cmd.extend(model_paths)
     print(
