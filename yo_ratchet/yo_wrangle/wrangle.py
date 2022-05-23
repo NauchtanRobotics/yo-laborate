@@ -37,6 +37,7 @@ from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
     get_all_txt_recursive,
     YOLO_ANNOTATIONS_FOLDER_NAME,
+    LABELS_FOLDER_NAME,
 )
 from yo_ratchet.yo_wrangle.recode import recode_using_class_mapping
 
@@ -585,3 +586,47 @@ def add_subset_folder_unique_images_only(
         shutil.copy(src=str(image_path), dst=str(new_image_path))
         if src_annotation_path.exists():
             shutil.copy(src=str(src_annotation_path), dst=str(dst_annotation_path))
+
+
+def _infer_annotations_folder_path(subset_folder: Path):
+    """
+    Infers path to annotations_folder assuming, in order of precedence, the
+    path to be formulated as::
+
+        * <subset_folder>/YOLO_darknet
+        * <subset_folder>/labels
+        * <subset_folder.parent>/labels
+
+    :raises RuntimeError: if not of the above paths exist.
+
+    """
+    if (subset_folder / YOLO_ANNOTATIONS_FOLDER_NAME).exists():
+        annotations_root = subset_folder / YOLO_ANNOTATIONS_FOLDER_NAME
+    elif (subset_folder / LABELS_FOLDER_NAME).exists():
+        annotations_root = subset_folder / LABELS_FOLDER_NAME
+    elif (subset_folder.parent / LABELS_FOLDER_NAME).exists():
+        annotations_root = subset_folder.parent / LABELS_FOLDER_NAME
+    else:
+        raise RuntimeError("Could not infer annotations_root path.")
+    return annotations_root
+
+
+def cleanup_excess_annotations(subset_folder: Path):
+    """
+    Removes any annotations file for which there is no matching image found
+    in subset_folder.
+
+    Infers path to annotations_folder assuming, in order of precedence, the
+    path to be formulated as::
+
+        * <subset_folder>/YOLO_darknet
+        * <subset_folder>/labels
+        * <subset_folder.parent>/labels
+
+    """
+    annotations_folder = _infer_annotations_folder_path(subset_folder=subset_folder)
+    annotation_paths = get_all_txt_recursive(root_dir=annotations_folder)
+    for annotation_path in annotation_paths:
+        image_path = subset_folder / f"{annotation_path.stem}.jpg"
+        if not image_path.exists():
+            annotation_path.unlink()

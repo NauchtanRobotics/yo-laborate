@@ -35,7 +35,11 @@ from yo_ratchet.yo_wrangle.wrangle import (
     split_yolo_train_dataset_every_nth,
     prepare_unique_dataset_from_detections,
     copy_detect_folder_recursively_as_reference_then_subsample,
-    delete_redundant_samples, collate_additional_sample, add_subset_folder_unique_images_only, flatten_images_dir,
+    delete_redundant_samples,
+    collate_additional_sample,
+    add_subset_folder_unique_images_only,
+    flatten_images_dir,
+    cleanup_excess_annotations,
 )
 
 
@@ -361,4 +365,10 @@ def test_add_unique():
     add_subset_folder_unique_images_only(
         existing_dataset_root=Path("/home/david/RACAS/sealed_roads_dataset"),
         src_new_images=Path("/home/david/RACAS/640_x_640/CT_D40_SD")
+    )
+
+
+def test_cleanup_excess_annotations():
+    cleanup_excess_annotations(subset_folder=Path(
+        "/home/david/RACAS/sealed_roads_dataset/SDRC_2022_1")
     )
