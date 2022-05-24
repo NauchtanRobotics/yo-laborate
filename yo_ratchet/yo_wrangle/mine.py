@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import shutil
 from pathlib import Path
 from tempfile import mkstemp
@@ -24,6 +25,7 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
     classes_json_path: Path,
     lower_probability_coefficient: float = 0.7,
     upper_probability_coefficient: Optional[float] = None,
+    marginal_coefficient: Optional[float] = None,
     filter_horizon: float = 0.0,
     y_wedge_apex: float = -0.2,
     marginal_classes: Optional[List[int]] = None,
@@ -89,6 +91,7 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
     else:
         outlier_params = None
 
+    fd, filtered_annotations_path = mkstemp(suffix=".txt")
     filtered_detections = filter_and_aggregate_annotations(
         annotations_dir=annotations_dir,
         classes_info=classes_info,
@@ -100,13 +103,38 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
         marginal_classes=marginal_classes,
         min_marginal_count=min_marginal_count,
         images_root=src_images_dir,
-        outlier_params=outlier_params,
+        outlier_params=outlier_params if marginal_coefficient is None else None,
         remove_probability=True,
     )
-
-    fd, filtered_annotations_path = mkstemp(suffix=".txt")
-    with open(filtered_annotations_path, "w") as fd:
-        fd.writelines(filtered_detections)
+    if marginal_coefficient:
+        short_list = list({row.split(" ")[0] for row in filtered_detections})
+        fd, less_filtered_path = mkstemp(suffix=".txt")
+        less_filtered = filter_and_aggregate_annotations(
+            annotations_dir=annotations_dir,
+            classes_info=classes_info,
+            lower_probability_coefficient=marginal_coefficient,
+            upper_probability_coefficient=upper_probability_coefficient,
+            output_path=Path(less_filtered_path),
+            filter_horizon=filter_horizon,
+            y_wedge_apex=y_wedge_apex,
+            marginal_classes=marginal_classes,
+            min_marginal_count=min_marginal_count,
+            images_root=src_images_dir,
+            outlier_params=outlier_params,
+            remove_probability=True,
+        )
+        less_filtered = pd.read_csv(less_filtered_path, sep=" ", header=None)
+        less_filtered = less_filtered.rename(columns={0: "photo_name"})
+        plus_marginal_detections = less_filtered.loc[
+            less_filtered["photo_name"].isin(short_list)
+        ]
+        plus_marginal_detections.to_csv(
+            filtered_annotations_path, index=False, sep=" ", header=None
+        )
+        os.unlink(less_filtered_path)
+    else:
+        with open(filtered_annotations_path, "w") as fd:
+            fd.writelines(filtered_detections)
 
     copy_training_data_listed_in_aggregated_annotations_file(
         src_images_dir=src_images_dir,
