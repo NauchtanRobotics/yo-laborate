@@ -13,6 +13,10 @@ from yo_ratchet.yo_wrangle.common import (
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
 
+DETECT_IMAGE_SIZE = 800
+TRAIN_IMAGE_SIZE = 800
+IOU_THRES = 0.45
+
 
 def prepare_dataset_and_train(
     classes_map: Dict[int, str],
@@ -189,6 +193,7 @@ def run_detections(
     base_dir: Path,
     conf_thres: float = 0.1,
     device: int = 1,
+    img_size: Optional[int] = DETECT_IMAGE_SIZE,
 ):
     results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
     python_path, yolo_path = get_yolo_detect_paths(base_dir)
@@ -198,16 +203,17 @@ def run_detections(
         f"{str(detect_script)}",
         f"--source={str(images_path)}",
         f"--weights={model_path}",
-        "--img=640",
+        f"--img={img_size}",
         f"--device={device}",
         f"--name={results_name}",
         "--save-txt",
         "--save-conf",
         "--nosave",
         # "--agnostic-nms",
-        f"--iou-thres=0.55",
+        f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
         "--half",
+        "--augment"
     ]
     print(
         subprocess.check_output(
@@ -227,6 +233,7 @@ def run_detections_using_cv_ensemble(
     base_dir: Path,
     conf_thres: float = 0.1,
     device: int = 0,
+    img_size: Optional[int] = DETECT_IMAGE_SIZE,
 ) -> str:
     results_name = (
         f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
@@ -243,7 +250,7 @@ def run_detections_using_cv_ensemble(
         python_path,
         f"{str(detect_script)}",
         f"--source={str(images_path)}",
-        "--img=640",
+        f"--img={img_size}",
         f"--device={device}",
         f"--name={results_name}",
         "--save-txt",
@@ -252,8 +259,8 @@ def run_detections_using_cv_ensemble(
         "--agnostic-nms",
         f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
-        f"--weights",
         "--augment",
+        f"--weights",
     ]
     pytorch_cmd.extend(model_paths)
     print(
@@ -275,6 +282,7 @@ def run_detections_using_cv_ensemble_given_paths(
     yolo_root: Path,
     conf_thres: float = 0.1,
     device: int = 0,
+    img_size: Optional[int] = DETECT_IMAGE_SIZE,
 ) -> Path:
     """
     Returns pathlib.Path to inferences directory for this run (this folder will contain
@@ -303,7 +311,7 @@ def run_detections_using_cv_ensemble_given_paths(
         python_path,
         f"{str(detect_script)}",
         f"--source={str(images_path)}",
-        "--img=640",
+        f"--img={img_size}",
         f"--device={device}",
         f"--name={detections_folder_name}",
         "--save-txt",
@@ -312,8 +320,8 @@ def run_detections_using_cv_ensemble_given_paths(
         "--agnostic-nms",
         f"--iou-thres=0.45",
         f"--conf-thres={conf_thres}",
-        f"--weights",
         "--augment",
+        f"--weights",
     ]
     pytorch_cmd.extend(model_paths)
     print(
