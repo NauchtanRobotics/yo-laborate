@@ -30,6 +30,7 @@ def prepare_dataset_and_train(
     run_training: bool = True,
     cross_validation_index: int = 0,
     fine_tune_patience: int = 5,
+    img_size: Optional[int] = TRAIN_IMAGE_SIZE,
 ):
     class_ids = list(classes_map.keys())
     output_str = count_class_instances_in_datasets(
@@ -95,7 +96,7 @@ names: {class_names}"""
     pytorch_cmd = [
         python_path,
         train_script,
-        "--img=640",
+        f"--img={img_size}",
         "--batch=62",
         "--workers=4",
         "--device=0,1",
