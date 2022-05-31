@@ -214,7 +214,7 @@ def run_detections(
         f"--iou-thres={IOU_THRES}",
         f"--conf-thres={conf_thres}",
         "--half",
-        "--augment"
+        "--augment",
     ]
     print(
         subprocess.check_output(
@@ -243,7 +243,7 @@ def run_detections_using_cv_ensemble(
     detect_script = Path(yolo_root) / "detect.py"
     models_root = Path(yolo_root) / "runs" / "train"
     model_paths = [
-        models_root / f"{model_version}.{str(i+1)}" / "weights" / "best.pt"
+        models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
         for i in range(k_folds)
     ]
     model_paths = [str(model_path) for model_path in model_paths]
@@ -302,12 +302,9 @@ def run_detections_using_cv_ensemble_given_paths(
         f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
     )
     detect_script = yolo_root / "detect.py"
-    models_root = yolo_root / "runs" / "train"
-    model_paths = [
-        models_root / f"{model_version}.{str(i+1)}" / "weights" / "best.pt"
-        for i in range(k_folds)
-    ]
-    model_paths = [str(model_path) for model_path in model_paths]
+    model_paths = get_paths_to_weights(
+        yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+    )
     pytorch_cmd = [
         python_path,
         f"{str(detect_script)}",
@@ -334,3 +331,43 @@ def run_detections_using_cv_ensemble_given_paths(
     )
     inferences_path = yolo_root / "runs" / "detect" / detections_folder_name
     return inferences_path
+
+
+def get_paths_to_weights(
+    yolo_root: Path, k_folds: int, model_version: str
+) -> List[str]:
+    """
+    Intelligently infers whether this is truely a K-Folds CV model, or just  a
+    regular model.
+
+    Returns model paths as a list of strings, whether that list have a length
+    k-fold or 1 depends on whether k-folds models could be found.
+
+    Raises a RuntimeError is neither a single model or k-folds models could be
+    found.
+
+    """
+    models_root = yolo_root / "runs" / "train"
+    model_paths = [
+        models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
+        for i in range(k_folds)
+    ]
+
+    model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
+    if len(model_paths) == 0:  # This is not a CV modelling thing. Don't add .kfold
+        model_path = models_root / model_version / "weights" / "best.pt"
+        if not model_path.exists():  # The model simply isn't available
+            raise RuntimeError("Model not found.")
+        model_paths = [str(model_path)]
+
+    return model_paths
+
+
+def test_get_paths_to_weights():
+    yolo_root = Path("/home/david/addn_repos/yolov5")
+    k_folds = 6
+    model_version = "srd31.1"
+    model_paths = get_paths_to_weights(
+        yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+    )
+    print(model_paths)
