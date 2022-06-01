@@ -25,7 +25,6 @@ from yo_ratchet.yo_wrangle.common import (
 from yo_ratchet.modelling import (
     run_detections,
     prepare_dataset_and_train,
-    reverse_train,
 )
 from yo_ratchet.yo_valuate.as_classification import (
     optimise_binary_and_get_group_classification_performance,
@@ -111,6 +110,7 @@ def run_prepare_dataset_and_train(
     cross_validation_index: int = 0,
     every_n_th: Optional[int] = None,
     fine_tune_epochs: Optional[int] = 5,
+    epochs: Optional[int] = 300,
 ):
     if every_n_th is None:
         every_n_th = EVERY_NTH_TO_VAL
@@ -128,6 +128,7 @@ def run_prepare_dataset_and_train(
         recode_map=RECODE_MAP,
         cross_validation_index=cross_validation_index,
         fine_tune_patience=fine_tune_epochs,
+        epochs=epochs,
     )
     detect_images_root = DST_ROOT / "val" / "images"
     (
@@ -174,6 +175,7 @@ def cross_validation_combinations_training(
     init_fiftyone: bool = True,
     k_folds: Optional[int] = K_FOLDS,
     fine_tune_epochs: Optional[int] = 5,
+    epochs: Optional[int] = 300,
 ):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
     val_inferences_roots = []
@@ -194,6 +196,7 @@ def cross_validation_combinations_training(
             recode_map=RECODE_MAP,
             cross_validation_index=cv_index,
             fine_tune_patience=fine_tune_epochs,
+            epochs=epochs,
         )
         commit_and_push(
             dataset_label=dataset_label,
