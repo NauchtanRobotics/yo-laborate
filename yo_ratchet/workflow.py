@@ -168,6 +168,11 @@ def run_prepare_dataset_and_train(
             ground_truths_root=None,  # Use dataset_root approach
             export_to_json=True,
         )
+    commit_and_push(
+        dataset_label=DATASET_LABEL,
+        base_dir=BASE_DIR,
+        description="Post-training artifacts.",
+    )
 
 
 def cross_validation_combinations_training(
