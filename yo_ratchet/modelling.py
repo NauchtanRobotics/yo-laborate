@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 from typing import Optional, List, Dict
 
-from yo_ratchet.dataset_versioning import commit_and_push
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
 from yo_ratchet.yo_wrangle.common import (
     get_config_items,
@@ -34,6 +33,8 @@ def prepare_dataset_and_train(
     img_size: Optional[int] = TRAIN_IMAGE_SIZE,
     epochs: Optional[int] = EPOCHS,
 ):
+    if epochs is None:
+        epochs = EPOCHS
     class_ids = list(classes_map.keys())
     output_str = count_class_instances_in_datasets(
         data_samples=subsets_included,
