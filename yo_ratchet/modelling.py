@@ -136,58 +136,6 @@ names: {class_names}"""
         )
 
 
-def reverse_train(
-    classes_map: Dict[int, str],
-    base_dir: Path,
-    dst_root: Path,
-):
-    commit_and_push(
-        dataset_label=dst_root.name,
-        base_dir=base_dir,
-    )
-    class_ids = list(classes_map.keys())
-    class_names = [classes_map[class_id] for class_id in class_ids]
-    yaml_text = f"""train: {str(dst_root)}/val/images/
-val: {str(dst_root)}/train/images/
-nc: {len(class_ids)}
-names: {class_names}"""
-
-    """ Write dataset.yaml in DST folder."""
-    dst_dataset_path = dst_root / "reverse_dataset.yaml"
-    with open(f"{str(dst_dataset_path)}", "w") as f_out:
-        f_out.write(yaml_text)
-
-    python_path, yolo_root, cfg_path, weights_path, hyp_path, _, _ = get_config_items(
-        base_dir
-    )
-    model_instance = f"{dst_root.name}_reverse"
-    train_script = Path(yolo_root) / "train.py"
-    pytorch_cmd = [
-        python_path,
-        f"{str(train_script)}",
-        f"--img={TRAIN_IMAGE_SIZE}",
-        "--batch=50",
-        "--workers=4",
-        "--device=0,1",
-        f"--cfg={cfg_path}",
-        "--epochs=300",
-        f"--data={str(dst_dataset_path)}",
-        f"--weights={weights_path}",
-        f"--hyp={hyp_path}",
-        f"--name={model_instance}",
-        "--patience=50",
-        "--cache",
-    ]
-    print("\n")
-    print(" ".join(pytorch_cmd))
-    subprocess.check_call(
-        pytorch_cmd,
-        stdout=sys.stdout,
-        stderr=subprocess.STDOUT,
-        cwd=yolo_root,
-    )
-
-
 def run_detections(
     images_path: Path,
     dataset_version: str,
