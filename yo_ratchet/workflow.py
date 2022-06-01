@@ -145,7 +145,6 @@ def run_prepare_dataset_and_train(
         conf_thres=CONF,
         device=0,
     )
-    output_filename = f"{model_label}_forward_performance_conf{CONF_PCNT}pcnt.txt"
     optimise_binary_and_get_group_classification_performance(
         images_root=detect_images_root,
         root_ground_truths=ground_truth_path,
@@ -170,10 +169,15 @@ def run_prepare_dataset_and_train(
         )
 
 
-def cross_validation_combinations_training(base_dir: Path):
+def cross_validation_combinations_training(
+    base_dir: Path,
+    init_fiftyone: bool = True,
+    k_folds: Optional[int] = K_FOLDS,
+    fine_tune_epochs: Optional[int] = 5,
+):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
     val_inferences_roots = []
-    for cv_index in range(K_FOLDS):
+    for cv_index in range(k_folds):
         bump_patch(base_dir=base_dir)
         dataset_label = get_dataset_label_from_version(base_dir=base_dir)
         dst_root = Path(YOLO_ROOT) / f"datasets/{dataset_label}"
@@ -182,13 +186,14 @@ def cross_validation_combinations_training(base_dir: Path):
             classes_map=CLASSES_MAP,
             subsets_included=SUBSETS_INCLUDED,
             dst_root=dst_root,
-            every_n_th=K_FOLDS,
+            every_n_th=k_folds,
             keep_class_ids=KEEP_CLASS_IDS,
             skip_class_ids=SKIP_CLASS_IDS,
             base_dir=base_dir,
             run_training=True,
             recode_map=RECODE_MAP,
             cross_validation_index=cv_index,
+            fine_tune_patience=fine_tune_epochs,
         )
         commit_and_push(
             dataset_label=dataset_label,
@@ -216,14 +221,15 @@ def cross_validation_combinations_training(base_dir: Path):
         base_dir=base_dir,
         groupings=GROUPINGS,
     )
-    init_fifty_one_dataset_for_cross_validation_combinations(
-        dataset_label=fiftyone_dataset_label,
-        classes_map=CLASSES_MAP,
-        val_inferences_roots=val_inferences_roots,
-        dataset_root=DATASET_ROOT,
-        candidate_subset=None,
-        export_to_json=True,
-    )
+    if init_fiftyone:
+        init_fifty_one_dataset_for_cross_validation_combinations(
+            dataset_label=fiftyone_dataset_label,
+            classes_map=CLASSES_MAP,
+            val_inferences_roots=val_inferences_roots,
+            dataset_root=DATASET_ROOT,
+            candidate_subset=None,
+            export_to_json=True,
+        )
     commit_and_push(
         dataset_label=fiftyone_dataset_label,
         base_dir=base_dir,
