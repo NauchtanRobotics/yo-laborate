@@ -13,8 +13,9 @@ from yo_ratchet.yo_wrangle.common import (
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
 
+EPOCHS = 325
 DETECT_IMAGE_SIZE = 800
-TRAIN_IMAGE_SIZE = 800
+TRAIN_IMAGE_SIZE = 640
 IOU_THRES = 0.45
 
 
@@ -31,6 +32,7 @@ def prepare_dataset_and_train(
     cross_validation_index: int = 0,
     fine_tune_patience: int = 5,
     img_size: Optional[int] = TRAIN_IMAGE_SIZE,
+    epochs: Optional[int] = EPOCHS,
 ):
     class_ids = list(classes_map.keys())
     output_str = count_class_instances_in_datasets(
@@ -101,7 +103,7 @@ names: {class_names}"""
         "--workers=4",
         "--device=0,1",
         f"--cfg={cfg_path}",
-        "--epochs=300",
+        f"--epochs={epochs}",
         f"--data={str(dst_dataset_path)}",
         f"--weights={weights_path}",
         f"--hyp={hyp_path}",
@@ -111,7 +113,7 @@ names: {class_names}"""
         "--freeze=3",
     ]
     if fine_tune:
-        start_epoch = 300 - fine_tune_patience
+        start_epoch = epochs - fine_tune_patience
         pytorch_cmd.append(f"--start-epoch={start_epoch}")
     else:
         pass

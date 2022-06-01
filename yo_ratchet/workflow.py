@@ -110,6 +110,7 @@ def run_prepare_dataset_and_train(
     init_fiftyone=True,
     cross_validation_index: int = 0,
     every_n_th: Optional[int] = None,
+    fine_tune_epochs: Optional[int] = 5,
 ):
     if every_n_th is None:
         every_n_th = EVERY_NTH_TO_VAL
@@ -126,6 +127,7 @@ def run_prepare_dataset_and_train(
         run_training=run_training,
         recode_map=RECODE_MAP,
         cross_validation_index=cross_validation_index,
+        fine_tune_patience=fine_tune_epochs,
     )
     detect_images_root = DST_ROOT / "val" / "images"
     (
@@ -151,7 +153,7 @@ def run_prepare_dataset_and_train(
         classes_map=CLASSES_MAP,
         print_first_n=24,
         groupings=GROUPINGS,
-        base_dir=Path(output_filename).resolve(),
+        base_dir=BASE_DIR,
     )
 
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
