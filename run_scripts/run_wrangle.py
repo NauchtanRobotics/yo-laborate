@@ -370,5 +370,42 @@ def test_add_unique():
 
 def test_cleanup_excess_annotations():
     cleanup_excess_annotations(subset_folder=Path(
-        "/home/david/RACAS/sealed_roads_dataset/SDRC_2022_1")
+        "/home/david/RACAS/sealed_roads_dataset/Sunshine_Coast_2022_1")
+    )
+
+
+def test_collate_samples():
+    sample_folders = [
+        (
+            Path("/home/david/RACAS/Sunshine_Coast_1654062225"),
+            None,
+        ),
+        (
+            Path("/home/david/RACAS/Sunshine_Coast_1654048134"),
+            None,
+        ),
+        (
+            Path("/home/david/RACAS/Sunshine_Coast_1654050846"),
+            None,
+        ),
+        (
+            Path("/home/david/RACAS/Sunshine_Coast_1654060521"),
+            None,
+        ),
+        (
+            Path("/home/david/RACAS/Sunshine_Coast_1654064371"),
+            None,
+        ),
+        (
+            Path("/home/david/RACAS/Sunshine_Coast_1654065888"),
+            None,
+        ),
+    ]
+    temp_images_root = (
+        "/home/david/RACAS/sealed_roads_dataset/Sunshine_Coast_2022_1"
+    )
+    collate_image_and_annotation_subsets(
+        samples_required=sample_folders,
+        dst_folder=Path(temp_images_root),
+        keep_class_ids=None,  # [3,4]
     )
