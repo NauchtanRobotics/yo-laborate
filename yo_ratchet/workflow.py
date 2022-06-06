@@ -181,6 +181,9 @@ def cross_validation_combinations_training(
     k_folds: Optional[int] = K_FOLDS,
     fine_tune_epochs: Optional[int] = 5,
     epochs: Optional[int] = 300,
+    training_imgsz: Optional[int] = 640,
+    batch_size: Optional[int] = 62,
+    test_imgsz: Optional[int] = 800,
 ):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
     val_inferences_roots = []
@@ -202,6 +205,8 @@ def cross_validation_combinations_training(
             cross_validation_index=cv_index,
             fine_tune_patience=fine_tune_epochs,
             epochs=epochs,
+            img_size=training_imgsz,
+            batch_size=batch_size,
         )
         commit_and_push(
             dataset_label=dataset_label,
@@ -220,6 +225,7 @@ def cross_validation_combinations_training(
             base_dir=base_dir,
             conf_thres=CONF,
             device=0,
+            img_size=test_imgsz,
         )
         inferences_path = YOLO_ROOT / f"runs/detect/{run_name}/labels"
         val_inferences_roots.append(inferences_path.resolve())

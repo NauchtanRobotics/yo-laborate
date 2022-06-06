@@ -32,6 +32,7 @@ def prepare_dataset_and_train(
     fine_tune_patience: int = 5,
     img_size: Optional[int] = TRAIN_IMAGE_SIZE,
     epochs: Optional[int] = EPOCHS,
+    batch_size: Optional[int] = 62,
 ):
     if epochs is None:
         epochs = EPOCHS
@@ -100,7 +101,7 @@ names: {class_names}"""
         python_path,
         train_script,
         f"--img={img_size}",
-        "--batch=62",
+        f"--batch={batch_size}",
         "--workers=4",
         "--device=0,1",
         f"--cfg={cfg_path}",
@@ -110,7 +111,7 @@ names: {class_names}"""
         f"--hyp={hyp_path}",
         f"--name={model_instance}",
         f"--patience={str(patience)}",
-        "--cache",
+        "--cache=disk",
         "--freeze=3",
     ]
     if fine_tune:
