@@ -2,128 +2,22 @@ from pathlib import Path
 
 from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 
-
-def test_count_class_instances_in_datasets():
-    sample_folders = [
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Caboone_10pcnt_AP_LO_LG_WS"
-            ),
-            313,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Caboone_40pcnt_D10_D20_D40_EB"
-            ),
-            415,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/CentralCoast_10pcnt_L0_LG_WS"
-            ),
-            475,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/CentralCoast_25pcnt_AP_D10_D20"
-            ),
-            626,
-        ),
-        (
-            Path("/home/david/RACAS/boosted/600_x_600/unmasked/CentralCoast_35pct_EB"),
-            87,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Gladstone_2020_sample_1"
-            ),
-            621,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Gladstone_2020_sample_2"
-            ),
-            503,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Gladstone_2020_sample_3"
-            ),
-            163,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Huon_2021_sample_1"
-            ),
-            398,
-        ),
-        (
-            Path("/home/david/RACAS/boosted/600_x_600/unmasked/Resample_Isaac_2021"),
-            1102,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Isaac_2021_sample_2"
-            ),
-            525,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Maranoa_2020_sample_1"
-            ),
-            175,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Maranoa_2020_sample_2"
-            ),
-            502,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Moira_2020_sample_1"
-            ),
-            670,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_WDRC_2021_sample_1"
-            ),
-            504,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Maranoa_2020_sample_val"
-            ),
-            175,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Moira_2020_sample_val"
-            ),
-            670,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Hobart_2021_sample"
-            ),
-            492,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Isaac_2021_pothole_sample_val"
-            ),
-            580,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Gladstone_2020_sample_val"
-            ),
-            622,
-        ),
-    ]
-    count_class_instances_in_datasets(
-        data_samples=sample_folders,
-        class_ids=[3, 4],
-        classes_list=Path("/home/david/addn_repos/OpenLabeling/main/class_list.txt"),
-    )
+# Example Usage:
+#
+# def test_count_class_instances_in_datasets():
+#     sample_folders = [
+#         (
+#             Path(
+#                 "/home/david/RACAS/boosted/600_x_600/unmasked/Caboone_10pcnt_AP_LO_LG_WS"
+#             ),
+#             None,
+#         ),
+#     ]
+#     class_ids = list(classes_map.keys())
+#
+#     output_str = count_class_instances_in_datasets(
+#         data_samples=sample_folders,
+#         class_ids=class_ids,
+#         class_id_to_name_map=classes_map,
+#     )
+#     print(output_str)
