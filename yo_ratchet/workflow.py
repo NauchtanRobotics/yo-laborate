@@ -183,6 +183,7 @@ def cross_validation_combinations_training(
     epochs: Optional[int] = 300,
     training_imgsz: Optional[int] = 640,
     batch_size: Optional[int] = 62,
+    cache: Optional[str] = "ram",
     test_imgsz: Optional[int] = 800,
 ):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
@@ -207,6 +208,7 @@ def cross_validation_combinations_training(
             epochs=epochs,
             img_size=training_imgsz,
             batch_size=batch_size,
+            cache=cache,
         )
         commit_and_push(
             dataset_label=dataset_label,
