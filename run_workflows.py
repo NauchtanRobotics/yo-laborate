@@ -168,7 +168,7 @@ def test_arrange_images_per_classification_errors():
     )
     true_positive = true_negative = 0
     severity_dict = get_severity_dict(
-        truths_csv=truths_csv, image_name_key="Photo_Name"
+        truths_csv=truths_csv, field_for_key="Photo_Name"
     )
     count = 0
     for index, row in df.iterrows():

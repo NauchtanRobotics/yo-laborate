@@ -43,7 +43,14 @@ def test_analyse_model_binary_metrics_for_groups():
     images_root = ROOT_TEST_DATA / "classification" / "images"
     root_ground_truths = ROOT_TEST_DATA / "filter_yolo"
     root_inferences = ROOT_TEST_DATA / "classification" / "labels"
-
+    optimised_thresholds = {
+        0: 0.35,
+        1: 0.2,
+        2: 0.25,
+        3: 0.45,
+        4: 0.5,
+        16: 0.2
+    }
     df = get_groups_classification_metrics(
         images_root=images_root,
         root_ground_truths=root_ground_truths,
@@ -53,6 +60,7 @@ def test_analyse_model_binary_metrics_for_groups():
             "Risk Defects": [3, 4],
             "Cracking": [0, 1, 2, 16],
         },
+        optimised_thresholds=optimised_thresholds
     )
     assert isinstance(df, pandas.DataFrame)
     assert "Risk Defects" in list(df)
@@ -60,7 +68,6 @@ def test_analyse_model_binary_metrics_for_groups():
     assert "P" in df.index
     assert "R" in df.index
     assert "F1" in df.index
-    assert "@conf" in df.index
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@ import pandas
 from pathlib import Path
 from sklearn import metrics as skm
 from tabulate import tabulate
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive
 
@@ -80,6 +80,8 @@ def get_classification_performance(
     classes_info: Dict[str, Dict],
     image_key: str = "Photo_Name",
     classifications_key: str = "Final_Remedy",
+    severity_key: Optional[str] = None,
+    severity_threshold: Optional[int] = 0,
     print_table: bool = True,
 ) -> pandas.DataFrame:
     """
@@ -96,6 +98,8 @@ def get_classification_performance(
         classes_info=classes_info,
         image_key=image_key,
         classifications_key=classifications_key,
+        severity_key=severity_key,
+        severity_threshold=severity_threshold,
     )
     groupings = get_group_to_int_mapping(mapping=csv_group_filters)
     results = {}
@@ -153,19 +157,27 @@ def get_classification_performance(
     return df
 
 
-def get_severity_dict(truths_csv: Path, image_name_key: str = "Photo_Name"):
+SEVERITY_KEY = "severity"
+
+
+def get_severity_dict(
+    truths_csv: Path,
+    field_for_severity: str,
+    field_for_key: str = "Photo_Name",
+    default_severity: int = 10,
+):
     classifications = pandas.read_csv(
         filepath_or_buffer=str(truths_csv),
     )
     classifications = classifications.fillna("")
-    classifications["severity"] = classifications.apply(
-        lambda x: int(x["D2_Side"].split(",")[0].strip()) if x["D2_Side"] != "" else 10,
+    classifications[SEVERITY_KEY] = classifications.apply(
+        lambda x: int(x[field_for_severity].split(",")[0].strip()) if x[field_for_severity] != "" else default_severity,
         axis=1,
     )
     severity_dict = {}
     for row in classifications.iterrows():
-        image_name = row[1][image_name_key]
-        severity = row[1]["severity"]
+        image_name = row[1][field_for_key]
+        severity = row[1][SEVERITY_KEY]
         severity_dict[image_name] = severity
     return severity_dict
 
@@ -179,6 +191,8 @@ def get_actual_vs_inferred_df(
     classes_info: Dict[str, Dict],
     image_key: str = "Photo_Name",
     classifications_key: str = "Final_Remedy",
+    severity_key: Optional[str] = None,
+    severity_threshold: int = 0,
 ) -> pandas.DataFrame:
     """
     A function for converting object detection data to classification.
@@ -203,6 +217,8 @@ def get_actual_vs_inferred_df(
             csv_group_filters=csv_group_filters,
             image_key=image_key,
             classifications_key=classifications_key,
+            severity_key=severity_key,
+            severity_threshold=severity_threshold,
         )
     else:
         raise RuntimeError("Path provided for root_ground_truths does not exist.")
@@ -234,6 +250,7 @@ def get_group_memberships_truths(
     csv_group_filters: Dict[str, List[str]],
     image_key: str = "Photo_Name",
     classifications_key: str = "Final_Remedy",
+    severity_key: Optional[str] = None,
     severity_threshold: int = 8,
 ) -> Dict[str, List[bool]]:
     """
@@ -259,10 +276,21 @@ def get_group_memberships_truths(
     )
     num_groups = len(csv_group_filters.keys())
     results_dict = {}
-    severity_dict = get_severity_dict(truths_csv=truths_csv, image_name_key=image_key)
+    if severity_key is not None:
+        severity_dict = get_severity_dict(
+            truths_csv=truths_csv, field_for_severity=severity_key, field_for_key=image_key
+        )
+    else:
+        severity_dict = None
     for image_name, group_memberships in classifications.items():
         actual_groups = [False for i in range(num_groups)]
-        severity = severity_dict[image_name]
+
+        if severity_dict is not None:
+            severity = severity_dict[image_name]  # n.b could still have a None value
+        else:
+            severity = None
+        if severity is None:
+            continue
         for group_name in group_memberships:
             group_int = group_to_int_mapping.get(group_name, None)
             if group_int is not None and severity >= severity_threshold:

@@ -60,6 +60,12 @@ def test_get_group_memberships_truths_mocked_read(
     mocker, test_df, test_csv_group_filters
 ):
     mocker.patch("pandas.read_csv", return_value=test_df)
+    mocker.patch("yo_valuate.reference_csv.get_severity_dict", return_value={
+        "Photo_1": 8,
+        "Photo_2": 8,
+        "Photo_3": 8,
+        "Photo_4": 8
+    })
     expected_truths = {  # [has_people, has_beverage]
         "Photo_1": [True, True],
         "Photo_2": [True, False],
@@ -71,6 +77,7 @@ def test_get_group_memberships_truths_mocked_read(
         csv_group_filters=test_csv_group_filters,
         image_key="Photo_NameZ",
         classifications_key="Final_Remedy",
+        severity_key="D2_Side",
     )
     assert result == expected_truths
 
@@ -92,6 +99,7 @@ def test_get_group_memberships_truths(test_df, test_csv_group_filters, expected_
         csv_group_filters=test_csv_group_filters,
         image_key="Photo_Name",
         classifications_key="D2_Remedy",
+        severity_key="D2_Side",
     )
     assert result == expected_truths
 
@@ -178,6 +186,7 @@ def test_get_actual_vs_inferred_df(
         classes_info=classes_info,
         image_key="Photo_Name",
         classifications_key="D2_Remedy",
+        severity_key="D2_Side",
     )
     indices = sorted(expected_inferences.keys())
     expected_result = pandas.DataFrame(
@@ -213,6 +222,8 @@ def test_get_classification_performance(
         classes_info=classes_info,
         image_key="Photo_Name",
         classifications_key="D2_Remedy",
+        severity_key="D2_Side",
+        severity_threshold=8,
     )
     assert isinstance(df, pandas.DataFrame)
     res_dict = df.to_dict()
@@ -224,5 +235,7 @@ def test_get_classification_performance(
 
 
 def test_get_severity_dict():
-    truths_csv = Path("/home/david/RACAS/sealed_roads_dataset/CTRC_all_sealed.csv")
-    get_severity_dict(truths_csv=truths_csv)
+    truths_csv = Path(__file__).parents[2] / "tests/test_data/classification/truth.csv"
+    get_severity_dict(
+        truths_csv=truths_csv, field_for_severity="D2_Side", field_for_key="Photo_Name", default_severity=10
+    )
