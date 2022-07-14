@@ -106,10 +106,9 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
         outlier_params=outlier_params if marginal_coefficient is None else None,
         remove_probability=True,
     )
-    if marginal_coefficient:
-        short_list = list({row.split(" ")[0] for row in filtered_detections})
+    if marginal_coefficient is not None:  # Only include marginal bounding boxes if at least one box > min_prob
         fd, less_filtered_path = mkstemp(suffix=".txt")
-        less_filtered = filter_and_aggregate_annotations(
+        _ = filter_and_aggregate_annotations(
             annotations_dir=annotations_dir,
             classes_info=classes_info,
             lower_probability_coefficient=marginal_coefficient,
@@ -125,8 +124,9 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
         )
         less_filtered = pd.read_csv(less_filtered_path, sep=" ", header=None)
         less_filtered = less_filtered.rename(columns={0: "photo_name"})
+        image_names_short_list = list({row.split(" ")[0] for row in filtered_detections})
         plus_marginal_detections = less_filtered.loc[
-            less_filtered["photo_name"].isin(short_list)
+            less_filtered["photo_name"].isin(image_names_short_list)
         ]
         plus_marginal_detections.to_csv(
             filtered_annotations_path, index=False, sep=" ", header=None
