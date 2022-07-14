@@ -6,7 +6,7 @@ import pandas
 
 from yo_ratchet.yo_filter.unsupervised import OutlierParams
 from yo_ratchet.yo_filter.filter_central import calculate_wedge_envelop
-from yo_ratchet.yo_filter.filters import apply_filters
+from yo_ratchet.yo_filter.filters import apply_filters, get_classes_info
 from yo_ratchet.yo_wrangle.common import (
     YOLO_ANNOTATIONS_FOLDER_NAME,
     get_all_jpg_recursive,
@@ -102,7 +102,7 @@ def filter_and_aggregate_annotations(
     marginal_classes: Optional[List[int]] = None,
     min_marginal_count: Optional[int] = MIN_COUNT_MARGINAL,
     outlier_params: Optional[OutlierParams] = None,
-    images_root: Optional[Path] = None,
+    images_root: Optional[Path] = None,  # Only required if filtering outliers patches
     global_object_width_threshold: Optional[float] = 0.0,
     remove_probability: bool = False,
 ) -> List[str]:
@@ -186,3 +186,57 @@ def filter_and_aggregate_annotations(
     if output_path is not None:
         print(f"See results at {str(output_path)}")
     return aggregated_detections
+
+
+def filter_and_aggregate_from_multiple_inference_directories(
+    detections_super_dir: Path,
+    classes_json_path: Path,
+    output_path: Path,
+    lower_probability_coefficient: float,
+    upper_probability_coefficient: Optional[float] = None,
+    filter_horizon: float = 0.0,
+    y_wedge_apex: float = -0.2,
+    marginal_classes: Optional[List[int]] = None,
+    min_marginal_count: Optional[int] = None,
+):
+    """
+    For looping through multiple detection runs which are co-located in a
+    directory to produce an aggregated YOLO annotations file that optionally
+    includes a probability field.
+
+    """
+    classes_info = get_classes_info(classes_json_path=classes_json_path)
+    filtered_detections = []
+    for annotations_dir in detections_super_dir.iterdir():
+        filtered_detections += filter_and_aggregate_annotations(
+            annotations_dir=annotations_dir,
+            classes_info=classes_info,
+            lower_probability_coefficient=lower_probability_coefficient,
+            upper_probability_coefficient=upper_probability_coefficient,
+            output_path=None,
+            filter_horizon=filter_horizon,
+            y_wedge_apex=y_wedge_apex,
+            marginal_classes=marginal_classes,
+            min_marginal_count=min_marginal_count,
+            images_root=None,  # Only required if filtering outliers patches
+            outlier_params=None,
+            remove_probability=True,
+        )
+
+    output_path.parent.mkdir(exist_ok=True, parents=True)
+    with open(str(output_path), "w") as fd:
+        fd.writelines(filtered_detections)
+
+
+def test_filter_and_aggregate_from_multiple_inference_directories():
+    filter_and_aggregate_from_multiple_inference_directories(
+        detections_super_dir=Path("/media/david/Samsung_T8/North_Burnett_Detections"),
+        classes_json_path=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
+        output_path=Path("/home/david/RACAS/North_Burnett_2022/Defects_lower_prob_coeff_point6.yolo"),
+        lower_probability_coefficient=0.6,
+        upper_probability_coefficient=None,
+        filter_horizon=0.0,
+        y_wedge_apex=-0.2,
+        marginal_classes=[6, 7, 8, 23, 25],
+        min_marginal_count=7
+    )

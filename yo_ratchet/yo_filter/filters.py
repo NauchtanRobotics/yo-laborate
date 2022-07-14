@@ -31,7 +31,7 @@ def apply_filters(
     classes_to_remove: Optional[List[int]] = None,
     marginal_classes: Optional[List[str]] = None,  # e.g. ["2", "5"]
     outlier_params: Optional[OutlierParams] = None,
-    image_path: Optional[Path] = None,
+    image_path: Optional[Path] = None,  # Only required if filtering outliers patches
     min_count_marginal: Optional[int] = None,
     remove_probability: bool = False,
 ) -> List[List]:
