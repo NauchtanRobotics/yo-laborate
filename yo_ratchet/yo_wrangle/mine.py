@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import mkstemp
 from typing import Optional, List
 
-from yo_ratchet.yo_filter.filters import get_classes_info
+from yo_ratchet.yo_filter.filters import get_classes_info, get_lower_probability_thresholds
 from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
 from yo_ratchet.yo_wrangle.wrangle import _get_hits_for_annotations_in_classes
 from yo_ratchet.yo_wrangle.aggregated_annotations import (
@@ -91,7 +91,7 @@ def extract_high_quality_training_data_from_yolo_runs_detect(
     else:
         outlier_params = None
 
-    fd, filtered_annotations_path = mkstemp(suffix=".txt")
+    fd, filtered_annotations_path = mkstemp(suffix=".txt")   # move this code down to near first use of 'fd'
     filtered_detections = filter_and_aggregate_annotations(
         annotations_dir=annotations_dir,
         classes_info=classes_info,
@@ -204,3 +204,88 @@ def selectively_copy_training_data_for_selected_classes(
         src_image_path = src_images_dir / f"{image_name_stem}.jpg"
         dst_image_path = dst_images_dir / f"{image_name_stem}.jpg"
         shutil.copy(src=str(src_image_path), dst=str(dst_image_path))
+
+
+def prepare_training_data_subset_from_reviewed_annotations(
+        images_archive_dir: Path,
+        annotations_path: Path,
+        dst_images_dir: Path,
+        classes_json_path: Path,
+        copy_all_src_images: bool = False,
+        move: bool = False,
+):
+    """
+    Filters for confirmed and deleted annotations from reviewed bounding box data (.yolo file)
+    and prepares the data into training data structure.
+
+    """
+    classes_info = get_classes_info(classes_json_path=classes_json_path)
+    lower_prob_thresholds = get_lower_probability_thresholds(
+        classes_info=classes_info,
+        lower_probability_coefficient=1.0,
+    )
+
+    with open(str(annotations_path), "r") as f:
+        lines = f.readlines()
+
+    hit_list = set()
+    for line in lines:
+        line_split = line.split(" ")
+
+        conf = float(line_split[6])
+        if conf not in [0, 1]:
+            continue
+
+        class_id = int(line_split[1])
+        if class_id not in [3, 4, 9, 17, 19, 22, 29, 30, 33]:
+            continue
+        else:
+            pass
+
+        photo_name = line_split[0]
+        hit_list.add(photo_name)
+
+    # copy line if photo_name is in hit-list, but remove probability (last field)
+    filtered_detections = []
+    for line in lines:
+        line_split = line.split(" ")
+        photo_name = line_split[0]
+        if photo_name not in hit_list:
+            continue
+        else:
+            pass
+        conf = float(line_split[6])
+        class_id = line_split[1]
+        lower_threshold = lower_prob_thresholds.get(int(class_id), 0.1)
+        if conf < lower_threshold:
+            continue
+        else:
+            pass
+        revised_line = " ".join(line_split[:6])
+        filtered_detections.append(revised_line)
+
+    fd, filtered_annotations_path = mkstemp(suffix=".txt")
+    with open(filtered_annotations_path, "w") as fd:
+        fd.write("\n".join(filtered_detections))
+
+    sub_dir_paths = [x for x in images_archive_dir.iterdir() if x.is_dir()]
+    for sub_dir_path in sub_dir_paths:
+        copy_training_data_listed_in_aggregated_annotations_file(
+            src_images_dir=sub_dir_path,
+            filtered_annotations_file=Path(filtered_annotations_path),
+            dst_images_dir=dst_images_dir,
+            copy_all_src_images=copy_all_src_images,
+            move=move,
+        )
+    os.unlink(filtered_annotations_path)
+
+
+def test_prepare_training_data_subset_from_reviewed_annotations():
+    prepare_training_data_subset_from_reviewed_annotations(
+        images_archive_dir=Path("/media/david/Samsung_T8/bot_archives/gympie_regional_council"),
+        annotations_path=Path("/media/david/Carol_sexy/Defects_gympie_regional_council_1658742129_edited.yolo"),
+        dst_images_dir=Path("/home/david/RACAS/sealed_roads_dataset/Gympie_2022_1"),
+        classes_json_path=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
+        copy_all_src_images=False,
+        move=False
+    )
