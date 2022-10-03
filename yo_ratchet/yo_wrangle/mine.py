@@ -207,17 +207,21 @@ def selectively_copy_training_data_for_selected_classes(
 
 
 def prepare_training_data_subset_from_reviewed_annotations(
-        images_archive_dir: Path,
-        annotations_path: Path,
-        dst_images_dir: Path,
-        classes_json_path: Path,
-        copy_all_src_images: bool = False,
-        move: bool = False,
+    images_archive_dir: Path,
+    yolo_file: Path,
+    dst_images_dir: Path,
+    classes_json_path: Path,
+    copy_all_src_images: bool = False,
+    move: bool = False,
 ):
     """
     Filters for confirmed and deleted annotations from reviewed bounding box data (.yolo file)
     and prepares the data into training data structure.
 
+    images_archive_dir: You can either provide a folder Path containing sub-folders of images,
+                               or simply a folder Path which directly contains images.
+    yolo_file: A path to a single text file containing aggregated bounding box annotations covering
+               all objects defined for images in images_archive_dir.
     """
     classes_info = get_classes_info(classes_json_path=classes_json_path)
     lower_prob_thresholds = get_lower_probability_thresholds(
@@ -225,7 +229,7 @@ def prepare_training_data_subset_from_reviewed_annotations(
         lower_probability_coefficient=1.0,
     )
 
-    with open(str(annotations_path), "r") as f:
+    with open(str(yolo_file), "r") as f:
         lines = f.readlines()
 
     hit_list = set()
@@ -237,10 +241,10 @@ def prepare_training_data_subset_from_reviewed_annotations(
             continue
 
         class_id = int(line_split[1])
-        if class_id not in [3, 4, 9, 17, 19, 22, 29, 30, 33]:
-            continue
-        else:
-            pass
+        # if class_id not in [3, 4, 8, 9, 17, 19, 22, 29, 30, 33]:
+        #     continue
+        # else:
+        #     pass
 
         photo_name = line_split[0]
         hit_list.add(photo_name)
@@ -269,6 +273,11 @@ def prepare_training_data_subset_from_reviewed_annotations(
         fd.write("\n".join(filtered_detections))
 
     sub_dir_paths = [x for x in images_archive_dir.iterdir() if x.is_dir()]
+    if len(sub_dir_paths) == 0:
+        sub_dir_paths = [images_archive_dir]
+    else:
+        pass  # A parent directory was passed in as a parameter as assumed in the first instance.
+
     for sub_dir_path in sub_dir_paths:
         copy_training_data_listed_in_aggregated_annotations_file(
             src_images_dir=sub_dir_path,
@@ -282,10 +291,10 @@ def prepare_training_data_subset_from_reviewed_annotations(
 
 def test_prepare_training_data_subset_from_reviewed_annotations():
     prepare_training_data_subset_from_reviewed_annotations(
-        images_archive_dir=Path("/media/david/Samsung_T8/bot_archives/gympie_regional_council"),
-        annotations_path=Path("/media/david/Carol_sexy/Defects_gympie_regional_council_1658742129_edited.yolo"),
-        dst_images_dir=Path("/home/david/RACAS/sealed_roads_dataset/Gympie_2022_1"),
+        images_archive_dir=Path("/media/david/Samsung_T8/bot_archives/western_downs_regional_council"),
+        yolo_file=Path("/media/david/Carol_sexy/Defects_western_downs_regional_council_1664227892_edited.yolo"),
+        dst_images_dir=Path("/home/david/RACAS/sealed_roads_dataset/WDRC_2022_Sep_Risk"),
         classes_json_path=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
         copy_all_src_images=False,
-        move=False
+        move=False  # Do dry run before changing this parameter to True
     )
