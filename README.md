@@ -1,7 +1,7 @@
 # `yo-wrangle` 
 _"helping computer vision engineers on a schedule"_
 
-An app to efficiently visualise, edit and wrangle images and labels (YOLO bounding box format) with special support for maintaining sample subsets.
+An app that facilitates MLOps specifically for YOLO datasets. Efficiently visualise, edit and wrangle images and labels with special support for maintaining sample subsets.
 
 ![Editing short listed "most mistaken annotations"](yo-wrangle-55.png)
 
