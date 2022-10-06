@@ -1,0 +1,5 @@
+Record_ID,Road_ID,Road_Name,Photo_Name,Time_Stamp,Longitude,Latitude,Sealed,Chainage,D1_Def_ID,D1_Remedy,D1_Width,D1_Side,D2_Def_ID,D2_Remedy,D2_Width,D2_Side
+2,2216,Boxing Club Carpark~~Local~Moranbah,Photo_1.jpg,2021-May-06 15:00:23 808,148.053218,-22.007485,TRUE,8,,,0,,2216_1,"Fred  Stripping",1,"9,Centre"
+2,2473,Edgerley Street~S173~Local~Dysart,Photo_2.jpg,2021-May-17 14:30:06 281,148.35734,-22.583185,TRUE,9,,,0,,2473_1,"Stripping  bob",1,"10,Centre"
+2,1996,Red Hill Road~P007~Local~Moranbah,Photo_3.jpg,2021-May-02 09:01:54 864,147.939287,-21.850493,TRUE,8,,,0,,1996_1,"Bob  Fred  Wine",1,"9,Centre"
+3,2216,Boxing Club Carpark~~Local~Moranbah,Photo_4.jpg,2021-May-06 15:00:25 241,148.053145,-22.007492,TRUE,16,,,0,,2216_1," Beer  Wine",1,"9,Centre"
