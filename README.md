@@ -1,4 +1,4 @@
-# `yo-wrangle` 
+# `yo-laborate` 
 _"helping computer vision engineers on a schedule"_
 
 An app that facilitates MLOps specifically for YOLO datasets. Efficiently visualise, edit and wrangle images and labels with special support for maintaining sample subsets.
