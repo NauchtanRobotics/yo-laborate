@@ -18,7 +18,7 @@ from yo_ratchet.yo_filter.unsupervised import (
 )
 
 
-def extract_high_quality_training_data_from_yolo_runs_detect(
+def extract_high_quality_training_data_from_raw_detections(
     src_images_dir: Path,
     annotations_dir: Path,
     dst_images_dir: Path,
@@ -206,13 +206,14 @@ def selectively_copy_training_data_for_selected_classes(
         shutil.copy(src=str(src_image_path), dst=str(dst_image_path))
 
 
-def prepare_training_data_subset_from_reviewed_annotations(
+def prepare_training_data_subset_from_reviewed_yolo_file(
     images_archive_dir: Path,
     yolo_file: Path,
     dst_images_dir: Path,
     classes_json_path: Path,
     copy_all_src_images: bool = False,
     move: bool = False,
+    probability_thresh_coefficient: float = 0.9
 ):
     """
     Filters for confirmed and deleted annotations from reviewed bounding box data (.yolo file)
@@ -226,30 +227,29 @@ def prepare_training_data_subset_from_reviewed_annotations(
     classes_info = get_classes_info(classes_json_path=classes_json_path)
     lower_prob_thresholds = get_lower_probability_thresholds(
         classes_info=classes_info,
-        lower_probability_coefficient=1.0,
+        lower_probability_coefficient=probability_thresh_coefficient,
     )
 
     with open(str(yolo_file), "r") as f:
         lines = f.readlines()
 
-    hit_list = set()
+    hit_list = set()  # Identify photos that have had at least one defect confirmed or deleted
     for line in lines:
         line_split = line.split(" ")
-
         conf = float(line_split[6])
         if conf not in [0, 1]:
-            continue
-
-        class_id = int(line_split[1])
+            continue  # Only accept
+        # class_id = int(line_split[1])
         # if class_id not in [3, 4, 8, 9, 17, 19, 22, 29, 30, 33]:
         #     continue
         # else:
         #     pass
-
         photo_name = line_split[0]
         hit_list.add(photo_name)
 
-    # copy line if photo_name is in hit-list, but remove probability (last field)
+    # Collect all annotations for photos in the hit-list, but remove probability (last field)
+    # (regardless whether box was confirmed or not) except defects below the minimum confidence
+    # Threshold
     filtered_detections = []
     for line in lines:
         line_split = line.split(" ")
@@ -289,11 +289,11 @@ def prepare_training_data_subset_from_reviewed_annotations(
     os.unlink(filtered_annotations_path)
 
 
-def test_prepare_training_data_subset_from_reviewed_annotations():
-    prepare_training_data_subset_from_reviewed_annotations(
-        images_archive_dir=Path("/media/david/Samsung_T8/bot_archives/western_downs_regional_council"),
-        yolo_file=Path("/media/david/Carol_sexy/Defects_western_downs_regional_council_1664227892_edited.yolo"),
-        dst_images_dir=Path("/home/david/RACAS/sealed_roads_dataset/WDRC_2022_Sep_Risk"),
+def test_prepare_training_data_subset_from_reviewed_yolo_file():
+    prepare_training_data_subset_from_reviewed_yolo_file(
+        images_archive_dir=Path("/media/david/Samsung_T8/bot_archives/somerset_regional_council"),
+        yolo_file=Path("/media/david/Carol_sexy/Defects_somerset_regional_council_1665575310_edited.yolo"),
+        dst_images_dir=Path("/home/david/RACAS/sealed_roads_dataset/Somerset_2022_Risk_D20"),
         classes_json_path=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
         copy_all_src_images=False,
         move=False  # Do dry run before changing this parameter to True
