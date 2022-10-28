@@ -21,6 +21,7 @@ from yo_ratchet.yo_wrangle.common import (
     get_id_to_label_map,
     inferred_base_dir,
     get_classes_list,
+    get_subsets_included,
 )
 from yo_ratchet.modelling import (
     run_detections,
@@ -59,7 +60,7 @@ def set_globals(base_dir: Path, workbook_ptr):
     global KEEP_CLASS_IDS, SKIP_CLASS_IDS, RECODE_MAP, DATASET_LABEL
 
     CONF = workbook_ptr.CONF
-    SUBSETS_INCLUDED = workbook_ptr.SUBSETS_INCLUDED
+    SUBSETS_INCLUDED = get_subsets_included(base_dir)
     EVERY_NTH_TO_VAL = workbook_ptr.EVERY_NTH_TO_VAL
     KEEP_CLASS_IDS = workbook_ptr.KEEP_CLASS_IDS
     SKIP_CLASS_IDS = workbook_ptr.SKIP_CLASS_IDS
