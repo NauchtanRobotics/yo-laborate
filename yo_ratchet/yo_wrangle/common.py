@@ -36,6 +36,26 @@ RESULTS_FOLDER = ".results"
 PERFORMANCE_FOLDER = ".performance"
 
 
+def get_subsets_included(base_dir: Path) -> List[Path]:
+    included_subsets = []
+    base_dir = base_dir.absolute()
+    excluded_subsets_file = base_dir / "subsets_excluded.txt"
+    if not excluded_subsets_file.exists():
+        excluded_subsets_file = base_dir / "excluded_subsets.txt"
+
+    if excluded_subsets_file.exists():
+        with open(excluded_subsets_file, "r") as excluded:
+            excluded_files = excluded.read().splitlines()
+    else:
+        excluded_files = []
+
+    for item in sorted(base_dir.iterdir()):
+        first_char = item.name[0]
+        if first_char != "." and first_char != "_" and item.is_dir() and item.name not in excluded_files:
+            included_subsets.append(item)
+    return included_subsets
+
+
 def get_all_jpg_recursive(img_root: Optional[Path]) -> Iterable[Path]:
     if img_root.exists():
         items = img_root.rglob("*.jpg")

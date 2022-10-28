@@ -4,7 +4,7 @@ from pandas._testing import assert_frame_equal
 from pathlib import Path
 from typing import Dict, List
 
-from yo_valuate.reference_csv import (
+from yo_ratchet.yo_valuate.reference_csv import (
     _get_group_memberships_from_dataframe,
     get_group_memberships_truths,
     get_group_membership_inferences,
@@ -60,7 +60,7 @@ def test_get_group_memberships_truths_mocked_read(
     mocker, test_df, test_csv_group_filters
 ):
     mocker.patch("pandas.read_csv", return_value=test_df)
-    mocker.patch("yo_valuate.reference_csv.get_severity_dict", return_value={
+    mocker.patch("yo_ratchet.yo_valuate.reference_csv.get_severity_dict", return_value={
         "Photo_1": 8,
         "Photo_2": 8,
         "Photo_3": 8,
