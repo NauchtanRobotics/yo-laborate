@@ -753,17 +753,6 @@ url = ".wheels/open_labeling-0.2.16-py3-none-any.whl"
 
 [[package]]
 name = "opencv-contrib-python"
-version = "3.4.9.33"
-description = "Wrapper package for OpenCV python bindings."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-numpy = ">=1.11.1"
-
-[[package]]
-name = "opencv-contrib-python"
 version = "3.4.18.65"
 description = "Wrapper package for OpenCV python bindings."
 category = "main"
@@ -1802,28 +1791,7 @@ oauthlib = []
 open-labeling = [
     {file = "open_labeling-0.2.16-py3-none-any.whl", hash = "sha256:bae623312386972ff412d127b821225bd0bd88696afd8e957f9d3ef69cb30fc2"},
 ]
-opencv-contrib-python = [
-    {file = "opencv_contrib_python-3.4.9.33-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:9d23656f48989c1247f9404cc15e14b6727f70cd4babd41e72ed6622dcaefbe3"},
-    {file = "opencv_contrib_python-3.4.9.33-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:4783cb25af0d0d79fb56bcce55c8dcd1d9cee914a5ea3e7eff28bc554fb7b5fa"},
-    {file = "opencv_contrib_python-3.4.9.33-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:fa3d134d54212fe95bd9d7edeb86b5cabf287f89fb5ab1d4b4bdfa7ebcde6544"},
-    {file = "opencv_contrib_python-3.4.9.33-cp35-cp35m-win32.whl", hash = "sha256:e455c618ed292f5cfce2df75dc81e6f322071b865c52c911da09ca8f33ac3958"},
-    {file = "opencv_contrib_python-3.4.9.33-cp35-cp35m-win_amd64.whl", hash = "sha256:a01a0a5605a9f746e41cb3de41b20ae3578e723e7d0abff10e19eb5e05c0c505"},
-    {file = "opencv_contrib_python-3.4.9.33-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:119fdf2943711b140f34552cb84a0b0e738d41a93675d579cb6b2e6e8907a823"},
-    {file = "opencv_contrib_python-3.4.9.33-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:0fb5369a70fc809726e3fb886908821e62e33cd556bc3315b5bb108d58cffed4"},
-    {file = "opencv_contrib_python-3.4.9.33-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:0f1c8a7297118745f3e13157447159e59d0e8849102b0438c00e262f30790746"},
-    {file = "opencv_contrib_python-3.4.9.33-cp36-cp36m-win32.whl", hash = "sha256:4dffb5d2118ffb2fa481b6309a682d3e86c3c8bbcf1dbe724f975b8e8ec8db09"},
-    {file = "opencv_contrib_python-3.4.9.33-cp36-cp36m-win_amd64.whl", hash = "sha256:c86d6dd822296819293ea388d42b144c17164579bceadd1a36297c75816500c3"},
-    {file = "opencv_contrib_python-3.4.9.33-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:448ecc64ceb2eb7fa18d906a9418b03e51fbf3b93db50432d11bee843e2f05eb"},
-    {file = "opencv_contrib_python-3.4.9.33-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:63e155bdd50cb5668b9d268b330d3f80b2f8cea6f74aeab6cc379d0f3e3aa923"},
-    {file = "opencv_contrib_python-3.4.9.33-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ec237d981052e9e893c2bda159f0db30f17e0df37eec7b369649b76f9a285d07"},
-    {file = "opencv_contrib_python-3.4.9.33-cp37-cp37m-win32.whl", hash = "sha256:72b835d3f4e6de21f6261cb48e34afa37c90f1fd4b5e6bfcdbecbfc9f046730e"},
-    {file = "opencv_contrib_python-3.4.9.33-cp37-cp37m-win_amd64.whl", hash = "sha256:840dccef38c6afd785735fee773f420ea6c46b589a5663d36ccda862e96ea9e6"},
-    {file = "opencv_contrib_python-3.4.9.33-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:814f7151134ccc1f1a1a4819fad595c227417e0c991da8e7884013e1de7de591"},
-    {file = "opencv_contrib_python-3.4.9.33-cp38-cp38-manylinux1_i686.whl", hash = "sha256:a5d3b367fdf9399faa363301503e5ec4863c351c3b83522c12b805a8cfe5f2d3"},
-    {file = "opencv_contrib_python-3.4.9.33-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:1d92dbe8b46e45617c016adc26bb24aa54427e07e36d008a43d64fd2227661dc"},
-    {file = "opencv_contrib_python-3.4.9.33-cp38-cp38-win32.whl", hash = "sha256:bc5699e79d3723ada0509d7c5505ecce11f2ada77ff03e9112e0343bf127aa87"},
-    {file = "opencv_contrib_python-3.4.9.33-cp38-cp38-win_amd64.whl", hash = "sha256:7b553e1c7ae886121a32e0296c9e3d4dec190c5ae8cc16e7ddd83b4528e767c8"},
-]
+opencv-contrib-python = []
 opencv-python = [
     {file = "opencv-python-4.5.5.64.tar.gz", hash = "sha256:f65de0446a330c3b773cd04ba10345d8ce1b15dcac3f49770204e37602d0b3f7"},
     {file = "opencv_python-4.5.5.64-cp36-abi3-macosx_10_15_x86_64.whl", hash = "sha256:a512a0c59b6fec0fac3844b2f47d6ecb1a9d18d235e6c5491ce8dbbe0663eae8"},
