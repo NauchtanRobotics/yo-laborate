@@ -78,10 +78,11 @@ pip3 install torch==1.10.0+cu113 torchvision==0.11.1+cu113 -f https://download.p
 1. Make a copy of `config.example.ini` and name it `config.ini`.
 2. Edit the paths in `config.ini` to line up with your system.
 3. Add your dataset (subsets) folders to the root directory
-4. Edit `wrangling_example.py` to replacing the example SUBSETS_INCLUDED with your subsets.
-5. Edit other parameters below SUBSETS_INCLUDED, including setting your version.
-6. Run the wrangling scripts in `wrangling_example`
-7. Commit your work `git add . && git commit -m 'v1.0'`
+4. Create a file called `subsets_excluded.txt` and add one folder name per line if you want any folders excluded.
+5. Create a copy of `wrangling_example.py` and call it `dataset_workbook.py` 
+6. Edit any parameters in `dataset_workbook.py` including setting your version.
+7. Run the wrangling scripts in `wrangling_example`
+8. Commit your work `git add . && git commit -m 'v1.0'`
 
 You should retrain your model and commit your work in small increments. 
 If model performance, you can easily back track and branch off at an earlier save-point.
