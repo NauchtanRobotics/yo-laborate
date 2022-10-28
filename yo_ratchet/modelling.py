@@ -20,7 +20,7 @@ IOU_THRES = 0.45
 
 def prepare_dataset_and_train(
     classes_map: Dict[int, str],
-    subsets_included: List,
+    subsets_included: List[Path],
     dst_root: Path,
     every_n_th: int,
     keep_class_ids: Optional[List[int]],
@@ -54,8 +54,8 @@ def prepare_dataset_and_train(
     )
     """Add actual classes support after filtering"""
     final_subsets_included = [
-        ((dst_root / "train"), None),
-        ((dst_root / "val"), None),
+        (dst_root / "train"),
+        (dst_root / "val"),
     ]
     output_str += "\n"
     output_str += count_class_instances_in_datasets(

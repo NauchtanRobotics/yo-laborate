@@ -10,7 +10,7 @@ from yo_ratchet.yo_wrangle.common import (
 
 
 def count_class_instances_in_datasets(
-    data_samples: List[Tuple[Path, Optional[int]]],
+    data_samples: List[Path],
     class_ids: List[int],
     class_id_to_name_map: Dict[int, str],
 ):
@@ -24,8 +24,8 @@ def count_class_instances_in_datasets(
 
     """
     results_dict = {}
-    for dataset_path, max_samples in data_samples:
-        dataset_name = dataset_path.stem  # equally, could be dataset_path.name
+    for dataset_path in data_samples:
+        dataset_name = dataset_path.name
         annotations_root = dataset_path / YOLO_ANNOTATIONS_FOLDER_NAME
         if not annotations_root.exists():
             annotations_root = dataset_path / "labels"
@@ -37,10 +37,6 @@ def count_class_instances_in_datasets(
 
         dataset_dict = {}
         for i, image_path in enumerate(get_all_jpg_recursive(img_root=dataset_path)):
-            if i == max_samples:
-                print(
-                    f"WARNING: Counting stats beyond nominated limit: {dataset_path.name}"
-                )
             annotations_file = annotations_root / f"{image_path.stem}.txt"
             if not annotations_file.exists():
                 continue

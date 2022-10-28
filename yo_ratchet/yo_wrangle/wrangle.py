@@ -252,7 +252,7 @@ def copy_detect_folder_recursively_as_reference_then_subsample(
 
 
 def collate_image_and_annotation_subsets(
-    samples_required: List[Tuple[Path, Optional[int]]],
+    samples_required: List[Path],
     dst_folder: Path,
     keep_class_ids: Optional[List[int]] = None,
     skip_class_ids: Optional[List[int]] = None,
@@ -272,7 +272,7 @@ def collate_image_and_annotation_subsets(
 
     """
     dst_folder.mkdir(exist_ok=True)
-    for original_images_dir, sample_size in samples_required:
+    for original_images_dir in samples_required:
         assert (
             original_images_dir.exists()
         ), f"Subset path not found: {str(original_images_dir)}"
@@ -286,8 +286,6 @@ def collate_image_and_annotation_subsets(
             len(original_image_paths) > 0
         ), f"Subset path has no jpg files: {str(original_images_dir)}"
         for i, original_image_path in enumerate(original_image_paths):
-            if sample_size and i >= sample_size:
-                break
             dst_image_path = dst_folder / original_image_path.name
             # if dst_image_path.exists():
             #     dst_image_path = dst_folder / f"{original_image_path.stem}zzz{original_image_path.suffix}"
@@ -382,7 +380,7 @@ def check_train_val_are_unique(dataset_path: Path):
 
 
 def collate_and_split(
-    subsets_included: List[Tuple[Path, Optional[int]]],
+    subsets_included: List[Path],
     dst_root: Path,
     every_n_th: int = 1,  # for the validation subset.
     keep_class_ids: Optional[List] = None,  # None actually means keep all classes
@@ -538,8 +536,8 @@ def collate_additional_sample(
 
     """
     sample_folders = [
-        (existing_sample_dir, None),
-        (additional_sample_dir, None),
+        existing_sample_dir,
+        additional_sample_dir,
     ]
     collate_image_and_annotation_subsets(
         samples_required=sample_folders,
