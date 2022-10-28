@@ -3,7 +3,7 @@ import pytest
 from pandas import testing as pandas_testing
 
 
-from yo_valuate.expected_values import (
+from yo_ratchet.yo_valuate.expected_values import (
     get_moving_average_for_target_column,
     append_expected_value_column_to_df,
     get_expected_value_for_image,
