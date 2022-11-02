@@ -188,35 +188,34 @@ def run_detections_using_cv_ensemble(
     conf_thres: float = 0.1,
     device: int = 0,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
-    ensemble_model_root: Optional[str] = None,
-    max_ensemble_count: Optional[int] = 3
+    explicit_model_paths: Optional[List[Path]] = None,
 ) -> str:
+    """
+    explicit_model_paths is optional. If not provided, the models will be assumed to be
+    located in:
+    `<yolo_root> / "runs" / "train" / <model_version>.# / "weights" / "best.pt"`
 
+    where the # is replaced by numbers 1 to 6.
+
+    model_version must also be provided regardless of whether explicit_model_paths
+    is provided - model_version is used to give a meaningful name to the detections'
+    folder.
+
+    """
     python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
     detect_script = Path(yolo_root) / "detect.py"
 
-    if ensemble_model_root:
-        ensemble_model_root.replace("~", str(Path().home()))
-        ensemble_model_root = Path(ensemble_model_root)
-        model_version = ensemble_model_root.name
-        models_root = ensemble_model_root.parent
-    elif not model_version:
-        raise RuntimeError("You must provide one of these params: model_full_path or model_version.")
-    else:  # model_version was provided
+    if explicit_model_paths is not None:
+        pass  # model_version must also be provided - used to label results folder.
+    elif model_version is not None:
         models_root = Path(yolo_root) / "runs" / "train"
-
-    model_paths = [
-        models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
-        for i in range(k_folds)
-    ]
-    model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
-
-    if max_ensemble_count and len(model_paths) > max_ensemble_count:
-        model_paths = model_paths[:max_ensemble_count]
-    elif len(model_paths) == 0:
-        raise RuntimeError("No models found under this root dir: " + str(models_root))
-    else:
-        pass
+        model_paths = [
+            models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
+            for i in range(k_folds)
+        ]
+        explicit_model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
+    elif explicit_model_paths is None and model_version is None:
+        raise RuntimeError("You must provide one of these params: model_full_path or model_version.")
 
     results_name = (
         f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
@@ -238,7 +237,7 @@ def run_detections_using_cv_ensemble(
         "--augment",
         f"--weights",
     ]
-    pytorch_cmd.extend(model_paths)
+    pytorch_cmd.extend(explicit_model_paths)
     print(
         subprocess.check_output(
             pytorch_cmd,
