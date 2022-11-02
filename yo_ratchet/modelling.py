@@ -182,24 +182,46 @@ def run_detections(
 def run_detections_using_cv_ensemble(
     images_path: Path,
     detection_dataset_name: str,
-    model_version: str,
+    model_version: Optional[str],
     k_folds: int,
     base_dir: Path,
     conf_thres: float = 0.1,
     device: int = 0,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
+    ensemble_model_root: Optional[str] = None,
+    max_ensemble_count: Optional[int] = 3
 ) -> str:
-    results_name = (
-        f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
-    )
+
     python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
     detect_script = Path(yolo_root) / "detect.py"
-    models_root = Path(yolo_root) / "runs" / "train"
+
+    if ensemble_model_root:
+        ensemble_model_root.replace("~", str(Path().home()))
+        ensemble_model_root = Path(ensemble_model_root)
+        model_version = ensemble_model_root.name
+        models_root = ensemble_model_root.parent
+    elif not model_version:
+        raise RuntimeError("You must provide one of these params: model_full_path or model_version.")
+    else:  # model_version was provided
+        models_root = Path(yolo_root) / "runs" / "train"
+
     model_paths = [
         models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
         for i in range(k_folds)
     ]
-    model_paths = [str(model_path) for model_path in model_paths]
+    model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
+
+    if max_ensemble_count and len(model_paths) > max_ensemble_count:
+        model_paths = model_paths[:max_ensemble_count]
+    elif len(model_paths) == 0:
+        raise RuntimeError("No models found under this root dir: " + str(models_root))
+    else:
+        pass
+
+    results_name = (
+        f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    )
+
     pytorch_cmd = [
         python_path,
         f"{str(detect_script)}",
