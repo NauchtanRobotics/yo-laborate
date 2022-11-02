@@ -167,16 +167,26 @@ def get_implicit_model_paths(base_dir: Path, dataset_identifier: str) -> List[Pa
     if not config_path.exists():
         raise RuntimeError(f"{str(config_path)} does not exist.")
     config.read(str(config_path))
-    model_folders: List[Path]
+
+    model_version: Optional[str] = None
+    model_folders: Optional[List[Path]] = None
+    ensemble_model_root: Optional[Path] = None
     try:
-        ensemble_model_root = Path(config.get(dataset_identifier, ENSEMBLE_MODEL_ROOT_TOML)).resolve()
-        if not ensemble_model_root.exists():
-            raise RuntimeError("Path does not exist:\n" + str(ensemble_model_root))
+        ensemble_model_dir = config.get(dataset_identifier, ENSEMBLE_MODEL_ROOT_TOML)
+        ensemble_model_dir = ensemble_model_dir.replace("~", str(Path().home()))
+        ensemble_model_root = Path(ensemble_model_dir).resolve()
+
         model_version = ensemble_model_root.name
         model_folders = [model_folder for model_folder in ensemble_model_root.iterdir() if model_folder.is_dir()]
         if len(model_folders) == 0:
             raise RuntimeError("No sub-folders found in ensemble root dir: \n" + str(ensemble_model_root))
     except Exception as ex:
+        pass
+
+    if ensemble_model_root is not None and not ensemble_model_root.exists():
+        raise RuntimeError("Path does not exist:\n" + str(ensemble_model_root))
+
+    if model_folders is None:
         model_version = config.get(dataset_identifier, MODEL_VERSION_TOML)
         _, yolo_root = get_yolo_detect_paths(base_dir)
         yolo_root = yolo_root.resolve()
@@ -190,7 +200,7 @@ def get_implicit_model_paths(base_dir: Path, dataset_identifier: str) -> List[Pa
             if model_folder.exists():
                 model_folders = [model_folder]
             else:
-                raise RuntimeError(str(ex) + "\nThen could not find model folder: \n" + str(model_folder))
+                raise RuntimeError("Could not find model folder: \n" + str(model_folder))
         else:
             pass  # We've found some promising looking sub-folders
 
@@ -198,7 +208,7 @@ def get_implicit_model_paths(base_dir: Path, dataset_identifier: str) -> List[Pa
         model_folder / "weights" / "best.pt" for model_folder in model_folders
         if (model_folder / "weights" / "best.pt").exists()
     ]
-    if len(model_paths) == 0:
+    if model_version is not None and len(model_paths) == 0:
         raise RuntimeError("No models found for model version " + model_version + "\n" +
                            "E.g. " + str(model_folders[0]) + "/weights/best.pt\n" +
                            "n.b. sub-folder structure /weights/best.pt is mandatory.")
