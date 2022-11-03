@@ -26,15 +26,23 @@ def test_get_implicit_model_paths_ensemble_model_root():
     This selected config file has a max count of 3 so all 3 of a possible 3 model paths are returned.
 
     """
-    models = get_implicit_model_paths(
+    expected = [
+        TEST_DATA_PATH / "model_36.1" / "36.1.1" / "weights" / "best.pt",
+        TEST_DATA_PATH / "model_36.1" / "36.1.2" / "weights" / "best.pt",
+        TEST_DATA_PATH / "model_36.1" / "36.1.3" / "weights" / "best.pt",
+    ]
+
+    actual = get_implicit_model_paths(
         base_dir=TEST_DATA_PATH / "config_file_ensemble_model_root",
         dataset_identifier="SEALED"
     )
-    assert models == [
-        TEST_DATA_PATH / "model_36.1" / "36.1.1" / "weights" / "best.pt",
-        TEST_DATA_PATH / "model_36.1" / "36.1.2" / "weights" / "best.pt",
-        TEST_DATA_PATH / "model_36.1" / "36.1.3" / "weights" / "best.pt"
-    ]
+
+    lacks = set(expected) - set(actual)
+    extra = set(actual) - set(expected)
+    message1 = f"Lacks elements {lacks} " if lacks else False
+    assert not message1
+    message2 = f"Extra elements {extra}" if extra else False
+    assert not message2
 
 
 def test_get_implicit_model_paths_model_version_max_count():
