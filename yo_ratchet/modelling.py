@@ -182,24 +182,45 @@ def run_detections(
 def run_detections_using_cv_ensemble(
     images_path: Path,
     detection_dataset_name: str,
-    model_version: str,
+    model_version: Optional[str],
     k_folds: int,
     base_dir: Path,
     conf_thres: float = 0.1,
     device: int = 0,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
+    explicit_model_paths: Optional[List[Path]] = None,
 ) -> str:
+    """
+    explicit_model_paths is optional. If not provided, the models will be assumed to be
+    located in:
+    `<yolo_root> / "runs" / "train" / <model_version>.# / "weights" / "best.pt"`
+
+    where the # is replaced by numbers 1 to 6.
+
+    model_version must also be provided regardless of whether explicit_model_paths
+    is provided - model_version is used to give a meaningful name to the detections'
+    folder.
+
+    """
+    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
+    detect_script = Path(yolo_root) / "detect.py"
+
+    if explicit_model_paths is not None:
+        pass  # model_version must also be provided - used to label results folder.
+    elif model_version is not None:
+        models_root = Path(yolo_root) / "runs" / "train"
+        model_paths = [
+            models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
+            for i in range(k_folds)
+        ]
+        explicit_model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
+    elif explicit_model_paths is None and model_version is None:
+        raise RuntimeError("You must provide one of these params: model_full_path or model_version.")
+
     results_name = (
         f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
     )
-    python_path, yolo_root, _, _, _, _, _ = get_config_items(base_dir)
-    detect_script = Path(yolo_root) / "detect.py"
-    models_root = Path(yolo_root) / "runs" / "train"
-    model_paths = [
-        models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
-        for i in range(k_folds)
-    ]
-    model_paths = [str(model_path) for model_path in model_paths]
+
     pytorch_cmd = [
         python_path,
         f"{str(detect_script)}",
@@ -216,7 +237,7 @@ def run_detections_using_cv_ensemble(
         "--augment",
         f"--weights",
     ]
-    pytorch_cmd.extend(model_paths)
+    pytorch_cmd.extend(explicit_model_paths)
     print(
         subprocess.check_output(
             pytorch_cmd,
@@ -237,6 +258,7 @@ def run_detections_using_cv_ensemble_given_paths(
     conf_thres: float = 0.1,
     device: int = 0,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
+    explicit_model_paths: Optional[List[Path]] = None
 ) -> Path:
     """
     Returns pathlib.Path to inferences directory for this run (this folder will contain
@@ -255,9 +277,17 @@ def run_detections_using_cv_ensemble_given_paths(
         f"{detection_dataset_name}__{model_version}_conf{int(conf_thres * 100)}pcnt"
     )
     detect_script = yolo_root / "detect.py"
-    model_paths = get_paths_to_weights(
-        yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
-    )
+    if explicit_model_paths is not None:
+        pass  # model_version must also be provided - used to label results folder.
+    elif model_version is not None:
+        model_paths = get_paths_to_weights(
+            yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+        )
+        explicit_model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
+    elif explicit_model_paths is None and model_version is None:
+        raise RuntimeError("You must provide one of these params: model_full_path or model_version.")
+
+
     pytorch_cmd = [
         python_path,
         f"{str(detect_script)}",
@@ -274,7 +304,7 @@ def run_detections_using_cv_ensemble_given_paths(
         "--augment",
         f"--weights",
     ]
-    pytorch_cmd.extend(model_paths)
+    pytorch_cmd.extend(explicit_model_paths)
     print(
         subprocess.check_output(
             pytorch_cmd,

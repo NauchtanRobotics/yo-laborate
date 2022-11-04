@@ -6,7 +6,7 @@ from yo_ratchet.fiftyone_integration import init_fifty_one_dataset
 
 TEST_DATA_ROOT = Path(__file__).parents[1] / "tests/test_data"
 BASE_DIR = Path(__file__).parents[2]
-_, _, _, _, _, _, CLASSES_JSON_PATH = get_config_items(base_dir=BASE_DIR)
+#_, _, _, _, _, _, CLASSES_JSON_PATH = get_config_items(base_dir=BASE_DIR)
 
 
 # def test_init_fifty_one_dataset():
