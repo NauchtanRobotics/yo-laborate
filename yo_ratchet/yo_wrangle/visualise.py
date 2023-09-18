@@ -1,9 +1,9 @@
 import numpy as np
 import pandas
-from cv2 import cv2
+import cv2
 from pathlib import Path
 from typing import List, Optional, Tuple
-from cv2.cv2 import VideoWriter_fourcc
+from cv2 import VideoWriter
 
 from yo_ratchet.yo_wrangle.common import (
     get_all_jpg_recursive,
@@ -103,7 +103,7 @@ def draw_polygon_on_image(
     (polygon) according to the provided `yolo_box` parameter.
 
     If a `dst_path` is provided, the resulting image will be saved.
-    Otherwise, the image will be displayed in a pop up window.
+    Otherwise, the image will be displayed in a pop-up window.
 
     """
     height, width, _ = image.shape
@@ -374,11 +374,12 @@ def make_mp4_movie_from_images_in_dir(
 
         image = cv2.imread(filename=str(img_path))
         image_small = _scale_image(img=image, factor=scale)
+        out = None
         if not done_once:
             frame_size = (image_small.shape[1], image_small.shape[0])
             dst_file = img_root / "an_output_video.mp4"
             out = cv2.VideoWriter(
-                str(dst_file), VideoWriter_fourcc(*"mp4v"), fps, frame_size
+                str(dst_file), VideoWriter.fourcc(*"mp4v"), fps, frame_size
             )
             done_once = True
 

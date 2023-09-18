@@ -4,7 +4,7 @@ from typing import List
 import numpy
 import cv2
 
-from yo_wrangle.common import get_all_txt_recursive, get_all_jpg_recursive
+from yo_ratchet.yo_wrangle.common import get_all_txt_recursive, get_all_jpg_recursive
 
 
 def resize_pad_image(img: numpy.ndarray, scale: float, final_size: int = 640):
