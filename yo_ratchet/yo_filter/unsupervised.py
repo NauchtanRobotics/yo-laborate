@@ -1,7 +1,7 @@
-from cv2 import cv2
+import cv2
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -171,7 +171,7 @@ def get_features_matrix_and_df(
     subset_path: Path, class_id: int, layer_number: int
 ) -> Tuple[Optional[np.ndarray], Optional[pd.DataFrame]]:
     """
-    A dataframe is required when later when processing test data and we wish
+    A dataframe is required when later when processing test data, and we wish
     to match the photo name to an outlier set of features.
 
     """
@@ -226,7 +226,8 @@ def get_rms_distance_vector_for_matrix(
     return rmsd
 
 
-def get_feature_extraction_model(layer_number: int = 80) -> tf.keras.Model:
+def get_feature_extraction_model(layer_number: int = 80) -> "tf.keras.Model":
+    import tensorflow as tf
     resnet50 = tf.keras.applications.ResNet50(
         include_top=False,
         weights="imagenet",
@@ -361,7 +362,7 @@ def get_patches_features_data_dict_list(
 
 
 def _extract_features_for_patch(
-    model: tf.keras.models.Sequential,
+    model: "tf.keras.models.Sequential",
     path_to_image: Path,
     x: float,
     y: float,
@@ -378,6 +379,7 @@ def _extract_features_for_patch(
     without extending outside the 0-1 domain.
 
     """
+    import tensorflow as tf
     img = cv2.imread(str(path_to_image))
     img_h, img_w, channels = img.shape
 
