@@ -6,9 +6,9 @@ import numpy
 import pandas
 from tabulate import tabulate
 
-from yo_valuate.as_classification import _get_classification_metrics_for_group
-from yo_valuate.reference_csv import get_thresholds
-from yo_wrangle.common import get_all_jpg_recursive
+from yo_ratchet.yo_valuate.as_classification import _get_classification_metrics_for_group
+from yo_ratchet.yo_valuate.reference_csv import get_thresholds
+from yo_ratchet.yo_wrangle.common import get_all_jpg_recursive
 
 
 def get_truth_vs_inferred_for_batch(

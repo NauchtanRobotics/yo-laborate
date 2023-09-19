@@ -5,12 +5,12 @@ import seaborn as sb
 from pathlib import Path
 from typing import Optional, List
 
-from cv2 import cv2
+import cv2
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from yo_filter.unsupervised import (
+from yo_ratchet.yo_filter.unsupervised import (
     get_patches_features_data_dict_list,
     get_distance_for_vector,
     get_features_matrix_and_df,
