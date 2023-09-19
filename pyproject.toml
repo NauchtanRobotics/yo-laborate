@@ -18,7 +18,6 @@ Pillow = "^8.4"
 # tabulate = ">=0.9"  # "^0.8"  # 0.8.9
 kaleido = "==0.2.1"  # Should not be a primary dep. Added to solve issue with 0.2.1.post1. Fiftyone req ==0.2.1
 open-labeling = { path = ".wheels/open_labeling-0.2.18-py3-none-any.whl"}
-#seaborn = "^0.12.2"
 tensorflow-io-gcs-filesystem = "0.27.0"  # version tip taken from stackoverflow.
 tensorflow-cpu = [
     { version = ">=2.8.0", platform = 'win32' }
@@ -27,6 +26,7 @@ tensorflow = [
     { version = "^2.11.0", platform = 'linux' }
     ]  # "^2.8.0"
 fiftyone = "^0.21.6"
+seaborn = "^0.12.2"
 
 [tool.poetry.dev-dependencies]
 # pytest = ">=6.2.5" - is a dependency of pytest-mock.
