@@ -216,8 +216,11 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
     probability_thresh_coefficient: float = 0.9
 ):
     """
-    Filters for confirmed and deleted annotations from reviewed bounding box data (.yolo file)
-    and prepares the data into training data structure.
+    Filters retains only images having confirmed or deleted annotations from reviewed bounding box data (.yolo file)
+    and prepares the data into training data structure, then extracts all annotations relating to those images
+    regardless of whether edited or raw. This saves time for the bounding box auditor in that they only
+    have to confirm, deny or add one bounding box per image to ensure that the image is included in training
+    data all with all the unedited pre-labelling.
 
     images_archive_dir: You can either provide a folder Path containing sub-folders of images,
                                or simply a folder Path which directly contains images.
@@ -287,14 +290,3 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
             move=move,
         )
     os.unlink(filtered_annotations_path)
-
-
-def test_prepare_training_data_subset_from_reviewed_yolo_file():
-    prepare_training_data_subset_from_reviewed_yolo_file(
-        images_archive_dir=Path("/media/david/Samsung_T8/bot_archives/somerset_regional_council"),
-        yolo_file=Path("/media/david/Carol_sexy/Defects_somerset_regional_council_1665575310_edited.yolo"),
-        dst_images_dir=Path("/home/david/RACAS/sealed_roads_dataset/Somerset_2022_Risk_D20"),
-        classes_json_path=Path("/home/david/RACAS/sealed_roads_dataset/classes.json"),
-        copy_all_src_images=False,
-        move=False  # Do dry run before changing this parameter to True
-    )
