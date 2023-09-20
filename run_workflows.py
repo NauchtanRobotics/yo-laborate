@@ -22,6 +22,7 @@ from yo_ratchet.yo_valuate.reference_csv import (
     get_severity_dict,
 )
 from yo_ratchet.yo_wrangle.common import get_id_to_label_map, get_config_items
+from yo_ratchet.yo_wrangle.mine import prepare_training_data_subset_from_reviewed_yolo_file
 
 
 def test_prepare_dataset_and_train():
@@ -33,7 +34,7 @@ def test_find_errors():
     set_globals(base_dir=Path(__file__).parent, workbook_ptr=dataset_workbook)
     run_find_errors(
         tag="mistakenness",
-        label_filter="WS",
+        label_filters=["WS"],
         limit=64,
     )
 
@@ -67,7 +68,7 @@ def test_import():
     set_globals(base_dir=Path(__file__).parent, workbook_ptr=dataset_workbook)
     run_find_errors(
         tag="mistakenness",
-        label_filter="WS",
+        label_filters=["WS"],
         limit=64,
         dataset_label=name,
     )
@@ -168,7 +169,9 @@ def test_arrange_images_per_classification_errors():
     )
     true_positive = true_negative = 0
     severity_dict = get_severity_dict(
-        truths_csv=truths_csv, field_for_key="Photo_Name"
+        truths_csv=truths_csv,
+        field_for_severity="severity",
+        field_for_key="Photo_Name"
     )
     count = 0
     for index, row in df.iterrows():
