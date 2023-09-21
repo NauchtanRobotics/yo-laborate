@@ -18,6 +18,36 @@ from yo_ratchet.yo_filter.unsupervised import (
 )
 
 
+def mine_high_confidence_training_data(
+    src_folder: Path,
+    dst_root: Path,
+    classes_json: Optional[Path] = None,
+    target_dataset: Optional[Path] = None
+):
+    """
+    Use this functions to find a subset of high-confidence training data located in the
+    folder <src_root> and copy that training data to folder f"{<dst_root>}/{<src_folder>.name}".
+    Lower-confidence detections are retained for an image so long as there is at least one
+    high-confidence object detection.
+
+    Does not filter out object detection based on x,y co-ordinates as
+    we wish to collect all high-confidence detections, whether they be a true-positive
+    or a false-positive. False positives help the model learn to learn from the pre-labelling
+    mistakes.
+
+    Only copies image if not already existing anywhere within the overall dataset defined by
+    the nominated <target_dataset> root directory or that inferred relative to the virtual environment
+    in which yo-laborate has been installed.
+
+    Threshold "min_prob" probabilities must be provided by a classes.json file which can be
+    inferred based on <target_dataset>/classes.json. However, if the above file contains production
+    thresholds, you may wish to explicitly provide a path to another classes.json file via
+    <classes_json>.
+
+    :return:
+    """
+
+
 def extract_high_quality_training_data_from_raw_detections(
     src_images_dir: Path,
     annotations_dir: Path,
@@ -35,7 +65,8 @@ def extract_high_quality_training_data_from_raw_detections(
     move: bool = False,
 ):
     """
-    Function to selectively copy images and annotations from a yolov5 detection run.
+    Function to selectively copy images and annotations from a yolov5 detection run with option to filter
+    out objects that have unlikely x, y position or low confidence level.
 
     This function will copy images from::
         <src_images_dir>/
