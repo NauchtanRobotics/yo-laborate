@@ -10,19 +10,21 @@ from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
 from yo_ratchet.yo_wrangle.wrangle import _get_hits_for_annotations_in_classes
 from yo_ratchet.yo_wrangle.aggregated_annotations import (
     filter_and_aggregate_annotations,
-    copy_training_data_listed_in_aggregated_annotations_file,
+    copy_training_data_listed_in_aggregated_annotations_file, copy_training_data_listed_in_aggregated_annotations_df,
 )
 from yo_ratchet.yo_filter.unsupervised import (
     OutlierParams,
     OutlierDetectionConfig,
 )
 
+PHOTO_NAME = "photo_name"
 
-def mine_high_confidence_training_data(
+
+def extract_high_confidence_training_data(
     src_folder: Path,
-    dst_root: Path,
+    target_dataset_root: Path,
     classes_json: Optional[Path] = None,
-    target_dataset: Optional[Path] = None
+    move: bool = False
 ):
     """
     Use this functions to find a subset of high-confidence training data located in the
@@ -46,6 +48,168 @@ def mine_high_confidence_training_data(
 
     :return:
     """
+    annotations_dir = src_folder / "YOLO_Darknet"
+    dst_images_dir = target_dataset_root / src_folder.name
+    existing_image_names = [image.name for image in target_dataset_root.rglob("*.jpg")]
+    extract_high_quality_training_data_from_raw_detections_new_images_only(
+        src_images_dir=src_folder,
+        src_annotations_dir=annotations_dir,
+        dst_images_dir=dst_images_dir,
+        classes_json_path=classes_json,
+        existing_image_names=existing_image_names,
+        lower_probability_coefficient=1.2,
+        upper_probability_coefficient=None,
+        marginal_coefficient=1.2,
+        filter_horizon=0.0,
+        y_wedge_apex=None,
+        marginal_classes=[5],
+        min_marginal_count=5,
+        copy_all_src_images=False,
+        outlier_config=None,
+        move=move
+    )
+
+
+def extract_high_quality_training_data_from_raw_detections_new_images_only(
+    src_images_dir: Path,
+    src_annotations_dir: Path,
+    dst_images_dir: Path,
+    classes_json_path: Path,
+    existing_image_names: Optional[List] = None,
+    lower_probability_coefficient: float = 0.7,
+    upper_probability_coefficient: Optional[float] = None,
+    marginal_coefficient: Optional[float] = None,
+    filter_horizon: float = 0.0,
+    y_wedge_apex: Optional[float] = -0.2,
+    marginal_classes: Optional[List[int]] = None,
+    min_marginal_count: Optional[int] = None,
+    copy_all_src_images: bool = False,
+    outlier_config: Optional[OutlierDetectionConfig] = None,
+    move: bool = False,
+):
+    """
+    Function to selectively copy images and pre-labelled yolo annotations. Reduces false positives where
+    an image ONLY has low likelihood object detections with unlikely x, y position or low confidence level.
+    However, all pre-labelling will be retained for an image if it has at least one associated highly
+    quality object detection.
+
+    Use this function if you want to minimize time to review training images as it will filtered out
+    more false-positives as compared to the function extract_high_confidence_training_data().
+
+    This function will copy images from::
+        <src_images_dir>/
+    to::
+        <dst_images_dir>/
+
+    and filtered annotation files from::
+        <annotations_dir>/
+    to::
+        <dst_images_dir>/YOLO_darknet/*
+
+    Filtering bounding box data is enabled according to the following parameters::
+
+        * classes_json_path: Path to a classes information json file which contains
+          minimum probability thresholds defined for production usage for each individual
+          class. These thresholds are applied to filtering in combination with the parameters
+          lower_probability_coefficient and upper_probability_coefficient defined below.
+
+        * lower_probability_coefficient: The minimum probability threshold is this
+          coefficient multiplied by the production probability threshold defined for
+          each class in class. Choose a value in the range [0-inf]. Higher values
+          result in more accurate training data, but too high will result in no training
+          data being extracted.
+
+        * upper_probability_coefficient: Set to None to not apply any filtering based
+          on an upper limit on confidence, or for selectively mining difficult positives,
+          set to a value  lower_probability_coefficient < upper_probability_coefficient < 1
+
+        * filter_horizon: removes objects that have a centre above this normalised
+          y-value (range[0-1]). i.e. Only keep objects in the image foreground.
+
+        * wedge_apex: all objects are removed from top-left and top-right corners
+          according to a wedge shape. You can choose the position of the apex.
+          See docstring TODO: XXXX for more explanation.
+
+        * marginal_classes: Remove any images that ONLY contain this selection of
+          class_ids.
+
+        * outlier_params: Removes outliers if this dict is provided.
+
+        * global_object_width_threshold: TODO: Also, apply area and diagonal length filters?
+
+    By default, only images associated with the filtered annotations will be copied to
+    dst_images_dir. Optionally, all images in src_images_dir can be copied to dst_images_dir.
+    Set copy_all_src_images = True when you wish to increase the weight of hard negatives.
+
+    """
+    classes_info = get_classes_info(classes_json_path=classes_json_path)
+    if outlier_config:
+        outlier_params = OutlierParams(
+            classes_info=classes_info, outlier_config=outlier_config
+        )
+    else:
+        outlier_params = None
+
+    filtered_detections = filter_and_aggregate_annotations(
+        annotations_dir=src_annotations_dir,
+        classes_info=classes_info,
+        lower_probability_coefficient=lower_probability_coefficient,
+        upper_probability_coefficient=upper_probability_coefficient,
+        output_path=None,
+        filter_horizon=filter_horizon,
+        y_wedge_apex=y_wedge_apex,
+        marginal_classes=marginal_classes,
+        min_marginal_count=min_marginal_count,
+        images_root=src_images_dir,
+        outlier_params=outlier_params if marginal_coefficient is None else None,
+        remove_probability=True,
+    )
+    if marginal_coefficient is not None:  # Only include marginal bounding boxes if at least one box > min_prob
+        less_filtered = filter_and_aggregate_annotations(
+            annotations_dir=src_annotations_dir,
+            classes_info=classes_info,
+            lower_probability_coefficient=marginal_coefficient,
+            upper_probability_coefficient=upper_probability_coefficient,
+            output_path=None,
+            filter_horizon=filter_horizon,
+            y_wedge_apex=y_wedge_apex,
+            marginal_classes=marginal_classes,
+            min_marginal_count=min_marginal_count,
+            images_root=src_images_dir,
+            outlier_params=outlier_params,
+            remove_probability=True,
+        )
+        less_filtered_df = pd.DataFrame(less_filtered)  # , columns = [...]) ~ Risky as makes assumption about num cols
+        # Assumes prob field: columns=[PHOTO_NAME, "class_id", "x_centre", "y_centre", "width", "height", "prob"])
+        less_filtered_df = less_filtered_df.rename(columns={0: PHOTO_NAME})
+        image_names_short_list = list({row.split(" ")[0] for row in filtered_detections})
+        for name in image_names_short_list:
+            if name in existing_image_names:
+                print(f"{name} already exists in target dataset.")
+        image_names_short_list = [name for name in image_names_short_list if name not in existing_image_names]
+        plus_marginal_detections = less_filtered_df.loc[
+            less_filtered_df[PHOTO_NAME].isin(image_names_short_list)
+        ]
+        copy_training_data_listed_in_aggregated_annotations_df(
+            src_images_dir=src_images_dir,
+            df_filtered_annotations=plus_marginal_detections,
+            dst_images_dir=dst_images_dir,
+            copy_all_src_images=copy_all_src_images,
+            move=move
+        )
+    else:
+        filtered_detections_df = pd.DataFrame(filtered_detections)
+        if existing_image_names:
+            filtered_detections_df = filtered_detections_df.loc[
+                ~filtered_detections_df[PHOTO_NAME].isin(existing_image_names)
+            ]
+        copy_training_data_listed_in_aggregated_annotations_df(
+            src_images_dir=src_images_dir,
+            df_filtered_annotations=filtered_detections_df,
+            dst_images_dir=dst_images_dir,
+            copy_all_src_images=copy_all_src_images,
+            move=move
+        )
 
 
 def extract_high_quality_training_data_from_raw_detections(
@@ -57,7 +221,7 @@ def extract_high_quality_training_data_from_raw_detections(
     upper_probability_coefficient: Optional[float] = None,
     marginal_coefficient: Optional[float] = None,
     filter_horizon: float = 0.0,
-    y_wedge_apex: float = -0.2,
+    y_wedge_apex: Optional[float] = -0.2,
     marginal_classes: Optional[List[int]] = None,
     min_marginal_count: Optional[int] = None,
     copy_all_src_images: bool = False,
@@ -65,8 +229,13 @@ def extract_high_quality_training_data_from_raw_detections(
     move: bool = False,
 ):
     """
-    Function to selectively copy images and annotations from a yolov5 detection run with option to filter
-    out objects that have unlikely x, y position or low confidence level.
+    Function to selectively copy images and pre-labelled yolo annotations. Reduces false positives where
+    an image ONLY has low likelihood object detections with unlikely x, y position or low confidence level.
+    However, all pre-labelling will be retained for an image if it has at least one associated highly
+    quality object detection.
+
+    Use this function if you want to minimize time to review training images as it will filtered out
+    more false-positives as compared to the function extract_high_confidence_training_data().
 
     This function will copy images from::
         <src_images_dir>/
@@ -154,10 +323,10 @@ def extract_high_quality_training_data_from_raw_detections(
             remove_probability=True,
         )
         less_filtered = pd.read_csv(less_filtered_path, sep=" ", header=None)
-        less_filtered = less_filtered.rename(columns={0: "photo_name"})
+        less_filtered = less_filtered.rename(columns={0: PHOTO_NAME})
         image_names_short_list = list({row.split(" ")[0] for row in filtered_detections})
         plus_marginal_detections = less_filtered.loc[
-            less_filtered["photo_name"].isin(image_names_short_list)
+            less_filtered[PHOTO_NAME].isin(image_names_short_list)
         ]
         plus_marginal_detections.to_csv(
             filtered_annotations_path, index=False, sep=" ", header=None
@@ -271,8 +440,8 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
     for line in lines:
         line_split = line.split(" ")
         conf = float(line_split[6])
-        if conf not in [0, 1]:
-            continue  # Only accept
+        if conf not in [0, 1]:  # 1 and 0 are the probabilities for confirmed and denied annotations respectively.
+            continue  # Only accept co
         # class_id = int(line_split[1])
         # if class_id not in [3, 4, 8, 9, 17, 19, 22, 29, 30, 33]:
         #     continue
@@ -307,6 +476,7 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
         fd.write("\n".join(filtered_detections))
 
     sub_dir_paths = [x for x in images_archive_dir.iterdir() if x.is_dir()]
+    sub_dir_paths = [x.name for x in sub_dir_paths if x.name.lower() != YOLO_ANNOTATIONS_FOLDER_NAME.lower()]
     if len(sub_dir_paths) == 0:
         sub_dir_paths = [images_archive_dir]
     else:
