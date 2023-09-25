@@ -908,7 +908,7 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "open-labeling"
-version = "0.2.18"
+version = "0.2.19"
 description = ""
 category = "main"
 optional = false
@@ -925,7 +925,7 @@ tqdm = ">=4.29,<5.0"
 
 [package.source]
 type = "file"
-url = ".wheels/open_labeling-0.2.18-py3-none-any.whl"
+url = ".wheels/open_labeling-0.2.19-py3-none-any.whl"
 
 [[package]]
 name = "opencv-contrib-python"
@@ -1960,7 +1960,7 @@ python-versions = ">=3.4"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"  # ">=3.8,<3.11"
-content-hash = "c30c5584a93b517ec2c75ca01a2c52535797e990a08ecbe804ada26b26229f4b"
+content-hash = "c0b7d9774dfcf2750adc1744cee9266404fbfda8206bc412f8e04537a3bebc14"
 
 [metadata.files]
 absl-py = [
@@ -2995,7 +2995,7 @@ oauthlib = [
     {file = "oauthlib-3.2.2.tar.gz", hash = "sha256:9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918"},
 ]
 open-labeling = [
-    {file = "open_labeling-0.2.18-py3-none-any.whl", hash = "sha256:1dd9a8a43bc023e08b7b69814efbbdb54f61856ded6ca6df945a857d15867e72"},
+    {file = "open_labeling-0.2.19-py3-none-any.whl", hash = "sha256:196d6afb146f99e9ec7ee0b18ccd5776fc563fead4609ff39b82fb11ee91ec61"},
 ]
 opencv-contrib-python = [
     {file = "opencv-contrib-python-3.4.18.65.tar.gz", hash = "sha256:589d5fe5d035d55a953862df7bfc58fb6d5bdb558ce94ad33d0f764f4326d3b6"},
