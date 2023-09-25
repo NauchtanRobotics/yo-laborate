@@ -300,7 +300,9 @@ def inferred_base_dir() -> Path:
     ).exists():
         base_dir = cwd.parents[3]
     else:
-        raise RuntimeError("Could not infer BASE_DIR.")
+        print("Could not infer BASE_DIR.")
+        base_dir = None
+        return base_dir
 
     """ Now check for re-routing to another directory. """
     config = configparser.ConfigParser()

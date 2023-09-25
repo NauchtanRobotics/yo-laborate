@@ -81,7 +81,11 @@ def set_globals(base_dir: Path, workbook_ptr):
 
 
 def launch_open_labeling_folder_browser():
-    class_names_list = get_classes_list(base_dir=inferred_base_dir())
+    base_dir = inferred_base_dir()
+    if base_dir is not None:
+        class_names_list = get_classes_list(base_dir=base_dir)
+    else:
+        class_names_list = []
 
     class Args:
         class_list = class_names_list
