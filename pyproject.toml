@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yo-laborate"
-version = "1.0.3"
+version = "1.0.4"
 description = "YOLO dataset improvement and wrangling tool."
 authors = ["David MacNaughton"]
 license = "MIT"
@@ -17,7 +17,7 @@ opencv-python = "^4.8.0" #"~4.5.4"  # 4.5.4.58
 Pillow = "^8.4"
 # tabulate = ">=0.9"  # "^0.8"  # 0.8.9
 kaleido = "==0.2.1"  # Should not be a primary dep. Added to solve issue with 0.2.1.post1. Fiftyone req ==0.2.1
-open-labeling = { path = ".wheels/open_labeling-0.2.18-py3-none-any.whl"}
+open-labeling = { path = ".wheels/open_labeling-0.2.19-py3-none-any.whl"}
 tensorflow-io-gcs-filesystem = "0.27.0"  # version tip taken from stackoverflow.
 tensorflow-cpu = [
     { version = ">=2.8.0", platform = 'win32' }
@@ -27,6 +27,7 @@ tensorflow = [
     ]  # "^2.8.0"
 fiftyone = "^0.21.6"
 seaborn = "^0.12.2"
+google-cloud-storage = "^2.11.0"
 
 [tool.poetry.dev-dependencies]
 # pytest = ">=6.2.5" - is a dependency of pytest-mock.

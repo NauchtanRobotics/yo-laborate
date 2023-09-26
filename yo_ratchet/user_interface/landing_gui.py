@@ -27,6 +27,10 @@ def launch_main_gui(base_dir: Path = None):
         base_dir = inferred_base_dir()
     else:
         pass
+    if base_dir is not None:
+        class_labels_list = get_classes_list(base_dir)
+    else:
+        class_labels_list = []
     sg.ChangeLookAndFeel("LightGreen")
 
     # ------ Menu Definition ------ #
@@ -89,7 +93,6 @@ def launch_main_gui(base_dir: Path = None):
         if event == BACKUP_TRAIN_VCS:
             backup_train_window()
         elif event == LABEL_FOLDER:
-            class_labels_list = get_classes_list(base_dir)
 
             class Args:
                 class_list = (*class_labels_list,)

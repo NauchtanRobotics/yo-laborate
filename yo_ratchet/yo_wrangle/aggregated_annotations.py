@@ -64,13 +64,55 @@ def copy_training_data_listed_in_aggregated_annotations_file(
         )
     dst_annotations_dir = dst_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
     dst_annotations_dir.mkdir(parents=True, exist_ok=True)
-
     df = pandas.read_csv(filtered_annotations_file, sep=" ", header=None)
-    unique_photo_names = df[0].unique().tolist()
+    copy_training_data_listed_in_aggregated_annotations_df(
+        src_images_dir=src_images_dir,
+        df_filtered_annotations=df,
+        dst_images_dir=dst_images_dir,
+        copy_all_src_images=copy_all_src_images,
+        move=move
+    )
+
+
+def copy_training_data_listed_in_aggregated_annotations_df(
+    src_images_dir: Path,
+    df_filtered_annotations: pandas.DataFrame,
+    dst_images_dir: Path,
+    copy_all_src_images: bool = False,
+    move: bool = False,
+):
+    """
+    Copy images into a sample folder based on a data frame containing all
+    YOLO detections. These likely have been filtered based on probability
+    thresholds, size and location filters. Only copies image if there is a
+    corresponding annotations file; i.e. no detections, not mined. This
+    keeps the dataset economically sized.
+
+    Copies a sample of original images from <src_images_dir> to::
+        <dst_sample_dir>/*
+    and annotations to::
+        <dst_sample_dir>/YOLO_darknet/*
+
+    Assumes columns of annotations DataFrame are: [Photo_Name, class_id, x_centre, y_centre, width, height, probability]
+
+    Processing steps:
+    1. Finds unique photo names from the first column of the annotations df,
+    2. Looping for photo_name in unique_photo_names:
+       - Copy image from src_images_dir to dst_sample_dir
+       - Filter df_filtered = df.loc[df[0]==photo_name]
+       - df_filtered.to_csv(df_filtered.loc[:,[1:]]) to create an individual
+         annotation files which are saved in <dst_sample_dir>/YOLO_darknet
+
+    """
+    total_images_not_found = 0
+    dst_annotations_dir = dst_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
+    dst_annotations_dir.mkdir(parents=True, exist_ok=True)
+    unique_photo_names = df_filtered_annotations[0].unique().tolist()
     for photo_name in unique_photo_names:
         original_image_path = src_images_dir / photo_name
         if not original_image_path.exists():
             print(f"Image not found: {str(original_image_path)}")
+            total_images_not_found += 1
             continue
         if not copy_all_src_images:
             dst_image_path = dst_images_dir / original_image_path.name
@@ -79,12 +121,13 @@ def copy_training_data_listed_in_aggregated_annotations_file(
             else:
                 shutil.copy(src=str(original_image_path), dst=str(dst_image_path))
 
-        df_filtered = df.loc[
-            df[0] == photo_name, df.columns.values[1:]
+        df_filtered = df_filtered_annotations.loc[
+            df_filtered_annotations[0] == photo_name, df_filtered_annotations.columns.values[1:]
         ]  # [1, 2, 3, 4, 5, 6] removed col0 (photo_name)
         dst_annotations_path = dst_annotations_dir / f"{original_image_path.stem}.txt"
         df_filtered.to_csv(dst_annotations_path, index=False, sep=" ", header=None)
-
+    print(f"\nCopied {len(unique_photo_names)} to {str(dst_images_dir)}")
+    print(f"Total number of images not found: {str(total_images_not_found)}")
     if copy_all_src_images:
         for image_path in get_all_jpg_recursive(img_root=src_images_dir):
             dst_image_path = dst_images_dir / image_path.name
@@ -113,8 +156,8 @@ def filter_and_aggregate_annotations(
     If the detections resulted from running the AI on un-transformed images, then set
     reverse_transform = False as the bounding boxes will already be positioned correctly.
 
-    If detections were based on transformed images and you want to show bounding boxes
-    on un-transformed images, the set reverse_transform = True.
+    If detections were based on transformed images, and you want to show bounding boxes
+    on un-transformed images, then set reverse_transform = True.
     However, if you may want to show the bounding boxes on the transformed images;
     in such case set reverse_transform to true.
 

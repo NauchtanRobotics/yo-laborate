@@ -195,7 +195,7 @@ def subsample_a_directory(
 ):
     """
     Only intended to work on directory after annotations have been moved to "YOLO_darknet"
-    folder (won't work directly on detection results where annotations are in "labels".
+    folder (won't work directly on detection results where annotations are in "labels").
     Best to run copy_images_recursive_inc_yolo_annotations_by_reference_dir() on yolo
     detect results first.
 
