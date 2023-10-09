@@ -928,7 +928,7 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "open-labeling"
-version = "0.2.20"
+version = "0.2.21"
 description = ""
 category = "main"
 optional = false
@@ -940,12 +940,13 @@ opencv-contrib-python = [
     {version = ">=3.4.11.45", markers = "sys_platform == \"win32\""},
     {version = ">=3.4.9.33,<4.0.0.0", markers = "sys_platform == \"linux\""},
 ]
+pyperclip = ">=1.8.2,<2.0.0"
 PySimpleGUI = ">=4.55.1,<5.0.0"
 tqdm = ">=4.29,<5.0"
 
 [package.source]
 type = "file"
-url = ".wheels/open_labeling-0.2.20-py3-none-any.whl"
+url = ".wheels/open_labeling-0.2.21-py3-none-any.whl"
 
 [[package]]
 name = "opencv-contrib-python"
@@ -1245,6 +1246,14 @@ python-versions = ">=3.6.8"
 
 [package.extras]
 diagrams = ["jinja2", "railroad-diagrams"]
+
+[[package]]
+name = "pyperclip"
+version = "1.8.2"
+description = "A cross-platform clipboard module for Python. (Only handles plain text for now.)"
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "pyppmd"
@@ -1989,7 +1998,7 @@ python-versions = ">=3.4"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"  # ">=3.8,<3.11"
-content-hash = "4652a8a4cfb3e9509dd355def39e32a9a79148f993037de9709a180dfa1832bc"
+content-hash = "77f1fcc98e06e25ad9fe094cf635d86198a773545d17d2bcd1d728929d1e6197"
 
 [metadata.files]
 absl-py = [
@@ -3063,7 +3072,7 @@ oauthlib = [
     {file = "oauthlib-3.2.2.tar.gz", hash = "sha256:9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918"},
 ]
 open-labeling = [
-    {file = "open_labeling-0.2.20-py3-none-any.whl", hash = "sha256:86f32465585afb4fb23da5ec5e2a6493841522592d3ff1b2013bc9e736b2725d"},
+    {file = "open_labeling-0.2.21-py3-none-any.whl", hash = "sha256:3f82eccaf0dfa710653644e1bf1e0e2f6a875d180ba1685b5f141ab075967cd0"},
 ]
 opencv-contrib-python = [
     {file = "opencv-contrib-python-3.4.18.65.tar.gz", hash = "sha256:589d5fe5d035d55a953862df7bfc58fb6d5bdb558ce94ad33d0f764f4326d3b6"},
@@ -3440,6 +3449,9 @@ pymongo = [
 pyparsing = [
     {file = "pyparsing-3.1.1-py3-none-any.whl", hash = "sha256:32c7c0b711493c72ff18a981d24f28aaf9c1fb7ed5e9667c9e84e3db623bdbfb"},
     {file = "pyparsing-3.1.1.tar.gz", hash = "sha256:ede28a1a32462f5a9705e07aea48001a08f7cf81a021585011deba701581a0db"},
+]
+pyperclip = [
+    {file = "pyperclip-1.8.2.tar.gz", hash = "sha256:105254a8b04934f0bc84e9c24eb360a591aaf6535c9def5f29d92af107a9bf57"},
 ]
 pyppmd = [
     {file = "pyppmd-1.0.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:8049c19af4b78b400b2347bff4514763257b55516c359144e9d8091991ed12e8"},
