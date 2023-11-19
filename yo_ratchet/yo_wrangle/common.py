@@ -225,7 +225,7 @@ def get_implicit_model_paths(base_dir: Path, dataset_identifier: str) -> List[Pa
     return model_paths
 
 
-def get_classes_list(base_dir: Path) -> List[str]:
+def get_classes_json_path(base_dir: Path) -> Optional[Path]:
     """
     Returns a list of class labels based on the "label" field in
     the classes.json file found in the base_dir.
@@ -236,7 +236,10 @@ def get_classes_list(base_dir: Path) -> List[str]:
     if not config_path.exists():
         raise RuntimeError(f"{str(config_path)} does not exist.")
     config.read(str(config_path))
-    classes_json_path = config.get(DATASET, CLASSES_JSON)
+    try:
+        classes_json_path = config.get(DATASET, CLASSES_JSON)
+    except:
+        classes_json_path = None
     if (
         classes_json_path is None
         or classes_json_path == ""
@@ -245,6 +248,18 @@ def get_classes_list(base_dir: Path) -> List[str]:
         classes_json_path = base_dir / CLASSES_JSON_FILENAME
     else:
         classes_json_path = Path(classes_json_path).resolve()
+    return classes_json_path
+
+
+def get_classes_list(base_dir: Path) -> List[str]:
+    """
+    Returns a list of class labels based on the "label" field in
+    the classes.json file found in the base_dir.
+
+    """
+    classes_json_path = get_classes_json_path(base_dir=base_dir)
+    if classes_json_path is None:
+        raise RuntimeError(str(base_dir) + "/classes.json could not be found.")
     if not classes_json_path.exists():
         raise RuntimeError(
             f"CLASSES_JSON path does not exist at {str(classes_json_path)}"
