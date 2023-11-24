@@ -16,6 +16,8 @@ def download_blobs_in_list(
     prefix: str = ""
 ) -> List[Path]:
     """
+    Downloads all images in set of image_names without filtering for confidence levels.
+
     Returns a list of fully resolved local paths to downloaded files.
 
     """
@@ -41,11 +43,12 @@ def download_blobs_in_list(
             pass
         free_disk_space = psutil.disk_usage('/').free
         if free_disk_space < MIN_FREE_DISK_SPACE:
+            print("Quitting because you have less than " + str(MIN_FREE_DISK_SPACE) + " space on drive '/'.")
             break
     return local_paths
 
 
-def prepare_training_data_subset_from_multiple_yolo_files(
+def download_training_data_for_a_subset_from_multiple_yolo_files(
     bucket_name: str,
     storage_client: storage.Client,
     yolo_files_root: Path,
@@ -58,9 +61,11 @@ def prepare_training_data_subset_from_multiple_yolo_files(
     aggregated yolo file which can then be processed by other functions to prepare
     a dataset/subset.
 
-    When working with `yo-laborate`, use this function to help prepare a single
+    When working with `yo-laborate`, use this function to help prepare a SINGLE
     data-subset where you have reviewed annotations which are mutually exclusive
     object detections across multiple yolo files which you want to combine.
+
+    Downloads everything in the provided yolo files WITHOUT filtering for confidence.
 
     :param bucket_name:
     :param storage_client:
