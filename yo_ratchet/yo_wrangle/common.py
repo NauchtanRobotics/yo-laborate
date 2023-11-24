@@ -238,7 +238,7 @@ def get_classes_json_path(base_dir: Path) -> Optional[Path]:
     try:
         classes_json_path = config.get(DATASET, CLASSES_JSON)
     except:
-        classes_json_path = None
+        return None
     if (
         classes_json_path is None
         or classes_json_path == ""
