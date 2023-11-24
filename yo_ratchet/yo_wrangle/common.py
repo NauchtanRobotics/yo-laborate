@@ -227,8 +227,7 @@ def get_implicit_model_paths(base_dir: Path, dataset_identifier: str) -> List[Pa
 
 def get_classes_json_path(base_dir: Path) -> Optional[Path]:
     """
-    Returns a list of class labels based on the "label" field in
-    the classes.json file found in the base_dir.
+    Returns a Path to the classes.json file found in the base_dir.
 
     """
     config = configparser.ConfigParser()
