@@ -25,6 +25,8 @@ def download_blobs_in_list(
     """
     local_paths: List[Path] = []
     dst_folder.mkdir(parents=True, exist_ok=True)
+    count_fails = 0
+    print(f"Failed downloads:")
     for image_name in image_names:
         dst_name = dst_folder / image_name
         blob_prefix = f"{prefix}{image_name}"
@@ -41,12 +43,16 @@ def download_blobs_in_list(
                 storage_client.download_blob_to_file(gs_path, file_obj)
             local_paths.append(dst_name)
         except:  # This file wasn't available in cloud so delete the empty local file that was created
+            print(dst_name.name)
+            count_fails += 1
             dst_name.unlink(missing_ok=True)
             pass
         free_disk_space = psutil.disk_usage('/').free
         if free_disk_space < MIN_FREE_DISK_SPACE:
             print("Quitting because you have less than " + str(MIN_FREE_DISK_SPACE) + " space on drive '/'.")
             break
+
+    print("Number of failed downloads: " + str(count_fails))
     return local_paths
 
 
