@@ -2,11 +2,29 @@ import pandas
 from tabulate import tabulate
 
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict
+from typing import List, Dict
 from yo_ratchet.yo_wrangle.common import (
     YOLO_ANNOTATIONS_FOLDER_NAME,
     get_all_jpg_recursive,
 )
+
+
+def count_images_having_confirmed_or_denied_boxes(yolo_file: Path) -> int:
+    with open(str(yolo_file), "r") as f:
+        lines = f.readlines()
+
+    hit_list = set()  # Identify photos that have had at least one defect confirmed or deleted
+    for line in lines:
+        line_split = line.split(" ")
+        conf = float(line_split[6])
+        if 0 < conf < 1:  # 2, 1 and 0 are the probabilities for manually added, confirmed and denied annotations resp.
+            continue  # Only accept confirmed or denied.
+        class_idx = int(line_split[1])
+        photo_name = line_split[0]
+        hit_list.add(photo_name)
+    num_images = len(hit_list)
+    print("\nNumber of audited images: " + str(num_images))
+    return num_images
 
 
 def count_class_instances_in_datasets(
