@@ -3,6 +3,8 @@ from google.cloud import storage
 from pathlib import Path
 from typing import Optional, List, Set
 
+YOLO_SUFFIX = ".yolo"
+
 MIN_FREE_DISK_SPACE = 30_000
 
 WINDOWS_LINE_ENDING = "\r\n"
@@ -48,6 +50,29 @@ def download_blobs_in_list(
     return local_paths
 
 
+def download_training_data_for_a_subset_from_a_single_yolo_file(
+    bucket_name: str,
+    storage_client: storage.Client,
+    yolo_file: Path,
+    dst_folder: Path,
+    images_prefix: str = ""
+) -> List[str]:
+    """
+    Downloads all images in the provided yolo file WITHOUT filtering for confidence.
+
+    """
+    yolo_content = yolo_file.read_text().splitlines()
+    image_names = set([row.split(" ")[0] for row in yolo_content])
+    download_blobs_in_list(
+        storage_client=storage_client,
+        bucket_name=bucket_name,
+        image_names=image_names,
+        dst_folder=dst_folder,
+        prefix=images_prefix,
+    )
+    return yolo_content
+
+
 def download_training_data_for_a_subset_from_multiple_yolo_files(
     bucket_name: str,
     storage_client: storage.Client,
@@ -76,24 +101,22 @@ def download_training_data_for_a_subset_from_multiple_yolo_files(
     """
     aggregated_content = []
     # Download images from all bounding boxes yolo text files in nominated dir <yolo_files_root>
-    yolo_files = list(yolo_files_root.iterdir())
+    yolo_files = [fp for fp in yolo_files_root.iterdir() if fp.suffix == YOLO_SUFFIX]
     dst_folder = dst_folder.resolve()
     for yolo_file in yolo_files:
         if yolo_file.is_dir():
             continue
-        yolo_content = yolo_file.read_text().splitlines()
-        aggregated_content.extend(yolo_content)
-        image_names = set([row.split(" ")[0] for row in yolo_content])
-        download_blobs_in_list(
+        yolo_content = download_training_data_for_a_subset_from_a_single_yolo_file(
             storage_client=storage_client,
             bucket_name=bucket_name,
-            image_names=image_names,
+            yolo_file=yolo_file,
             dst_folder=dst_folder,
-            prefix=images_prefix,
+            images_prefix=images_prefix,
         )
+        aggregated_content.extend(yolo_content)
 
     # Now write all lines from individual yolo files into an aggregated yolo file
-    aggregated_yolo_dst = dst_folder / "aggregated.yolo"
+    aggregated_yolo_dst = dst_folder / f"aggregated{YOLO_SUFFIX}"
     with open(str(aggregated_yolo_dst), "w") as fp:
         for item in aggregated_content:
             fp.write("%s\n" % item)
@@ -176,7 +199,7 @@ def download_all_training_data_from_buckets(
 
     for blob in most_recent_yolo_blobs:
         suffix = blob.name[-4:]
-        if suffix != "yolo":
+        if suffix != YOLO_SUFFIX:
             continue
         print(blob.bucket.name)  # + ": " + blob.name)
         if images_redirect_bucket is None:
