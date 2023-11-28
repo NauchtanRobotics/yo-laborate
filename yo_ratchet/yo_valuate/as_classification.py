@@ -13,7 +13,7 @@ from yo_ratchet.yo_wrangle.common import (
     get_config_items,
     PERFORMANCE_FOLDER,
     save_output_to_text_file,
-    RESULTS_FOLDER,
+    get_label_to_id_map,
 )
 
 RECALL = "R"
@@ -134,7 +134,7 @@ def _get_classification_metrics_for_group(
     group_inferences = numpy.array([False for _ in range(count)])
     for i, idx in enumerate(idxs):
         confidences = numpy.array([y[idx] for y in y_confidences])
-        threshold = optimised_thresholds[int(idx)]
+        threshold = optimised_thresholds.get(int(idx), 0.1)
         cond = confidences >= threshold
         inferences = numpy.array([y[idx] for y in y_inferences])
         truths = numpy.array([y[idx] for y in y_truths])
@@ -271,8 +271,9 @@ def optimise_binary_and_get_group_classification_performance(
         class_name: float(metrics_dict["@conf"])
         for class_name, metrics_dict in df.to_dict().items()
     }
+    label_to_id_dict = get_label_to_id_map(base_dir=base_dir)
     conf_dict = {
-        i: conf_threshold for i, conf_threshold in enumerate(thresholds.values())
+        label_to_id_dict.get(class_name, 34): conf_threshold for class_name, conf_threshold in thresholds.items()
     }
     if groupings:
         df = get_groups_classification_metrics(

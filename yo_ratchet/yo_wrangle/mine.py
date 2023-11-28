@@ -422,6 +422,8 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
     have to confirm, deny or add one bounding box per image to ensure that the image is included in training
     data all with all the unedited pre-labelling.
 
+    This version filters out low confidence boxes. Saves time when auditing.
+
     images_archive_dir: You can either provide a folder Path containing sub-folders of images,
                                or simply a folder Path which directly contains images.
     yolo_file: A path to a single text file containing aggregated bounding box annotations covering
@@ -440,7 +442,7 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
     for line in lines:
         line_split = line.split(" ")
         conf = float(line_split[6])
-        if conf not in [0, 1]:  # 1 and 0 are the probabilities for confirmed and denied annotations respectively.
+        if 0 < conf < 1:  # 1 and 0 are the probabilities for confirmed and denied annotations respectively.
             continue  # Only accept co
         # class_id = int(line_split[1])
         # if class_id not in [3, 4, 8, 9, 17, 19, 22, 29, 30, 33]:
@@ -465,6 +467,80 @@ def prepare_training_data_subset_from_reviewed_yolo_file(
         class_id = line_split[1]
         lower_threshold = lower_prob_thresholds.get(int(class_id), 0.1)
         if conf < lower_threshold:
+            continue
+        else:
+            pass
+        revised_line = " ".join(line_split[:6])
+        filtered_detections.append(revised_line)
+
+    fd, filtered_annotations_path = mkstemp(suffix=".txt")
+    with open(filtered_annotations_path, "w") as fd:
+        fd.write("\n".join(filtered_detections))
+
+    sub_dir_paths = [x for x in images_archive_dir.iterdir() if x.is_dir()]
+    sub_dir_paths = [x.name for x in sub_dir_paths if x.name.lower() != YOLO_ANNOTATIONS_FOLDER_NAME.lower()]
+    if len(sub_dir_paths) == 0:
+        sub_dir_paths = [images_archive_dir]
+    else:
+        pass  # A parent directory was passed in as a parameter as assumed in the first instance.
+
+    for sub_dir_path in sub_dir_paths:
+        copy_training_data_listed_in_aggregated_annotations_file(
+            src_images_dir=sub_dir_path,
+            filtered_annotations_file=Path(filtered_annotations_path),
+            dst_images_dir=dst_images_dir,
+            copy_all_src_images=copy_all_src_images,
+            move=move,
+        )
+    os.unlink(filtered_annotations_path)
+
+
+def prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file(
+    images_archive_dir: Path,
+    yolo_file: Path,
+    dst_images_dir: Path,
+    copy_all_src_images: bool = False,
+    move: bool = False,
+):
+    """
+    Filters retains only images having confirmed or deleted annotations from reviewed bounding box data (.yolo file)
+    and prepares the data into training data structure, then extracts all annotations relating to those images
+    regardless of whether edited or raw. This saves time for the bounding box auditor in that they only
+    have to confirm, deny or add one bounding box per image to ensure that the image is included in training
+    data all with all the unedited pre-labelling.
+
+    images_archive_dir: You can either provide a folder Path containing sub-folders of images,
+                               or simply a folder Path which directly contains images.
+    yolo_file: A path to a single text file containing aggregated bounding box annotations covering
+               all objects defined for images in images_archive_dir.
+
+.
+    """
+    with open(str(yolo_file), "r") as f:
+        lines = f.readlines()
+
+    hit_list = set()  # Identify photos that have had at least one defect confirmed or deleted
+    for line in lines:
+        line_split = line.split(" ")
+        conf = float(line_split[6])
+        if 0 < conf < 1:  # 1 and 0 are the probabilities for confirmed and denied annotations respectively.
+            continue  # Only accept co
+        # class_id = int(line_split[1])
+        # if class_id not in [3, 4, 8, 9, 17, 19, 22, 29, 30, 33]:
+        #     continue
+        # else:
+        #     pass
+        photo_name = line_split[0]
+        hit_list.add(photo_name)
+
+    # Collect all annotations for photos in the hit-list regardless of whether the
+    # individual box was confirmed or not.
+    # Removes probability (last field) if present.
+    filtered_detections = []
+    for line in lines:
+        line_split = line.split(" ")
+        photo_name = line_split[0]
+        if photo_name not in hit_list:
             continue
         else:
             pass

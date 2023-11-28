@@ -100,7 +100,7 @@ def get_id_to_label_map(classes_json_path: Path) -> Dict[int, str]:
     return label_map
 
 
-def get_label_to_id_map(base_dir: Path):
+def get_label_to_id_map(base_dir: Path) -> Dict[str, str]:
     config = configparser.ConfigParser()
     config_path = base_dir / CONFIG_INI
     if not config_path.exists():
@@ -238,7 +238,7 @@ def get_classes_json_path(base_dir: Path) -> Optional[Path]:
     try:
         classes_json_path = config.get(DATASET, CLASSES_JSON)
     except:
-        classes_json_path = None
+        return None
     if (
         classes_json_path is None
         or classes_json_path == ""

@@ -212,14 +212,16 @@ def test_arrange_images_per_classification_errors():
 
 
 def test_group_performance():
+    # base_dir = Path(__file__).parent
+    base_dir = Path("/home/david/production/sealed_roads_dataset")
     _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
-        base_dir=Path(__file__).parent
+        base_dir=base_dir
     )
     yolo_root = Path(yolo_root)
-    detect_images_root = yolo_root / "datasets" / "srd20.1.1" / "val" / "images"
-    ground_truth_path = yolo_root / "datasets" / "srd20.1.1" / "val" / "labels"
+    detect_images_root = yolo_root / "datasets" / "srd39.3" / "val" / "images"
+    ground_truth_path = yolo_root / "datasets" / "srd39.3" / "val" / "labels"
     inferences_path = (
-        yolo_root / "runs/detect/srd20.1.1_val__srd20.1.1_conf5pcnt/labels"
+        yolo_root / "runs/detect/srd39.3_val__srd39.3_conf5pcnt/labels"
     )
     classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
 
@@ -229,7 +231,7 @@ def test_group_performance():
         root_inferred_bounding_boxes=inferences_path,
         classes_map=classes_map,
         groupings=dataset_workbook.GROUPINGS,
-        base_dir=None,
+        base_dir=base_dir,
     )
 
 
