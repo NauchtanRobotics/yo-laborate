@@ -9,6 +9,40 @@ MIN_FREE_DISK_SPACE = 30_000
 
 WINDOWS_LINE_ENDING = "\r\n"
 
+# e.g. public url:
+# 'https://storage.googleapis.com/tablelands_regional_council/Photo_2023_Oct_01_08_41_54_584_n.jpg'
+
+
+def download_all_blobs_in_bucket(
+    storage_client: storage.Client,
+    bucket_name: str,
+    prefix: str,
+    dst_root: Path,
+    delimiter: Optional[str] = None
+):
+    """
+    Assumes blobs end in a time stamp so that alphabetical sorting equates
+    to sorting in order of age.
+
+    """
+    dst_root.mkdir(parents=True, exist_ok=True)
+    blobs = list(storage_client.list_blobs(bucket_name, prefix=prefix, delimiter=delimiter))
+    count_fails = 0
+    for blob in blobs:
+        blob_name = blob.name.split("/")[-1]
+        dst_path = dst_root / blob_name
+        try:
+            blob.download_to_filename(str(dst_path))
+        except:  # This file wasn't available in cloud so delete the empty local file that was created
+            print(dst_path.name)
+            count_fails += 1
+            dst_path.unlink(missing_ok=True)
+            pass
+        free_disk_space = psutil.disk_usage('/').free
+        if free_disk_space < MIN_FREE_DISK_SPACE:
+            print("Quitting because you have less than " + str(MIN_FREE_DISK_SPACE) + " space on drive '/'.")
+            break
+
 
 def download_blobs_in_list(
     storage_client: storage.Client,
@@ -183,9 +217,11 @@ def download_all_training_data_from_buckets(
     bucket_names: Optional[List[str]] = None
 ):
     """
-    1. Determine which buckets have images available.
-    2. Download the latest yolo files from each of those buckets.
-    3. Download the images associated with the object detections.
+    Downloads just the images which are referenced in a yolo file in each of the buckets named, via::
+
+        1. Determine which buckets have images available.
+        2. Download the latest yolo files from each of those buckets.
+        3. Download the images associated with the object detections.
 
     Keeps data-subsets independent according to bucket name.
 
