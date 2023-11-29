@@ -31,6 +31,8 @@ def download_all_blobs_in_bucket(
     for blob in blobs:
         blob_name = blob.name.split("/")[-1]
         dst_path = dst_root / blob_name
+        if dst_path.exists() and dst_path.stat().st_size > 0:
+            continue
         try:
             blob.download_to_filename(str(dst_path))
         except:  # This file wasn't available in cloud so delete the empty local file that was created
