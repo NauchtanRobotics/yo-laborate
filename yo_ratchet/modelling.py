@@ -283,10 +283,9 @@ def run_detections_using_cv_ensemble_given_paths(
         model_paths = get_paths_to_weights(
             yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
         )
-        explicit_model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
+        explicit_model_paths = [str(model_path) for model_path in model_paths if Path(model_path).exists()]
     elif explicit_model_paths is None and model_version is None:
-        raise RuntimeError("You must provide one of these params: model_full_path or model_version.")
-
+        raise RuntimeError("You must provide one of these params: explicit_model_paths or model_version.")
 
     pytorch_cmd = [
         python_path,
