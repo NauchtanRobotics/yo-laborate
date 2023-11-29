@@ -4,7 +4,7 @@ from yo_ratchet.yo_wrangle.gcs_interface import (
     download_all_training_data_from_buckets,
     download_training_data_for_a_subset_from_a_single_yolo_file,
     download_training_data_for_a_subset_from_multiple_yolo_files,
-    download_all_blobs_in_bucket
+    download_all_blobs_in_bucket, download_file_from_gcs_using_public_url
 )
 
 JSON_CREDENTIALS_PATH = Path(__file__).parent.parent / "GOOGLE_APPLICATION_CREDENTIALS.json"
@@ -47,10 +47,27 @@ def test_download_training_data_for_a_subset_from_multiple_yolo_files():
     )
 
 
-def test_download_all_images_in_bucket():
+def test_download_all_images_in_tablelands_bucket():
     download_all_blobs_in_bucket(
         storage_client=storage_client,
         bucket_name="racas_ai",
         prefix="tablelands_regional_council/unprocessed_images/",
-        dst_root=Path("/home/david/production/tablelands_2023_all")
+        dst_root=Path("/media/david/Samsung_T8/bulk_download_2023_07/tablelands_regional_council")
+    )
+
+
+def test_download_all_images_in_murrumbidgee_bucket():
+    download_all_blobs_in_bucket(
+        storage_client=storage_client,
+        bucket_name="racas_ai",
+        prefix="tablelands_regional_council/unprocessed_images/",
+        dst_root=Path("/media/david/Samsung_T8/bulk_download_2023_07/murrumbidgee_council")
+    )
+
+
+def test_download_file_from_gcs_using_public_url():
+    download_file_from_gcs_using_public_url(
+        bucket_name="murrumbidgee_council",
+        file_name="Photo_2023_Apr_20_16_37_30_079_j.jpg",
+        dst_root=Path("/home/david/production/test_council")
     )
