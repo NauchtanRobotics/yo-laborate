@@ -60,7 +60,7 @@ def test_download_all_images_in_murrumbidgee_bucket():
     download_all_blobs_in_bucket(
         storage_client=storage_client,
         bucket_name="racas_ai",
-        prefix="tablelands_regional_council/unprocessed_images/",
+        prefix="murrumbidgee_council/unprocessed_images/",
         dst_root=Path("/media/david/Samsung_T8/bulk_download_2023_07/murrumbidgee_council")
     )
 
