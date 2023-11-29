@@ -2,15 +2,34 @@ import psutil
 from google.cloud import storage
 from pathlib import Path
 from typing import Optional, List, Set
+from urllib import request
+
 
 YOLO_SUFFIX = ".yolo"
-
 MIN_FREE_DISK_SPACE = 30_000
-
 WINDOWS_LINE_ENDING = "\r\n"
+GCP_ROOT_URL = "https://storage.googleapis.com"
 
-# e.g. public url:
-# 'https://storage.googleapis.com/tablelands_regional_council/Photo_2023_Oct_01_08_41_54_584_n.jpg'
+
+def download_file_from_gcs_using_public_url(
+    bucket_name: str,
+    file_name: str,
+    dst_root: Path,
+    prefix: str = "",  # don't forget to add trailing slash if prefix is a folder.
+):
+    """
+    E.g. download from GCP public url:
+    'https://storage.googleapis.com/<bucket_name>/Photo_2.jpg'
+    or
+    'https://storage.googleapis.com/<bucket_name>/<prefix>Photo_2.jpg'
+
+    """
+    # Define the remote file to retrieve
+    remote_url = f"{GCP_ROOT_URL}/{bucket_name}/{prefix}{file_name}"
+    # Define the local filename to save data
+    local_file = dst_root / file_name
+    # Download remote and save locally
+    request.urlretrieve(remote_url, local_file)
 
 
 def download_all_blobs_in_bucket(
@@ -44,6 +63,27 @@ def download_all_blobs_in_bucket(
         if free_disk_space < MIN_FREE_DISK_SPACE:
             print("Quitting because you have less than " + str(MIN_FREE_DISK_SPACE) + " space on drive '/'.")
             break
+
+
+def download_a_blob(
+    storage_client: storage.Client,
+    bucket_name: str,
+    file_name: str,
+    dst_root: Path,
+    prefix: str = ""
+):
+    """
+    Assumes blobs end in a time stamp so that alphabetical sorting equates
+    to sorting in order of age.
+
+    """
+    download_blobs_in_list(
+        storage_client=storage_client,
+        bucket_name=bucket_name,
+        image_names=[file_name],
+        dst_folder=dst_root,
+        prefix=prefix
+    )
 
 
 def download_blobs_in_list(

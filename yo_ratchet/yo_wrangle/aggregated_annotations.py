@@ -108,10 +108,11 @@ def copy_training_data_listed_in_aggregated_annotations_df(
     dst_annotations_dir = dst_images_dir / YOLO_ANNOTATIONS_FOLDER_NAME
     dst_annotations_dir.mkdir(parents=True, exist_ok=True)
     unique_photo_names = df_filtered_annotations[0].unique().tolist()
+    print(f"Image not found in {str(dst_images_dir)}")
     for photo_name in unique_photo_names:
         original_image_path = src_images_dir / photo_name
         if not original_image_path.exists():
-            print(f"Image not found: {str(original_image_path)}")
+            print(f"{str(original_image_path)}")
             total_images_not_found += 1
             continue
         if not copy_all_src_images:
