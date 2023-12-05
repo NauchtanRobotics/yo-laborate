@@ -112,7 +112,7 @@ def copy_training_data_listed_in_aggregated_annotations_df(
     for photo_name in unique_photo_names:
         original_image_path = src_images_dir / photo_name
         if not original_image_path.exists():
-            print(f"{str(original_image_path)}")
+            print(f"{original_image_path.name}")
             total_images_not_found += 1
             continue
         if not copy_all_src_images:
