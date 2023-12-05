@@ -22,26 +22,26 @@ F1 = "F1"
 CONF_MIN_STR = "conf_min"
 
 CONF_TEST_LEVELS = [
+    0.35,
+    0.35,
+    0.35,
+    0.45,
+    0.45,
+    0.50,
     0.1,
+    0.45,
+    0.45,
+    0.25,
+    0.55,
+    0.35,
+    0.25,
     0.15,
     0.16,
-    0.18,
-    0.2,
-    0.25,
-    0.2,
-    0.25,
-    0.27,
-    0.29,
-    0.3,
     0.32,
     0.35,
+    0.15,
+    0.1,
     0.4,
-    0.45,
-    0.5,
-    0.55,
-    0.6,
-    0.65,
-    0.7,
 ]
 
 F1_PERFORMANCE_JSON = "f1_performance.json"
@@ -75,7 +75,11 @@ def get_truth_vs_inferred_dict_by_photo(
                 ground_truth_lines = truth_file.readlines()
             for ground_truth_line in ground_truth_lines:
                 class_id = ground_truth_line.split(" ")[0]
-                actual_classifications[int(class_id)] = True
+                if len(actual_classifications) > int(class_id):
+                    actual_classifications[int(class_id)] = True
+                else:
+                    print("\nTrying to exceed length of actual_classifications list. class_id=" + class_id)
+                    print("in file: " + str(ground_truth_path))
         else:
             pass  # ground_truth_classification already initialized to False
 
