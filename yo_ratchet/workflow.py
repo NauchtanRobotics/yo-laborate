@@ -161,8 +161,8 @@ def run_prepare_dataset_and_train(
         base_dir=BASE_DIR,
     )
 
-    delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
     if init_fiftyone:
+        delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
         init_fifty_one_dataset(
             dataset_label=DATASET_LABEL,
             classes_map=CLASSES_MAP,
