@@ -125,3 +125,4 @@ def count_class_instances_in_test_datasets(base_dir: Path):
         class_ids=class_ids,
         class_id_to_name_map=classes_map,
     )
+    return output_str

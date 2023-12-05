@@ -9,7 +9,7 @@ from yo_ratchet.yo_wrangle.common import (
     save_output_to_text_file,
     get_yolo_detect_paths,
 )
-from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
+from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets, count_class_instances_in_test_datasets
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
 
 EPOCHS = 325
@@ -43,6 +43,9 @@ def prepare_dataset_and_train(
         class_ids=class_ids,
         class_id_to_name_map=classes_map,
     )
+    output_str += "\n"
+    output_str += count_class_instances_in_test_datasets(base_dir=base_dir)
+
     collate_and_split(
         subsets_included=subsets_included,
         dst_root=dst_root,
