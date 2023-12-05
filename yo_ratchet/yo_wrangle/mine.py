@@ -544,6 +544,9 @@ def prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file(
             continue
         else:
             pass
+        conf = float(line_split[6])
+        if conf <= 0:  # Don't include denied boxes
+            continue
         revised_line = " ".join(line_split[:6])
         filtered_detections.append(revised_line)
 
