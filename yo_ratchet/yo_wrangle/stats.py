@@ -6,6 +6,8 @@ from typing import List, Dict, Optional
 from yo_ratchet.yo_wrangle.common import (
     YOLO_ANNOTATIONS_FOLDER_NAME,
     get_all_jpg_recursive,
+    get_classes_json_path,
+    get_id_to_label_map,
 )
 
 
@@ -109,3 +111,17 @@ def count_class_instances_in_datasets(
     output_str += f"\nGrand Total boxes: {grand_total}\n"
     print(output_str)
     return output_str
+
+
+def count_class_instances_in_test_datasets(base_dir: Path):
+    test_data = base_dir / ".test_datasets"
+    sample_folders = [x for x in test_data.iterdir() if (x.is_dir() and x.name[0] != "." and x.name[0] != "_")]
+    classes_json_path = get_classes_json_path(base_dir=base_dir)
+    classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
+    class_ids = list(classes_map.keys())
+    print()
+    output_str = count_class_instances_in_datasets(
+        data_samples=sample_folders,
+        class_ids=class_ids,
+        class_id_to_name_map=classes_map,
+    )
