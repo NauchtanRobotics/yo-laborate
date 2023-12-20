@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 from pathlib import Path
 from tempfile import mkstemp
-from typing import Optional, List
+from typing import Optional, List, Tuple, Set
 
 from yo_ratchet.yo_filter.filters import get_classes_info, get_lower_probability_thresholds
 from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
@@ -572,3 +572,104 @@ def prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file(
             move=move,
         )
     os.unlink(filtered_annotations_path)
+
+
+def join_multiple_yolo_files_without_duplication_or_overwrite(
+    src_dir: Path,
+    include_unedited: Optional[bool] = False
+):
+    """
+    Combines the confirmed and denied bounding boxes content first.
+
+    Does not add any bounding boxes for un-edited image.
+
+    Future: Adds in unique bounding boxes from un-edited content from yolo files.
+
+    """
+    master_filtered_detections = []
+    master_hit_list = []
+    file_paths = [x for x in src_dir.iterdir()]
+    for yolo_file in file_paths:
+        filtered_detections, hit_list = data_from_images_with_at_least_one_confirmed_or_denied_box(
+            yolo_file=yolo_file
+        )
+        master_filtered_detections.extend(filtered_detections)
+        master_hit_list.extend(hit_list)
+
+    if include_unedited:
+        for yolo_file in file_paths:
+            unedited_detections = yolo_data_from_unedited_images(
+                yolo_file=yolo_file, exclusion_list=master_hit_list
+            )
+            master_filtered_detections.extend(unedited_detections)
+            break  # for Isaac 2023, the same yolo starting file was used consistently
+
+    print(f"total hits before enforcing unique: {len(master_filtered_detections)}")
+    master_filtered_detections = set(master_filtered_detections)
+    print(f"total hits after enforcing unique: {len(master_filtered_detections)}")
+    joined_file_path = src_dir / "joined.yolo"
+    with open(joined_file_path, "w") as fd:
+        fd.write("\n".join(master_filtered_detections))
+
+
+def data_from_images_with_at_least_one_confirmed_or_denied_box(yolo_file: Path) -> Tuple[List[str], Set[str]]:
+    """
+    Return yolo data as a list with confidence/probability (last field) data stripped out.
+
+    """
+    filtered_detections = []
+    hit_list = set()  # Identify photos that have had at least one defect confirmed or deleted
+
+    with open(str(yolo_file), "r") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        line_split = line.split(" ")
+        conf = float(line_split[6])
+        if 0 < conf < 1:  # 1 and 0 are the probabilities for confirmed and denied annotations respectively.
+            continue  # Only accept confirmed or denied
+        photo_name = line_split[0]
+        hit_list.add(photo_name)
+
+    # Collect all annotations for photos in the hit-list regardless of whether the
+    # individual box was confirmed or not.
+    for line in lines:
+        line_split = line.split(" ")
+        photo_name = line_split[0]
+        if photo_name not in hit_list:
+            continue
+        else:
+            pass
+        revised_line = " ".join(line_split[:6])
+        filtered_detections.append(revised_line)
+    print(f"{yolo_file.name} has {len(hit_list)} hits.")
+    return filtered_detections, hit_list
+
+
+def yolo_data_from_unedited_images(yolo_file: Path, exclusion_list: List[str]) -> List[str]:
+    """
+    Return yolo data as a list with confidence/probability (last field) data stripped out.
+
+    """
+    filtered_detections = []
+
+    with open(str(yolo_file), "r") as f:
+        lines = f.readlines()
+
+    # Collect all annotations for photos except for those in the hit-list
+    for line in lines:
+        line_split = line.split(" ")
+        photo_name = line_split[0]
+        if photo_name in exclusion_list:
+            continue
+        else:
+            pass
+        revised_line = " ".join(line_split[:6])
+        filtered_detections.append(revised_line)
+
+    return filtered_detections
+
+
+def test_join_multiple_yolo_files_without_duplication_or_overwrite():
+    src_dir = Path(r"C:\Users\61419\Downloads\Isaac AI")
+    join_multiple_yolo_files_without_duplication_or_overwrite(src_dir=src_dir, include_unedited=True)
