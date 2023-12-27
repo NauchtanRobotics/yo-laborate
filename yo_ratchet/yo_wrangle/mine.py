@@ -144,9 +144,10 @@ def extract_high_quality_training_data_from_raw_detections_new_images_only(
     """
     classes_info = get_classes_info(classes_json_path=classes_json_path)
     if outlier_config:
-        outlier_params = OutlierParams(
-            classes_info=classes_info, outlier_config=outlier_config
-        )
+        raise NotImplementedError
+        # outlier_params = OutlierParams(
+        #     classes_info=classes_info, outlier_config=outlier_config
+        # )
     else:
         outlier_params = None
 
@@ -285,9 +286,10 @@ def extract_high_quality_training_data_from_raw_detections(
     """
     classes_info = get_classes_info(classes_json_path=classes_json_path)
     if outlier_config:
-        outlier_params = OutlierParams(
-            classes_info=classes_info, outlier_config=outlier_config
-        )
+        raise NotImplementedError
+        # outlier_params = OutlierParams(
+        #     classes_info=classes_info, outlier_config=outlier_config
+        # )
     else:
         outlier_params = None
 
