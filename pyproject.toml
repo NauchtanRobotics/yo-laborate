@@ -19,6 +19,7 @@ Pillow = "^8.4"
 # kaleido = "==0.2.1"  # Should not be a primary dep. Added to solve issue with 0.2.1.post1. Fiftyone req ==0.2.1
 open-labeling = { path = ".wheels/open_labeling-0.2.21-py3-none-any.whl"}
 google-cloud-storage = "^2.14.0"
+fiftyone = "^0.23.2"
 
 [tool.poetry.dev-dependencies]
 # pytest = ">=6.2.5" - is a dependency of pytest-mock.
