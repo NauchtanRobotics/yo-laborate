@@ -579,9 +579,14 @@ def join_multiple_yolo_files_without_duplication_or_overwrite(
     include_unedited: Optional[bool] = False
 ):
     """
-    Combines the confirmed and denied bounding boxes content first.
+    Combines the confirmed and denied bounding boxes content first from multiple
+    yolo files in a way that prevents overwriting edited bounding boxes
+    when the same bounding box was not edited in one of the other yolo files. The
+    confidence (7th field) is retained in the output allowing for review of bounding
+    auditing for quality purposes.
 
-    Does not add any bounding boxes for un-edited image.
+    Adding bounding boxes that have not been edited in any of the input yolo files
+    is optional.
 
     Future: Adds in unique bounding boxes from un-edited content from yolo files.
 
@@ -614,7 +619,10 @@ def join_multiple_yolo_files_without_duplication_or_overwrite(
 
 def data_from_images_with_at_least_one_confirmed_or_denied_box(yolo_file: Path) -> Tuple[List[str], Set[str]]:
     """
-    Return yolo data as a list with confidence/probability (last field) data stripped out.
+    Returns condensed yolo data (as a list) containing only
+
+    The confidence/probability (7th and last field) been retained to allow for
+    review of bounding box edits via Virtual RACAS software.
 
     """
     filtered_detections = []
@@ -640,8 +648,7 @@ def data_from_images_with_at_least_one_confirmed_or_denied_box(yolo_file: Path) 
             continue
         else:
             pass
-        revised_line = " ".join(line_split[:6])
-        filtered_detections.append(revised_line)
+        filtered_detections.append(line)
     print(f"{yolo_file.name} has {len(hit_list)} hits.")
     return filtered_detections, hit_list
 
@@ -664,8 +671,8 @@ def yolo_data_from_unedited_images(yolo_file: Path, exclusion_list: List[str]) -
             continue
         else:
             pass
-        revised_line = " ".join(line_split[:6])
-        filtered_detections.append(revised_line)
+        # revised_line = " ".join(line_split[:6])
+        filtered_detections.append(line)
 
     return filtered_detections
 
