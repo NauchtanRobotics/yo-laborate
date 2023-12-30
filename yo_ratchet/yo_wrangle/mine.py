@@ -18,7 +18,13 @@ from yo_ratchet.yo_filter.unsupervised import (
 )
 
 PHOTO_NAME = "photo_name"
+"""
+This module is about filtering object detections that are already in one or more yolo files.
 
+See the 'reaper' module for higher level functions that possibly download images and 
+run detections before calling filtering functions in this module.
+
+"""
 
 def extract_high_confidence_training_data(
     src_folder: Path,

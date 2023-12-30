@@ -184,6 +184,33 @@ def run_detections(
     return results_name
 
 
+def run_detection_return_inferences_root(
+    images_root: Path,
+    results_folder_name: str,
+    model_path: Path,
+    model_version: str,
+    base_dir: Path,
+    yolo_root: Path,
+    conf_thres: float = 0.1,
+    device: int = 1,
+    img_size: Optional[int] = DETECT_IMAGE_SIZE,
+):
+    detect_folder_name = run_detections(
+        images_path=images_root,
+        dataset_version=results_folder_name,
+        model_path=model_path,
+        model_version=model_version,
+        base_dir=base_dir,
+        conf_thres=conf_thres,
+        device=device,
+        img_size=img_size
+    )
+    inferences_root = (
+            yolo_root / "runs/detect" / detect_folder_name / "labels"
+    )
+    return inferences_root
+
+
 def run_detections_using_cv_ensemble(
     images_path: Path,
     detection_dataset_name: str,
