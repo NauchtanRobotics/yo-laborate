@@ -43,8 +43,10 @@ def prepare_dataset_and_train(
         class_ids=class_ids,
         class_id_to_name_map=classes_map,
     )
-    output_str += "\n"
-    output_str += count_class_instances_in_test_datasets(base_dir=base_dir)
+    test_data_root = base_dir / ".test_datasets"
+    if test_data_root.exists() and len(test_data_root.iterdir()) > 0:
+        output_str += "\n"
+        output_str += count_class_instances_in_test_datasets(base_dir=base_dir)
 
     collate_and_split(
         subsets_included=subsets_included,
