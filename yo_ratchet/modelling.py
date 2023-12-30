@@ -190,8 +190,7 @@ def run_detection_return_inferences_root(
     model_path: Path,
     model_version: str,
     base_dir: Path,
-    yolo_root: Path,
-    conf_thres: float = 0.1,
+    conf_thresh: float = 0.1,
     device: int = 1,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
 ):
@@ -201,12 +200,13 @@ def run_detection_return_inferences_root(
         model_path=model_path,
         model_version=model_version,
         base_dir=base_dir,
-        conf_thres=conf_thres,
+        conf_thres=conf_thresh,
         device=device,
         img_size=img_size
     )
+    unused_python_path, yolo_path = get_yolo_detect_paths(base_dir)
     inferences_root = (
-            yolo_root / "runs/detect" / detect_folder_name / "labels"
+            yolo_path / "runs/detect" / detect_folder_name / "labels"
     )
     return inferences_root
 
