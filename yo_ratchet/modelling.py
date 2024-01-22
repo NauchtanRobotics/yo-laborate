@@ -174,13 +174,17 @@ def run_detections(
         "--half",
         "--augment",
     ]
-    print(
+    try:
         subprocess.check_output(
             pytorch_cmd,
             stderr=subprocess.STDOUT,
             cwd=str(yolo_path),
         )
-    )
+    except Exception as ex:
+        print(str(ex))
+        print("Try run command: ")
+        print(pytorch_cmd)
+
     return results_name
 
 
