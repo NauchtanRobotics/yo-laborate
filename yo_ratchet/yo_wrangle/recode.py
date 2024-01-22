@@ -51,6 +51,8 @@ def test_recode_and_filter():
     detect 'Signs' as follows:
 
     """
+    anno_path = Path.home() / "traffic_signs_dataset/GTSDB_2013_JPG/YOLO_darknet"
+    assert anno_path.exists() and len(list(anno_path.iterdir())) > 0
     recode_using_class_mapping(
         annotations_dir=Path(
             "/home/david/RACAS/boosted/600_x_600/unmasked/Signs_Central_Coast_2021/YOLO_darknet"

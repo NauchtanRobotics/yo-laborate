@@ -8,7 +8,7 @@ from yo_ratchet.yo_wrangle.stats import (
 
 
 def test_count_class_instances_in_datasets():
-    base_dir = Path.home() / "production/sealed_roads_dataset"  # Path(__file__).parent.parent
+    base_dir = Path("/home/david/traffic_signs_dataset")  # Path(__file__).parent.parent
     sample_folders = [x for x in base_dir.iterdir() if (x.is_dir() and x.name[0] != "." and x.name[0] != "_")]
     classes_json_path = get_classes_json_path(base_dir=base_dir)
     classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
