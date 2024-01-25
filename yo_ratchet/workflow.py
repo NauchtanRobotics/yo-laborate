@@ -156,7 +156,7 @@ def run_prepare_dataset_and_train(
         root_ground_truths=ground_truth_path,
         root_inferred_bounding_boxes=inferences_path,
         classes_map=CLASSES_MAP,
-        print_first_n=24,
+        print_first_n=None,
         groupings=GROUPINGS,
         base_dir=BASE_DIR,
     )
