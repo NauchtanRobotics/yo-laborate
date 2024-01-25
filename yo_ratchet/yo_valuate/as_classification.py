@@ -401,7 +401,7 @@ def classification_metrics_for_cross_validation_set(
         df = get_average_group_metrics_for_cv_set(
             dataset_prefix=dataset_prefix,
             base_dir=base_dir,
-            k_folds=K_FOLDS,
+            k_folds=n_folds,
             conf_pcnt=CONF_PCNT,
             classes_map=classes_map,
             groupings=groupings,
@@ -484,12 +484,18 @@ def get_paths_for_cross_validation_part(
     the root of the image paths and the root of the ground truth annotation files.
     """
     inferences_path = Path(
-        f"{base_dir}/.predict/detect/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels"
+        f"{base_dir}/.predict/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels"
     ).resolve()
     detect_images_root = Path(f"{base_dir}/.datasets/{dataset_label}/val").resolve()
     ground_truth_path = Path(
         f"{base_dir}/.datasets/{dataset_label}/val/labels"
     ).resolve()
+
+    assert inferences_path.exists(), "Inferences path does not exist at: " + str(inferences_path)
+    assert len(list(inferences_path.glob("*.txt"))) > 0, "No text files in inferences root: " + str(inferences_path)
+    assert detect_images_root.exists() and len(list(detect_images_root.rglob("*.jpg"))) > 0
+    assert ground_truth_path.exists() and len(list(ground_truth_path.glob("*.txt"))) > 0
+
     return inferences_path, detect_images_root, ground_truth_path
 
 
