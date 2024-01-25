@@ -399,7 +399,7 @@ def classification_metrics_for_cross_validation_set(
     if groupings:
         df = get_average_group_metrics_for_cv_set(
             dataset_prefix=dataset_prefix,
-            yolo_root=yolo_root,
+            base_dir=base_dir,
             k_folds=K_FOLDS,
             conf_pcnt=CONF_PCNT,
             classes_map=classes_map,
@@ -422,7 +422,7 @@ def classification_metrics_for_cross_validation_set(
 
 def get_average_group_metrics_for_cv_set(
     dataset_prefix: str,
-    yolo_root: str,
+    base_dir: str,
     k_folds: int,
     conf_pcnt: int,
     classes_map: Dict[int, str],
@@ -439,7 +439,7 @@ def get_average_group_metrics_for_cv_set(
             images_path,
             ground_truths_path,
         ) = get_paths_for_cross_validation_part(
-            yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=conf_pcnt
+            base_dir=base_dir, dataset_label=dataset_label, conf_pcnt=conf_pcnt
         )
         df = get_groups_classification_metrics(
             images_root=images_path,
@@ -476,6 +476,23 @@ def get_average_group_metrics_for_cv_set(
 
 
 def get_paths_for_cross_validation_part(
+    base_dir: str, dataset_label: str, conf_pcnt: int
+) -> Tuple[Path, Path, Path]:
+    """
+    Using conventions, provides Pathlib paths to the root of the inference annotations files,
+    the root of the image paths and the root of the ground truth annotation files.
+    """
+    inferences_path = Path(
+        f"{base_dir}/.predict/detect/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels"
+    ).resolve()
+    detect_images_root = Path(f"{base_dir}/.datasets/{dataset_label}/val").resolve()
+    ground_truth_path = Path(
+        f"{base_dir}/.datasets/{dataset_label}/val/labels"
+    ).resolve()
+    return inferences_path, detect_images_root, ground_truth_path
+
+
+def get_paths_for_cross_validation_part_yolov5(
     yolo_root: str, dataset_label: str, conf_pcnt: int
 ) -> Tuple[Path, Path, Path]:
     """
