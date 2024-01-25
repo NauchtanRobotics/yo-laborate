@@ -241,4 +241,15 @@ def test_optimise_conf():
         dataset_prefix=cross_validation_prefix,
         base_dir=Path(__file__).parent,
         groupings=dataset_workbook.GROUPINGS,
+        n_folds=2
+    )
+
+
+def test_download_coco():
+    import fiftyone.zoo as foz
+    dataset = foz.load_zoo_dataset(
+        "coco-2017",
+        splits=["train", "validation"],  # "test"],
+        label_types=["detections", "segmentations"],
+        max_samples=500,
     )

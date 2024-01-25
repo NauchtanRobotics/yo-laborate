@@ -2,6 +2,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Optional, List, Dict
+from ultralytics import YOLO
 
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
 from yo_ratchet.yo_wrangle.common import (
@@ -19,6 +20,114 @@ IOU_THRES = 0.45
 
 
 def prepare_dataset_and_train(
+    classes_map: Dict[int, str],
+    subsets_included: List[Path],
+    dst_root: Path,
+    every_n_th: int,
+    keep_class_ids: Optional[List[int]],
+    skip_class_ids: Optional[List[int]],
+    base_dir: Path,
+    recode_map: Optional[Dict[int, int]] = None,
+    run_training: bool = True,
+    cross_validation_index: int = 0,
+    fine_tune_patience: int = 5,
+    img_size: Optional[int] = TRAIN_IMAGE_SIZE,
+    epochs: Optional[int] = EPOCHS,
+    batch_size: Optional[int] = 62,
+    cache: Optional[str] = "ram",
+):
+    if epochs is None:
+        epochs = EPOCHS
+    class_ids = list(classes_map.keys())
+    output_str = count_class_instances_in_datasets(
+        data_samples=subsets_included,
+        class_ids=class_ids,
+        class_id_to_name_map=classes_map,
+    )
+    test_data_root = base_dir / ".test_datasets"
+    if test_data_root.exists() and len(list(test_data_root.iterdir())) > 0:
+        output_str += "\n"
+        output_str += count_class_instances_in_test_datasets(base_dir=base_dir)
+
+    collate_and_split(
+        subsets_included=subsets_included,
+        dst_root=dst_root,
+        every_n_th=every_n_th,
+        keep_class_ids=keep_class_ids,
+        skip_class_ids=skip_class_ids,
+        recode_map=recode_map,
+        cross_validation_index=cross_validation_index,
+    )
+    """Add actual classes support after filtering"""
+    final_subsets_included = [
+        (dst_root / "train"),
+        (dst_root / "val"),
+    ]
+    output_str += "\n"
+    output_str += count_class_instances_in_datasets(
+        data_samples=final_subsets_included,
+        class_ids=class_ids,
+        class_id_to_name_map=classes_map,
+    )
+    model_instance = dst_root.name
+    file_name = f"{model_instance}_classes_support.txt"
+    save_output_to_text_file(
+        content=output_str,
+        base_dir=base_dir,
+        file_name=file_name,
+        commit=False,
+    )
+
+    class_names = [classes_map[class_id] for class_id in class_ids]
+    yaml_text = f"""train: {str(dst_root)}/train/images/
+val: {str(dst_root)}/val/images/
+nc: {len(class_ids)}
+names: {class_names}"""
+
+    """ Write dataset.yaml in DST folder."""
+    dst_dataset_path = dst_root / "dataset.yaml"
+    with open(f"{str(dst_dataset_path)}", "w") as f_out:
+        f_out.write(yaml_text)
+
+    (
+        python_path,
+        yolo_base_dir,
+        cfg_path,
+        _,
+        hyp_path,
+        _,
+        _,
+    ) = get_config_items(base_dir)
+    weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
+    if not fine_tune:
+        patience = 50
+    else:
+        patience = fine_tune_patience  # Just use the default param value
+
+    train_dir_name = ".train"
+    if run_training:
+        # TODO: Remove this override
+        weights_path = Path("/home/david/production/ultralytics/runs/detect/srd40.2.1_yolov8/weights/best.pt")
+        model = YOLO(weights_path)
+        model.train(
+            data=str(dst_dataset_path),
+            epochs=epochs,
+            warmup_epochs=0,
+            lr0=0.005,
+            project=train_dir_name,
+            name=model_instance,
+            cache=cache,
+            imgsz=img_size,
+            nbs=batch_size,  # 42 works on 800 x 800
+            workers=6,
+            device="0,1"
+        )
+
+    new_model_path = base_dir / train_dir_name / model_instance / "weights" / "best.pt"
+    return new_model_path
+
+
+def prepare_dataset_and_train_yolov5(
     classes_map: Dict[int, str],
     subsets_included: List[Path],
     dst_root: Path,
@@ -145,6 +254,34 @@ names: {class_names}"""
 
 
 def run_detections(
+    images_path: Path,
+    dataset_version: str,
+    model_path: Path,
+    model_version: str,
+    base_dir: Path,
+    conf_thres: float = 0.1,
+    device: int = 1,
+    img_size: Optional[int] = DETECT_IMAGE_SIZE,
+):
+    results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    predictions_root = base_dir / ".predict"
+    model = YOLO(model_path, task="predict", verbose=False)
+    results = model.predict(
+        source=str(images_path),
+        project=predictions_root,
+        name=results_name,
+        conf=conf_thres,
+        imgsz=img_size,
+        device=device,
+        augment=True,
+        save_conf=True,
+        save_txt=True
+    )
+    inferences_dir = predictions_root / results_name / "labels"
+    return inferences_dir
+
+
+def run_detections_yolov5(
     images_path: Path,
     dataset_version: str,
     model_path: Path,

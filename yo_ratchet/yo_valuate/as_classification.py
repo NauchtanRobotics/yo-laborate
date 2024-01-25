@@ -313,6 +313,7 @@ def classification_metrics_for_cross_validation_set(
     dataset_prefix: str,  # E.g. 14.4  - do not include patch
     print_table: bool = False,
     groupings: Dict[str, List[int]] = None,
+    n_folds: Optional[int] = None
 ):
     """
     Loops through cross_validation training and inferences data in the configured

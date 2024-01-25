@@ -193,6 +193,92 @@ def cross_validation_combinations_training(
 ):
     fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
     val_inferences_roots = []
+    if init_fiftyone:
+        cv_indicies = range(k_folds)
+        n_folds = K_FOLDS
+    else:
+        n_folds = 2
+        cv_indicies = range(n_folds)
+
+    for cv_index in cv_indicies:
+        bump_patch(base_dir=base_dir)
+        dataset_label = get_dataset_label_from_version(base_dir=base_dir)
+        dst_root = base_dir / f".datasets/{dataset_label}"
+        model_path = prepare_dataset_and_train(
+            classes_map=CLASSES_MAP,
+            subsets_included=SUBSETS_INCLUDED,
+            dst_root=dst_root,
+            every_n_th=k_folds,  # still split it this many times even if you are only goes to train first n_folds
+            keep_class_ids=KEEP_CLASS_IDS,
+            skip_class_ids=SKIP_CLASS_IDS,
+            base_dir=base_dir,
+            run_training=True,
+            recode_map=RECODE_MAP,
+            cross_validation_index=cv_index,
+            fine_tune_patience=fine_tune_epochs,
+            epochs=epochs,
+            img_size=training_imgsz,
+            batch_size=batch_size,
+            cache=cache,
+        )
+        commit_and_push(
+            dataset_label=dataset_label,
+            base_dir=base_dir,
+            description="Bump patch/pre-artifacts.",
+        )
+        detect_images_root = dst_root / "val" / "images"
+        test_set_str = "val"
+        test_set_part_label = f"{dataset_label}_{test_set_str}"
+
+        run_name = run_detections(
+            images_path=detect_images_root,
+            dataset_version=test_set_part_label,
+            model_path=model_path,
+            model_version=dataset_label,
+            base_dir=base_dir,
+            conf_thres=CONF,
+            device=0,
+            img_size=test_imgsz,
+        )
+        inferences_path = base_dir / f"runs/detect/{run_name}/labels"
+        val_inferences_roots.append(inferences_path.resolve())
+
+
+    classification_metrics_for_cross_validation_set(
+        dataset_prefix=fiftyone_dataset_label,
+        base_dir=base_dir,
+        groupings=GROUPINGS,
+        n_folds=n_folds  # only have this many trained models to assess, regardless of k_folds splits.
+    )
+    if init_fiftyone:
+        init_fifty_one_dataset_for_cross_validation_combinations(
+            dataset_label=fiftyone_dataset_label,
+            classes_map=CLASSES_MAP,
+            val_inferences_roots=val_inferences_roots,
+            dataset_root=DATASET_ROOT,
+            candidate_subset=None,
+            export_to_json=True,
+        )
+    commit_and_push(
+        dataset_label=fiftyone_dataset_label,
+        base_dir=base_dir,
+        description="Post-training artifacts.",
+    )
+
+
+def cross_validation_combinations_training_yolov5(
+    base_dir: Path,
+    init_fiftyone: bool = True,
+    k_folds: Optional[int] = K_FOLDS,
+    fine_tune_epochs: Optional[int] = 5,
+    epochs: Optional[int] = 300,
+    training_imgsz: Optional[int] = 640,
+    batch_size: Optional[int] = 62,
+    cache: Optional[str] = "ram",
+    test_imgsz: Optional[int] = 800,
+):
+    fiftyone_dataset_label = get_dataset_label_from_version(base_dir=base_dir)
+    val_inferences_roots = []
     for cv_index in range(k_folds):
         bump_patch(base_dir=base_dir)
         dataset_label = get_dataset_label_from_version(base_dir=base_dir)
@@ -241,6 +327,7 @@ def cross_validation_combinations_training(
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
         groupings=GROUPINGS,
+        n_folds=k_folds
     )
     if init_fiftyone:
         init_fifty_one_dataset_for_cross_validation_combinations(
