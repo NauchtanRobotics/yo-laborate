@@ -331,6 +331,8 @@ def classification_metrics_for_cross_validation_set(
 
     """
     from yo_ratchet.workflow import K_FOLDS, CONF_PCNT  # To prevent circular references
+    if n_folds is None:
+        n_folds = K_FOLDS
 
     _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
         base_dir=base_dir
@@ -338,14 +340,14 @@ def classification_metrics_for_cross_validation_set(
     classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
     f1_scores = []
     confidences = []
-    for i in range(K_FOLDS):
+    for i in range(n_folds):
         dataset_label = f"{dataset_prefix}.{str(i + 1)}"
         (
             inferences_path,
             detect_images_root,
             ground_truth_path,
         ) = get_paths_for_cross_validation_part(
-            yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=CONF_PCNT
+            base_dir=base_dir, dataset_label=dataset_label, conf_pcnt=CONF_PCNT
         )
         if print_table:
             print(f"\nDataset: {dataset_label}")
