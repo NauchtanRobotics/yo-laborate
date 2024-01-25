@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Optional
 
+from google.cloud import storage
+
 from yo_ratchet.modelling import run_detection_return_inferences_root
 from yo_ratchet.yo_wrangle.common import get_config_items, get_id_to_label_map, inferred_base_dir, get_yolo_detect_paths
 from yo_ratchet.yo_wrangle.gcs_interface import download_all_blobs_in_bucket
@@ -90,19 +92,39 @@ def harvest_training_data_from_images_in_the_cloud(
     )
 
 
+JSON_CREDENTIALS_PATH = Path(__file__).parent.parent.parent / "GOOGLE_APPLICATION_CREDENTIALS.json"
+
+
 def test_harvest_training_data_from_images_in_the_cloud():
-    storage_client = xxx
-    base_dir = inferred_base_dir()
+    bucket_name = "example_bucket"
+    model_version = "tsd8.1"
+    base_dir = Path("/home/david/example_dataset")  # inferred_base_dir()
+    archive_root = Path("/media/david/Samsung_T8/archive_original_format_2023")
+
+    assert JSON_CREDENTIALS_PATH.exists()
+    assert base_dir.exists() and (base_dir / "classes.json").exists()
+    assert archive_root.parent.exists()
+    archive_root.mkdir(exist_ok=True)
+
+    cred_path = str(JSON_CREDENTIALS_PATH)
+    storage_client = storage.Client.from_service_account_json(
+        # project="sacred-bonus-274204",
+        json_credentials_path=cred_path
+    )
+
     unused_python_path, yolo_path = get_yolo_detect_paths(base_dir)
-    model_version = "tsd4.1"
+
     model_path = (
         yolo_path / "runs/train" / model_version / "weights/best.pt"
     )
+    assert model_path.exists()
     harvest_training_data_from_images_in_the_cloud(
-        storage_client=,
-        bucket_name="devenport_shire_council",
-        archive_root=Path("/media/david/Samsung_T8/archive_original_format"),
+        storage_client=storage_client,
+        bucket_name=bucket_name,
+        archive_root=archive_root,
         base_dir=base_dir,
         model_path=model_path,
-        tag="2023",
+        tag="2022",
+        prefix="Photo_2022",
+        conf_thresh=0.65
     )
