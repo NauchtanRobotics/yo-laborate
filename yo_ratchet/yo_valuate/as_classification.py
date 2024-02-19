@@ -16,6 +16,9 @@ from yo_ratchet.yo_wrangle.common import (
     get_label_to_id_map,
 )
 
+YOLO_VERSION_5 = "yolo_v5"
+YOLO_VERSION_8 = "yolo_v8"
+
 RECALL = "R"
 PRECISION = "P"
 F1 = "F1"
@@ -313,7 +316,9 @@ def classification_metrics_for_cross_validation_set(
     dataset_prefix: str,  # E.g. 14.4  - do not include patch
     print_table: bool = False,
     groupings: Dict[str, List[int]] = None,
-    n_folds: Optional[int] = None
+    n_folds: Optional[int] = None,
+    conf: Optional[int] = None,  # e.g. enter 5 to set to 5 percent.
+    yolo_version: str = YOLO_VERSION_8
 ):
     """
     Loops through cross_validation training and inferences data in the configured
@@ -334,22 +339,33 @@ def classification_metrics_for_cross_validation_set(
     from yo_ratchet.workflow import K_FOLDS, CONF_PCNT  # To prevent circular references
     if n_folds is None:
         n_folds = K_FOLDS
+    if conf is None:
+        conf = CONF_PCNT
 
     _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
         base_dir=base_dir
     )
     classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
-    f1_scores = []
-    confidences = []
+    list_f1_scores = []
+    list_confidences = []
     for i in range(n_folds):
         dataset_label = f"{dataset_prefix}.{str(i + 1)}"
-        (
-            inferences_path,
-            detect_images_root,
-            ground_truth_path,
-        ) = get_paths_for_cross_validation_part(
-            base_dir=base_dir, dataset_label=dataset_label, conf_pcnt=CONF_PCNT
-        )
+        if yolo_version == YOLO_VERSION_5:
+            (
+                inferences_path,
+                detect_images_root,
+                ground_truth_path,
+            ) = get_paths_for_cross_validation_part_yolov5(
+                yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=conf
+            )
+        else:
+            (
+                inferences_path,
+                detect_images_root,
+                ground_truth_path,
+            ) = get_paths_for_cross_validation_part(
+                base_dir=base_dir, dataset_label=dataset_label, conf_pcnt=conf
+            )
         if print_table:
             print(f"\nDataset: {dataset_label}")
         df = optimise_analyse_model_binary_metrics(
@@ -360,20 +376,22 @@ def classification_metrics_for_cross_validation_set(
             dst_csv=None,
             print_table=print_table,
         )
+        f1_scores = df.loc[[F1]]
+        confidences = df.loc[["@conf"]]
+        list_f1_scores.append(f1_scores)
+        list_confidences.append(confidences)
+        if not print_table:  # i.e. save results
+            optimise_binary_and_get_group_classification_performance(
+                images_root=detect_images_root,
+                root_ground_truths=ground_truth_path,
+                root_inferred_bounding_boxes=inferences_path,
+                classes_map=classes_map,
+                groupings=groupings,
+                base_dir=base_dir,
+            )
 
-        f1_scores.append(df.loc[[F1]])
-        confidences.append(df.loc[["@conf"]])
-        optimise_binary_and_get_group_classification_performance(
-            images_root=detect_images_root,
-            root_ground_truths=ground_truth_path,
-            root_inferred_bounding_boxes=inferences_path,
-            classes_map=classes_map,
-            groupings=groupings,
-            base_dir=base_dir,
-        )
-
-    df = pandas.concat(f1_scores, axis=0, ignore_index=True).astype(float)
-    df_conf = pandas.concat(confidences, axis=0, ignore_index=True).astype(float)
+    df = pandas.concat(list_f1_scores, axis=0, ignore_index=True).astype(float)
+    df_conf = pandas.concat(list_confidences, axis=0, ignore_index=True).astype(float)
 
     new_df = pandas.DataFrame()
     new_df[F1] = f1_mean = df.mean(axis=0)
@@ -406,6 +424,7 @@ def classification_metrics_for_cross_validation_set(
             classes_map=classes_map,
             groupings=groupings,
             optimised_thresholds=conf_thresholds,
+            yolo_version=yolo_version
         )
         tbl_str += "\n"
         tbl_str += tabulate(
@@ -415,37 +434,52 @@ def classification_metrics_for_cross_validation_set(
             tablefmt="pretty",
             floatfmt=".2f",
         )
-    output_file = f"{dataset_prefix}_classification_f1_summary.txt"
-    save_output_to_text_file(
-        content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True
-    )
+    if not print_table:
+        output_file = f"{dataset_prefix}_classification_f1_summary.txt"
+        save_output_to_text_file(
+            content=tbl_str, base_dir=base_dir, file_name=output_file, commit=True
+        )
+    return new_df
 
 
 def get_average_group_metrics_for_cv_set(
     dataset_prefix: str,
-    base_dir: str,
+    base_dir: Path,
     k_folds: int,
     conf_pcnt: int,
     classes_map: Dict[int, str],
     groupings: Dict[str, List[int]],
     optimised_thresholds: Dict[int, float],
+    yolo_version: str = YOLO_VERSION_8
 ) -> pandas.DataFrame:
     f1_scores = []
     precision_scores = []
     recall_scores = []
     for i in range(k_folds):
         dataset_label = f"{dataset_prefix}.{str(i + 1)}"
-        (
-            inferences_path,
-            images_path,
-            ground_truths_path,
-        ) = get_paths_for_cross_validation_part(
-            base_dir=base_dir, dataset_label=dataset_label, conf_pcnt=conf_pcnt
-        )
+        if yolo_version == YOLO_VERSION_5:
+            _, yolo_root, _, _, _, dataset_root, classes_json_path = get_config_items(
+                base_dir=base_dir
+            )
+            (
+                inferences_root,
+                detect_images_root,
+                ground_truths_root,
+            ) = get_paths_for_cross_validation_part_yolov5(
+                yolo_root=yolo_root, dataset_label=dataset_label, conf_pcnt=conf_pcnt
+            )
+        else:
+            (
+                inferences_root,
+                detect_images_root,
+                ground_truths_root,
+            ) = get_paths_for_cross_validation_part(
+                base_dir=base_dir, dataset_label=dataset_label, conf_pcnt=conf_pcnt
+            )
         df = get_groups_classification_metrics(
-            images_root=images_path,
-            root_ground_truths=ground_truths_path,
-            root_inferred_bounding_boxes=inferences_path,
+            images_root=detect_images_root,
+            root_ground_truths=ground_truths_root,
+            root_inferred_bounding_boxes=inferences_root,
             classes_map=classes_map,
             groupings=groupings,
             optimised_thresholds=optimised_thresholds,
@@ -454,6 +488,7 @@ def get_average_group_metrics_for_cv_set(
         f1_scores.append(df.loc[[F1]])
         precision_scores.append(df.loc[[PRECISION]])
         recall_scores.append(df.loc[[RECALL]])
+
     precision_series = (
         pandas.concat(precision_scores, axis=0, ignore_index=True)
         .astype(float)
@@ -477,19 +512,15 @@ def get_average_group_metrics_for_cv_set(
 
 
 def get_paths_for_cross_validation_part(
-    base_dir: str, dataset_label: str, conf_pcnt: int
+    base_dir: Path, dataset_label: str, conf_pcnt: int
 ) -> Tuple[Path, Path, Path]:
     """
     Using conventions, provides Pathlib paths to the root of the inference annotations files,
     the root of the image paths and the root of the ground truth annotation files.
     """
-    inferences_path = Path(
-        f"{base_dir}/.predict/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels"
-    ).resolve()
-    detect_images_root = Path(f"{base_dir}/.datasets/{dataset_label}/val").resolve()
-    ground_truth_path = Path(
-        f"{base_dir}/.datasets/{dataset_label}/val/labels"
-    ).resolve()
+    inferences_path = (base_dir / f".predict/{dataset_label}_val__{dataset_label}_conf{conf_pcnt}pcnt/labels").resolve()
+    detect_images_root = (base_dir / f".datasets/{dataset_label}/val").resolve()
+    ground_truth_path = (base_dir / f".datasets/{dataset_label}/val/labels").resolve()
 
     assert inferences_path.exists(), "Inferences path does not exist at: " + str(inferences_path)
     assert len(list(inferences_path.glob("*.txt"))) > 0, "No text files in inferences root: " + str(inferences_path)

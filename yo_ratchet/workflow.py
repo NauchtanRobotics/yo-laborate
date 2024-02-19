@@ -26,10 +26,13 @@ from yo_ratchet.yo_wrangle.common import (
 from yo_ratchet.modelling import (
     run_detections,
     prepare_dataset_and_train,
+    prepare_dataset_and_train_yolov5,
+    run_detections_yolov5,
 )
 from yo_ratchet.yo_valuate.as_classification import (
     optimise_binary_and_get_group_classification_performance,
     classification_metrics_for_cross_validation_set,
+    YOLO_VERSION_5,
 )
 
 K_FOLDS = 6
@@ -243,7 +246,6 @@ def cross_validation_combinations_training(
         inferences_path = base_dir / f"runs/detect/{run_name}/labels"
         val_inferences_roots.append(inferences_path.resolve())
 
-
     classification_metrics_for_cross_validation_set(
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
@@ -284,7 +286,7 @@ def cross_validation_combinations_training_yolov5(
         dataset_label = get_dataset_label_from_version(base_dir=base_dir)
         dst_root = Path(YOLO_ROOT) / f"datasets/{dataset_label}"
 
-        prepare_dataset_and_train(
+        prepare_dataset_and_train_yolov5(
             classes_map=CLASSES_MAP,
             subsets_included=SUBSETS_INCLUDED,
             dst_root=dst_root,
@@ -310,7 +312,7 @@ def cross_validation_combinations_training_yolov5(
         test_set_str = "val"
         test_set_part_label = f"{dataset_label}_{test_set_str}"
 
-        run_name = run_detections(
+        run_name = run_detections_yolov5(
             images_path=detect_images_root,
             dataset_version=test_set_part_label,
             model_path=Path(f"{YOLO_ROOT}/runs/train/{dataset_label}/weights/best.pt"),
@@ -327,7 +329,8 @@ def cross_validation_combinations_training_yolov5(
         dataset_prefix=fiftyone_dataset_label,
         base_dir=base_dir,
         groupings=GROUPINGS,
-        n_folds=k_folds
+        n_folds=k_folds,
+        yolo_version=YOLO_VERSION_5
     )
     if init_fiftyone:
         init_fifty_one_dataset_for_cross_validation_combinations(
