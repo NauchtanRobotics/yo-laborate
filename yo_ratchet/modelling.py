@@ -77,10 +77,18 @@ def prepare_dataset_and_train(
         file_name=file_name,
         commit=False,
     )
+    train_images_dir = dst_root / "train/images"
+    assert train_images_dir.exists()
+    assert len(list(train_images_dir.glob("*.jpg"))) > 0
+
+    val_images_dir = dst_root / "val/images"
+    assert val_images_dir.exists()
+    assert len(list(val_images_dir.glob("*.jpg"))) > 0
 
     class_names = [classes_map[class_id] for class_id in class_ids]
-    yaml_text = f"""train: {str(dst_root)}/train/images/
-val: {str(dst_root)}/val/images/
+
+    yaml_text = f"""train: {str(train_images_dir)}
+val: {str(val_images_dir)}
 nc: {len(class_ids)}
 names: {class_names}"""
 
