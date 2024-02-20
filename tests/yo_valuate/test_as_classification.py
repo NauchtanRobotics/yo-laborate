@@ -57,11 +57,13 @@ def test_classification_metrics_for_cross_validation_set_for_yolo_v5():
     df = classification_metrics_for_cross_validation_set(
         base_dir=base_dir,
         dataset_prefix="srd40.2",
-        print_table=True,
+        print_table=False,
         groupings={
-            "Risk Defects": [3, 4],
+            "Risk Defects inc Sh": [3, 4, 17, 22],
+            "Potholes Big/Small": [3, 18],
             "Simple Cracking": [0, 1],
-            "All Cracking": [0, 1, 2, 16],
+            "Any Cracking": [0, 1, 2, 11, 14, 16],
+            "Stripping": [12, 17, 18, 19, 20, 33],
         },
         n_folds=6,
         conf=5,
