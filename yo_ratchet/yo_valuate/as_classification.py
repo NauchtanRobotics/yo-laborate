@@ -2,6 +2,7 @@ import json
 
 import numpy
 import pandas
+from sklearn.metrics import precision_recall_fscore_support
 from tabulate import tabulate
 from typing import Optional, List, Dict, Tuple
 from sklearn import metrics as skm
@@ -150,32 +151,15 @@ def _get_classification_metrics_for_group(
         group_inferences = numpy.logical_or(group_inferences, re_inferences)
 
     labels = None
-    precision = skm.precision_score(
+    precision, recall, f1, true_sum = precision_recall_fscore_support(
         y_true=group_truths,
         y_pred=group_inferences,
         labels=labels,
         pos_label=1,
         average="binary",
+        warn_for=(),
         sample_weight=None,
-        zero_division="warn",
-    )
-    recall = skm.recall_score(
-        y_true=group_truths,
-        y_pred=group_inferences,
-        labels=labels,
-        pos_label=1,
-        average="binary",
-        sample_weight=None,
-        zero_division="warn",
-    )
-    f1 = skm.f1_score(
-        y_true=group_truths,
-        y_pred=group_inferences,
-        labels=labels,
-        pos_label=1,
-        average="binary",
-        sample_weight=None,
-        zero_division="warn",
+        zero_division=0.0,
     )
     accuracy = skm.accuracy_score(
         y_true=group_truths,
@@ -660,32 +644,15 @@ def _optimise_analyse_model_binary_metrics(
             cond = confidences >= conf
             re_inferences = inferences & cond
             labels = None
-            p = skm.precision_score(
+            p, r, f, true_sum = precision_recall_fscore_support(
                 y_true=truths,
                 y_pred=re_inferences,
                 labels=labels,
                 pos_label=1,
                 average="binary",
+                warn_for=(),
                 sample_weight=None,
-                zero_division="warn",
-            )
-            r = skm.recall_score(
-                y_true=truths,
-                y_pred=re_inferences,
-                labels=labels,
-                pos_label=1,
-                average="binary",
-                sample_weight=None,
-                zero_division="warn",
-            )
-            f = skm.f1_score(
-                y_true=truths,
-                y_pred=re_inferences,
-                labels=labels,
-                pos_label=1,
-                average="binary",
-                sample_weight=None,
-                zero_division="warn",
+                zero_division=0.0,
             )
             if f > f1:
                 recall = r
@@ -700,4 +667,6 @@ def _optimise_analyse_model_binary_metrics(
             "F1": "{:.2f}".format(f1),
             "@conf": "{:.2f}".format(optimum_conf),
         }
+    # next loop
+
     return results
