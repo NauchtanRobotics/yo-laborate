@@ -97,7 +97,14 @@ def launch_open_labeling_folder_browser():
     launcher.main(args=args)
 
 
-def get_labels_and_paths_tuple(dataset_label: str, reverse_it: bool = False):
+def get_validation_paths_tuple(dataset_label: str, reverse_it: bool = False):
+    """
+    Take care - assumes dst_root = Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
+
+    :param dataset_label:
+    :param reverse_it:
+    :return:
+    """
     if reverse_it:
         test_set_str = "train"
         model_label = f"{dataset_label}_reverse"
@@ -139,12 +146,13 @@ def run_prepare_dataset_and_train(
         epochs=epochs,
     )
     detect_images_root = DST_ROOT / "val" / "images"
-    (
+    (  # fxn assumes dataset located at Path(YOLO_ROOT) / f"datasets/{workbook_ptr.DATASET_LABEL}"
         model_label,
         test_set_part_label,
         ground_truth_path,
         inferences_path,
-    ) = get_labels_and_paths_tuple(dataset_label=DATASET_LABEL, reverse_it=False)
+    ) = get_validation_paths_tuple(dataset_label=DATASET_LABEL, reverse_it=False)
+
     run_detections(
         images_path=detect_images_root,
         dataset_version=test_set_part_label,
@@ -180,6 +188,80 @@ def run_prepare_dataset_and_train(
         dataset_label=DATASET_LABEL,
         base_dir=BASE_DIR,
         description="Post-training artifacts.",
+    )
+
+
+def run_prepare_dataset_and_train_yolov5(
+    run_training=True,
+    init_fiftyone=True,
+    cross_validation_index: int = 0,
+    every_n_th: Optional[int] = None,
+    fine_tune_epochs: Optional[int] = 5,
+    epochs: Optional[int] = 300,
+):
+    if every_n_th is None:
+        every_n_th = EVERY_NTH_TO_VAL
+    else:
+        pass  # Use the new parameter
+    prepare_dataset_and_train_yolov5(
+        classes_map=CLASSES_MAP,
+        subsets_included=SUBSETS_INCLUDED,
+        dst_root=DST_ROOT,
+        every_n_th=every_n_th,
+        keep_class_ids=KEEP_CLASS_IDS,
+        skip_class_ids=SKIP_CLASS_IDS,
+        base_dir=BASE_DIR,
+        run_training=run_training,
+        recode_map=RECODE_MAP,
+        cross_validation_index=cross_validation_index,
+        fine_tune_patience=fine_tune_epochs,
+        epochs=epochs,
+    )
+
+    detect_images_root = DST_ROOT / "val" / "images"
+    (
+        model_label,
+        test_set_part_label,
+        ground_truth_path,
+        inferences_path,
+    ) = get_validation_paths_tuple(dataset_label=DATASET_LABEL, reverse_it=False)
+
+    run_detections_yolov5(
+        images_path=detect_images_root,
+        dataset_version=test_set_part_label,
+        model_path=Path(f"{YOLO_ROOT}/runs/train/{model_label}/weights/best.pt"),
+        model_version=model_label,
+        base_dir=BASE_DIR,
+        conf_thres=CONF,
+        device=0,
+    )
+
+    optimise_binary_and_get_group_classification_performance(
+        images_root=detect_images_root,
+        root_ground_truths=ground_truth_path,
+        root_inferred_bounding_boxes=inferences_path,
+        classes_map=CLASSES_MAP,
+        print_first_n=None,
+        groupings=GROUPINGS,
+        base_dir=BASE_DIR,
+    )
+
+    if init_fiftyone:
+        delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
+        init_fifty_one_dataset(
+            dataset_label=DATASET_LABEL,
+            classes_map=CLASSES_MAP,
+            train_inferences_root=None,
+            val_inferences_root=inferences_path,
+            dataset_root=DATASET_ROOT,
+            images_root=None,  # Use dataset_root approach
+            ground_truths_root=None,  # Use dataset_root approach
+            export_to_json=True,
+        )
+    commit_and_push(
+        dataset_label=DATASET_LABEL,
+        base_dir=BASE_DIR,
+        description="Post-training artifacts."
     )
 
 
@@ -252,6 +334,7 @@ def cross_validation_combinations_training(
         groupings=GROUPINGS,
         n_folds=n_folds  # only have this many trained models to assess, regardless of k_folds splits.
     )
+
     if init_fiftyone:
         init_fifty_one_dataset_for_cross_validation_combinations(
             dataset_label=fiftyone_dataset_label,
@@ -261,6 +344,7 @@ def cross_validation_combinations_training(
             candidate_subset=None,
             export_to_json=True,
         )
+
     commit_and_push(
         dataset_label=fiftyone_dataset_label,
         base_dir=base_dir,
@@ -351,7 +435,7 @@ def cross_validation_combinations_training_yolov5(
 def test_init_fiftyone_ds(candidate_subset: Path = None):
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
     delete_fiftyone_dataset(dataset_label=DATASET_LABEL)
-    (_, _, _, val_inferences_root) = get_labels_and_paths_tuple(
+    (_, _, _, val_inferences_root) = get_validation_paths_tuple(
         dataset_label=DATASET_LABEL, reverse_it=False
     )
     init_fifty_one_dataset(
