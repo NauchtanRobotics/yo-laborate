@@ -28,6 +28,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from yo_ratchet.yo_wrangle.common import get_classes_json_path, get_id_to_label_map
+from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets
 from yo_ratchet.yo_wrangle.wrangle import (
     copy_images_recursive_inc_yolo_annotations_by_reference_dir,
     subsample_a_directory,
@@ -116,141 +118,13 @@ def test_copy_recursive_by_reference_then_subsample():
 def test_collate_image_and_annotation_subsets():
     keep_class_ids = None  # None actually means keep all classes
     skip_class_ids = [13, 14, 15, 22]
-    every_n_th = 5  # for the validation subset
+    every_n_th = 4  # for the validation subset
     dst_root = Path(
-        "/home/david/RACAS/boosted/600_x_600/unmasked/bbox_collation_9a"
+        "/home/david/production/test/split_cabonne"
     )
+    srd_root = Path("/home/david/production/sealed_roads_dataset")
     samples_required = [
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Caboone_10pcnt_AP_LO_LG_WS"
-            ),
-            313,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Caboone_40pcnt_D10_D20_D40_EB"
-            ),
-            415,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/CentralCoast_10pcnt_L0_LG_WS"
-            ),
-            475,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/CentralCoast_25pcnt_AP_D10_D20"
-            ),
-            626,
-        ),
-        (
-            Path("/home/david/RACAS/boosted/600_x_600/unmasked/CentralCoast_35pct_EB"),
-            87,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Gladstone_2020_sample_1"
-            ),
-            621,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Gladstone_2020_sample_2"
-            ),
-            503,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Gladstone_2020_sample_3"
-            ),
-            163,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Huon_2021_sample_1"
-            ),
-            398,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Isaac_2021_sample_1"
-            ),
-            579,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Isaac_2021_sample_2"
-            ),
-            525,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Maranoa_2020_sample_1"
-            ),
-            175,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Maranoa_2020_sample_2"
-            ),
-            502,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Moira_2020_sample_1"
-            ),
-            670,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_WDRC_2021_sample_1"
-            ),
-            504,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Maranoa_2020_sample_val"
-            ),
-            175,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Moira_2020_sample_val"
-            ),
-            670,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Hobart_2021_sample"
-            ),
-            492,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/YOLO_Isaac_2021_pothole_sample_val"
-            ),
-            580,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Weddin_2019_samples"
-            ),
-            None,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Whitsunday_2018_samples"
-            ),
-            None,
-        ),
-        (
-            Path(
-                "/home/david/RACAS/boosted/600_x_600/unmasked/Train_Charters_Towers_2021_subsample"
-            ),
-            None,
-        ),
+        (srd_root / "Cabonne_2020"),
     ]
     temp_dir = tempfile.mkdtemp()
     collate_image_and_annotation_subsets(
@@ -263,8 +137,22 @@ def test_collate_image_and_annotation_subsets():
         src_images_root=Path(temp_dir),
         dst_dataset_root=dst_root,
         every_n_th=every_n_th,
+        cross_validation_index=3
     )
     shutil.rmtree(temp_dir)
+    final_subsets_included = [
+        (dst_root / "train"),
+        (dst_root / "val"),
+    ]
+    classes_json_path = get_classes_json_path(base_dir=srd_root)
+    classes_map = get_id_to_label_map(Path(f"{classes_json_path}").resolve())
+    class_ids = [int(class_id) for class_id in classes_map.keys()]
+    print("\n")
+    count_class_instances_in_datasets(
+        data_samples=final_subsets_included,
+        class_ids=class_ids,
+        class_id_to_name_map=classes_map,
+    )
 
 
 def test_prepare_unique_dataset_from_detections():

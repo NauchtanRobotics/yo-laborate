@@ -348,22 +348,21 @@ def split_yolo_train_dataset_every_nth(
     dst_val_images_root.mkdir()
     dst_val_labels_root = dst_val_root / "labels"
     dst_val_labels_root.mkdir()
-
-    for i, image_path in enumerate(get_all_jpg_recursive(img_root=src_images_root)):
-        if i < cross_validation_index:
-            continue
-        src_annotations_file = (
-            src_images_root / YOLO_ANNOTATIONS_FOLDER_NAME / f"{image_path.stem}.txt"
-        )
-
-        if (i - cross_validation_index) % every_n_th != 0:
-            dst = dst_train_root
-        else:
+    image_paths = sorted(list(get_all_jpg_recursive(img_root=src_images_root)))
+    num_images = len(image_paths)
+    for i, image_path in enumerate(image_paths):
+        this_index = int((i/num_images) * every_n_th)
+        # still causes contamination between training runs if data is inserted into the existing date (filename) range
+        if this_index == cross_validation_index:
             dst = dst_val_root
-
+        else:
+            dst = dst_train_root
         dst_image_path = dst / "images" / image_path.name
         shutil.copy(src=str(image_path), dst=str(dst_image_path))
 
+        src_annotations_file = (
+            src_images_root / YOLO_ANNOTATIONS_FOLDER_NAME / f"{image_path.stem}.txt"
+        )
         dst_annotations_file = dst / "labels" / src_annotations_file.name
         if src_annotations_file.exists():
             shutil.copy(src=str(src_annotations_file), dst=str(dst_annotations_file))
