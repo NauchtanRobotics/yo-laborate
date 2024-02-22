@@ -15,8 +15,8 @@ from yo_ratchet.yo_wrangle.stats import count_class_instances_in_datasets, count
 from yo_ratchet.yo_wrangle.wrangle import collate_and_split
 
 EPOCHS = 325
-DETECT_IMAGE_SIZE = 800
-TRAIN_IMAGE_SIZE = 640
+DETECT_IMAGE_SIZE = 1024
+TRAIN_IMAGE_SIZE = 800
 IOU_THRES = 0.45
 
 
