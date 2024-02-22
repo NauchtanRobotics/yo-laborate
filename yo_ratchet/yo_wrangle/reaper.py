@@ -92,11 +92,11 @@ def harvest_training_data_from_images_in_the_cloud(
     )
 
 
-JSON_CREDENTIALS_PATH = Path(__file__).parent.parent.parent / "GOOGLE_APPLICATION_CREDENTIALS.json"
+JSON_CREDENTIALS_PATH = Path("/home/david/production/sealed_roads_dataset/SHEPHERD_TEAM_ONLY.json")
 
 
 def test_harvest_training_data_from_images_in_the_cloud():
-    bucket_name = "example_bucket"
+    bucket_name = "racas_ai"
     model_version = "tsd8.1"
     base_dir = Path("/home/david/example_dataset")  # inferred_base_dir()
     archive_root = Path("/media/david/Samsung_T8/archive_original_format_2023")
