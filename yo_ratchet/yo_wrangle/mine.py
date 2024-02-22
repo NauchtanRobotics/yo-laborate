@@ -6,11 +6,14 @@ from tempfile import mkstemp
 from typing import Optional, List, Tuple, Set
 
 from yo_ratchet.yo_filter.filters import get_classes_info, get_lower_probability_thresholds
-from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME
-from yo_ratchet.yo_wrangle.wrangle import _get_hits_for_annotations_in_classes
+from yo_ratchet.yo_wrangle.common import YOLO_ANNOTATIONS_FOLDER_NAME, get_subsets_included
+from yo_ratchet.yo_wrangle.gcs_interface import download_training_data_for_a_subset_from_a_single_yolo_file
+from yo_ratchet.yo_wrangle.wrangle import _get_hits_for_annotations_in_classes, delete_redundant_samples, \
+    cleanup_excess_annotations
 from yo_ratchet.yo_wrangle.aggregated_annotations import (
     filter_and_aggregate_annotations,
-    copy_training_data_listed_in_aggregated_annotations_file, copy_training_data_listed_in_aggregated_annotations_df,
+    copy_training_data_listed_in_aggregated_annotations_file,
+    copy_training_data_listed_in_aggregated_annotations_df,
 )
 from yo_ratchet.yo_filter.unsupervised import (
     OutlierParams,
@@ -25,6 +28,7 @@ See the 'reaper' module for higher level functions that possibly download images
 run detections before calling filtering functions in this module.
 
 """
+
 
 def extract_high_confidence_training_data(
     src_folder: Path,
@@ -683,6 +687,54 @@ def yolo_data_from_unedited_images(yolo_file: Path, exclusion_list: List[str]) -
     return filtered_detections
 
 
-def test_join_multiple_yolo_files_without_duplication_or_overwrite():
-    src_dir = Path(r"C:\Users\61419\Downloads\Isaac AI")
-    join_multiple_yolo_files_without_duplication_or_overwrite(src_dir=src_dir, include_unedited=True)
+def download_images_and_prepare_unique_training_data(
+    storage_client,
+    yolo_file: Path,
+    bucket_name: str,
+    images_prefix: str,
+    download_dst: Path,
+    final_dst: Path
+):
+    """
+    This is a bit slow because it downloads all images in yolo file, not just the images
+    which correspond to confirmed or denied bounding boxes.
+
+    First downloads all images referenced in a yolo file, then prepares a folder of
+    unique images and their corresponding text files containing annotations.
+
+    The location of existing training data subsets is inferred from final_dst.
+    To ensure that only unique images are added to your training data set, make sure that
+    final_dst is a path to be created within your training data repository.
+
+    """
+    assert yolo_file.exists()
+    assert not final_dst.exists(), "Final destination must not already exist for uniqueness. Merge afterwards."
+    download_training_data_for_a_subset_from_a_single_yolo_file(
+        bucket_name=bucket_name,
+        storage_client=storage_client,
+        yolo_file=yolo_file,
+        dst_folder=download_dst,
+        images_prefix=images_prefix
+    )
+
+    assert download_dst.exists()
+    len_images = len(list(download_dst.rglob("*.jpg")))
+    assert len_images > 0
+
+    base_dir = final_dst.parent
+    other_sample_folders = get_subsets_included(base_dir=base_dir)  # do prior to adding final_dst
+    for folder in other_sample_folders:
+        cleanup_excess_annotations(subset_folder=folder)
+
+    prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file(
+        images_archive_dir=download_dst,
+        yolo_file=yolo_file,
+        dst_images_dir=final_dst,
+        copy_all_src_images=False,
+        move=True  # Do dry run before changing this parameter to True
+    )
+
+    delete_redundant_samples(
+        sample_folder_to_clean=final_dst,
+        other_sample_folders=other_sample_folders,
+    )
