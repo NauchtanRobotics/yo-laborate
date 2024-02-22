@@ -452,6 +452,7 @@ def delete_redundant_samples(
             image_path.unlink()
         else:
             unique_images.append(image_name)
+    cleanup_excess_annotations(subset_folder=sample_folder_to_clean)
 
 
 def prepare_unique_dataset_from_detections(
