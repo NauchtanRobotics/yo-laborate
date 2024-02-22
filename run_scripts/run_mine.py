@@ -1,7 +1,10 @@
 from pathlib import Path
 
-from yo_ratchet.yo_wrangle.mine import prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file, \
-    prepare_training_data_subset_from_reviewed_yolo_file
+from yo_ratchet.yo_wrangle.mine import (
+    prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file,
+    prepare_training_data_subset_from_reviewed_yolo_file,
+    join_multiple_yolo_files_without_duplication_or_overwrite
+)
 
 
 def test_prepare_training_data_for_confirmed_or_denied_boxes_in_yolo_file():
@@ -60,3 +63,8 @@ def test_prepare_training_data_subset_from_reviewed_yolo_file():
         move=False,  # Do dry run before changing this parameter to True
         probability_thresh_coefficient=0.0001  # include all bounding boxes that were not denied
     )
+
+
+def test_join_multiple_yolo_files_without_duplication_or_overwrite():
+    src_dir = Path(r"C:\Users\61419\Downloads\Isaac AI")
+    join_multiple_yolo_files_without_duplication_or_overwrite(src_dir=src_dir, include_unedited=True)
