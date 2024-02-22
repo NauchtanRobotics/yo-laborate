@@ -24,7 +24,7 @@ from yo_ratchet.yo_wrangle.common import (
     get_subsets_included,
 )
 from yo_ratchet.modelling import (
-    run_detections,
+    run_detections_yolov8,
     prepare_dataset_and_train,
     prepare_dataset_and_train_yolov5,
     run_detections_yolov5,
@@ -153,7 +153,7 @@ def run_prepare_dataset_and_train(
         inferences_path,
     ) = get_validation_paths_tuple(dataset_label=DATASET_LABEL, reverse_it=False)
 
-    run_detections(
+    run_detections_yolov8(
         images_path=detect_images_root,
         dataset_version=test_set_part_label,
         model_path=Path(f"{YOLO_ROOT}/runs/train/{model_label}/weights/best.pt"),
@@ -315,7 +315,7 @@ def cross_validation_combinations_training(
         test_set_str = "val"
         test_set_part_label = f"{dataset_label}_{test_set_str}"
 
-        run_name = run_detections(
+        run_name = run_detections_yolov8(
             images_path=detect_images_root,
             dataset_version=test_set_part_label,
             model_path=model_path,

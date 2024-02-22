@@ -3,7 +3,7 @@ from typing import Optional
 
 from google.cloud import storage
 
-from yo_ratchet.modelling import run_detection_return_inferences_root
+from yo_ratchet.modelling import run_detection_return_inferences_root_yolov8
 from yo_ratchet.yo_wrangle.common import get_config_items, get_id_to_label_map, inferred_base_dir, get_yolo_detect_paths
 from yo_ratchet.yo_wrangle.gcs_interface import download_all_blobs_in_bucket
 from yo_ratchet.yo_wrangle.mine import extract_high_quality_training_data_from_raw_detections
@@ -51,7 +51,7 @@ def harvest_training_data_from_images_in_the_cloud(
 
     model_label = model_path.parent.parent.name
 
-    inferences_root = run_detection_return_inferences_root(
+    inferences_root = run_detection_return_inferences_root_yolov8(
         images_root=dst_archive,
         results_folder_name=results_folder_name,
         model_path=model_path,

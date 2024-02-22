@@ -5,6 +5,7 @@ from typing import Optional, List, Dict
 from ultralytics import YOLO
 
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
+from yo_ratchet.yo_valuate.as_classification import YOLO_VERSION_5, YOLO_VERSION_8
 from yo_ratchet.yo_wrangle.common import (
     get_config_items,
     save_output_to_text_file,
@@ -261,7 +262,7 @@ names: {class_names}"""
         )
 
 
-def run_detections(
+def run_detections_yolov8(
     images_path: Path,
     dataset_version: str,
     model_path: Path,
@@ -333,7 +334,7 @@ def run_detections_yolov5(
     return results_name
 
 
-def run_detection_return_inferences_root(
+def run_detection_return_inferences_root_yolov8(
     images_root: Path,
     results_folder_name: str,
     model_path: Path,
@@ -343,7 +344,7 @@ def run_detection_return_inferences_root(
     device: int = 1,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
 ):
-    detect_folder_name = run_detections(
+    detect_folder_name = run_detections_yolov8(
         images_path=images_root,
         dataset_version=results_folder_name,
         model_path=model_path,
@@ -360,7 +361,7 @@ def run_detection_return_inferences_root(
     return inferences_root
 
 
-def run_detections_using_cv_ensemble(
+def run_detections_using_cv_ensemble_yolov5(
     images_path: Path,
     detection_dataset_name: str,
     model_version: Optional[str],
@@ -429,11 +430,11 @@ def run_detections_using_cv_ensemble(
     return results_name
 
 
-def run_detections_using_cv_ensemble_given_paths(
+def run_detections_using_cv_ensemble_given_paths_yolov5(
     images_path: Path,
     detection_dataset_name: str,
     model_version: str,  # e.g. srd26.0
-    k_folds: int,  # How many folder were used when cv modeling for <model_version>?
+    n_ensemble: int,  # How many models to ensemble when making prediction
     python_path: Path,
     yolo_root: Path,
     conf_thres: float = 0.1,
@@ -462,7 +463,7 @@ def run_detections_using_cv_ensemble_given_paths(
         pass  # model_version must also be provided - used to label results folder.
     elif model_version is not None:
         model_paths = get_paths_to_weights(
-            yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+            yolo_root=yolo_root, n_ensemble=n_ensemble, model_version=model_version
         )
         explicit_model_paths = [str(model_path) for model_path in model_paths if Path(model_path).exists()]
     elif explicit_model_paths is None and model_version is None:
@@ -497,7 +498,7 @@ def run_detections_using_cv_ensemble_given_paths(
 
 
 def get_paths_to_weights(
-    yolo_root: Path, k_folds: int, model_version: str
+    yolo_root: Path, n_ensemble: int, model_version: str, yolo_version: str
 ) -> List[str]:
     """
     Intelligently infers whether this is truely a K-Folds CV model, or just  a
@@ -510,10 +511,15 @@ def get_paths_to_weights(
     found.
 
     """
-    models_root = yolo_root / "runs" / "train"
+    if yolo_version == YOLO_VERSION_5:
+        models_root = yolo_root / "runs" / "train"
+    elif yolo_version == YOLO_VERSION_8:
+        models_root = yolo_root / "runs" / ".train"
+    else:
+        raise NotImplementedError("Please choose from yolov5 and yolov8")
     model_paths = [
         models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
-        for i in range(k_folds)
+        for i in range(n_ensemble)
     ]
 
     model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
@@ -528,9 +534,9 @@ def get_paths_to_weights(
 
 def test_get_paths_to_weights():
     yolo_root = Path("/home/david/addn_repos/yolov5")
-    k_folds = 6
+    n_folds = 6
     model_version = "srd31.1"
     model_paths = get_paths_to_weights(
-        yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+        yolo_root=yolo_root, n_ensemble=n_folds, model_version=model_version
     )
     print(model_paths)
