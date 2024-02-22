@@ -197,6 +197,8 @@ def run_prepare_dataset_and_train_yolov5(
     cross_validation_index: int = 0,
     every_n_th: Optional[int] = None,
     fine_tune_epochs: Optional[int] = 5,
+    train_size: int = 800,
+    val_size: int = 1024,
     epochs: Optional[int] = 300,
 ):
     if every_n_th is None:
@@ -215,6 +217,7 @@ def run_prepare_dataset_and_train_yolov5(
         recode_map=RECODE_MAP,
         cross_validation_index=cross_validation_index,
         fine_tune_patience=fine_tune_epochs,
+        img_size=train_size,
         epochs=epochs,
     )
 
@@ -233,6 +236,7 @@ def run_prepare_dataset_and_train_yolov5(
         model_version=model_label,
         base_dir=BASE_DIR,
         conf_thres=CONF,
+        img_size=val_size,
         device=0,
     )
 
