@@ -608,7 +608,7 @@ def _infer_annotations_folder_path(subset_folder: Path):
     return annotations_root
 
 
-def cleanup_excess_annotations(subset_folder: Path):
+def cleanup_excess_annotations(subset_folder: Path, verbose: bool = True):
     """
     Removes any annotations file for which there is no matching image found
     in subset_folder.
@@ -623,7 +623,14 @@ def cleanup_excess_annotations(subset_folder: Path):
     """
     annotations_folder = _infer_annotations_folder_path(subset_folder=subset_folder)
     annotation_paths = get_all_txt_recursive(root_dir=annotations_folder)
+    count_unlinked = 0
     for annotation_path in annotation_paths:
         image_path = subset_folder / f"{annotation_path.stem}.jpg"
         if not image_path.exists():
             annotation_path.unlink()
+            count_unlinked += 1
+            if verbose:
+                print("Unlinking: " + str(annotation_path))
+
+    if verbose:
+        print("Total num annotations files unlinked: " + str(count_unlinked))
