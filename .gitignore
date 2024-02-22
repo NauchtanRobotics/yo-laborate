@@ -7,3 +7,4 @@ config.ini
 classes.json
 .results/*
 .performance/*
+GOOGLE_APPLICATION_CREDENTIALS.json
