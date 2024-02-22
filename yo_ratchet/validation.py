@@ -1,7 +1,11 @@
 from pathlib import Path
 from typing import Optional, Dict, List
 
-from yo_ratchet.modelling import run_detections, run_detections_using_cv_ensemble_given_paths, DETECT_IMAGE_SIZE
+from yo_ratchet.modelling import (
+    run_detections_yolov8,
+    run_detections_using_cv_ensemble_given_paths_yolov5,
+    DETECT_IMAGE_SIZE
+)
 from yo_ratchet.yo_valuate.as_classification import optimise_binary_and_get_group_classification_performance
 from yo_ratchet.yo_wrangle.common import get_config_items, get_id_to_label_map
 
@@ -32,7 +36,7 @@ def run_detections_without_filtering_then_validate(
         model_path = (yolo_root / "runs/train" / model_version / "weights/best.pt")
     assert model_path.exists()
 
-    detect_folder_name = run_detections(
+    detect_folder_name = run_detections_yolov8(
         images_path=detect_images_root,
         dataset_version=data_folder_name,
         model_path=model_path,
@@ -80,11 +84,11 @@ def run_ensemble_detections_without_filtering_then_validate(
     )
     yolo_root = Path(yolo_root)
     conf = 0.05
-    inferences_root_path = run_detections_using_cv_ensemble_given_paths(
+    inferences_root_path = run_detections_using_cv_ensemble_given_paths_yolov5(
         images_path=detect_images_root,
         model_version=model_version,
         detection_dataset_name=data_folder_name,
-        k_folds=3,
+        n_ensemble=3,
         python_path=Path(python_path),
         yolo_root=Path(yolo_root),
         conf_thres=conf,

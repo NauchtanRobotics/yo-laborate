@@ -2,8 +2,10 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Optional, List, Dict
+from ultralytics import YOLO
 
 from yo_ratchet.dataset_versioning.tag import get_path_for_best_pretrained_model
+from yo_ratchet.yo_valuate.as_classification import YOLO_VERSION_5, YOLO_VERSION_8
 from yo_ratchet.yo_wrangle.common import (
     get_config_items,
     save_output_to_text_file,
@@ -44,7 +46,123 @@ def prepare_dataset_and_train(
         class_id_to_name_map=classes_map,
     )
     test_data_root = base_dir / ".test_datasets"
-    if test_data_root.exists() and len(test_data_root.iterdir()) > 0:
+    if test_data_root.exists() and len(list(test_data_root.iterdir())) > 0:
+        output_str += "\n"
+        output_str += count_class_instances_in_test_datasets(base_dir=base_dir)
+
+    collate_and_split(
+        subsets_included=subsets_included,
+        dst_root=dst_root,
+        every_n_th=every_n_th,
+        keep_class_ids=keep_class_ids,
+        skip_class_ids=skip_class_ids,
+        recode_map=recode_map,
+        cross_validation_index=cross_validation_index,
+    )
+    """Add actual classes support after filtering"""
+    final_subsets_included = [
+        (dst_root / "train"),
+        (dst_root / "val"),
+    ]
+    output_str += "\n"
+    output_str += count_class_instances_in_datasets(
+        data_samples=final_subsets_included,
+        class_ids=class_ids,
+        class_id_to_name_map=classes_map,
+    )
+    model_instance = dst_root.name
+    file_name = f"{model_instance}_classes_support.txt"
+    save_output_to_text_file(
+        content=output_str,
+        base_dir=base_dir,
+        file_name=file_name,
+        commit=False,
+    )
+    train_images_dir = dst_root / "train/images"
+    assert train_images_dir.exists()
+    assert len(list(train_images_dir.glob("*.jpg"))) > 0
+
+    val_images_dir = dst_root / "val/images"
+    assert val_images_dir.exists()
+    assert len(list(val_images_dir.glob("*.jpg"))) > 0
+
+    class_names = [classes_map[class_id] for class_id in class_ids]
+
+    yaml_text = f"""train: {str(train_images_dir)}
+val: {str(val_images_dir)}
+nc: {len(class_ids)}
+names: {class_names}"""
+
+    """ Write dataset.yaml in DST folder."""
+    dst_dataset_path = dst_root / "dataset.yaml"
+    with open(f"{str(dst_dataset_path)}", "w") as f_out:
+        f_out.write(yaml_text)
+
+    (
+        python_path,
+        yolo_base_dir,
+        cfg_path,
+        _,
+        hyp_path,
+        _,
+        _,
+    ) = get_config_items(base_dir)
+    weights_path, fine_tune = get_path_for_best_pretrained_model(base_dir=base_dir)
+    if not fine_tune:
+        patience = 50
+    else:
+        patience = fine_tune_patience  # Just use the default param value
+
+    train_dir_name = ".train"
+    if run_training:
+        # TODO: Remove this override
+        weights_path = Path("/home/david/production/ultralytics/runs/detect/srd40.2.1_yolov8/weights/best.pt")
+        model = YOLO(weights_path)
+        model.train(
+            data=str(dst_dataset_path),
+            epochs=epochs,
+            warmup_epochs=0,
+            lr0=0.005,
+            project=train_dir_name,
+            name=model_instance,
+            cache=cache,
+            imgsz=img_size,
+            nbs=batch_size,  # 42 works on 800 x 800
+            workers=6,
+            device="0,1"
+        )
+
+    new_model_path = base_dir / train_dir_name / model_instance / "weights" / "best.pt"
+    return new_model_path
+
+
+def prepare_dataset_and_train_yolov5(
+    classes_map: Dict[int, str],
+    subsets_included: List[Path],
+    dst_root: Path,
+    every_n_th: int,
+    keep_class_ids: Optional[List[int]],
+    skip_class_ids: Optional[List[int]],
+    base_dir: Path,
+    recode_map: Optional[Dict[int, int]] = None,
+    run_training: bool = True,
+    cross_validation_index: int = 0,
+    fine_tune_patience: int = 5,
+    img_size: Optional[int] = TRAIN_IMAGE_SIZE,
+    epochs: Optional[int] = EPOCHS,
+    batch_size: Optional[int] = 62,
+    cache: Optional[str] = "ram",
+):
+    if epochs is None:
+        epochs = EPOCHS
+    class_ids = list(classes_map.keys())
+    output_str = count_class_instances_in_datasets(
+        data_samples=subsets_included,
+        class_ids=class_ids,
+        class_id_to_name_map=classes_map,
+    )
+    test_data_root = base_dir / ".test_datasets"
+    if test_data_root.exists() and len(list(test_data_root.iterdir())) > 0:
         output_str += "\n"
         output_str += count_class_instances_in_test_datasets(base_dir=base_dir)
 
@@ -144,7 +262,35 @@ names: {class_names}"""
         )
 
 
-def run_detections(
+def run_detections_yolov8(
+    images_path: Path,
+    dataset_version: str,
+    model_path: Path,
+    model_version: str,
+    base_dir: Path,
+    conf_thres: float = 0.1,
+    device: int = 1,
+    img_size: Optional[int] = DETECT_IMAGE_SIZE,
+):
+    results_name = f"{dataset_version}__{model_version}_conf{int(conf_thres * 100)}pcnt"
+    predictions_root = base_dir / ".predict"
+    model = YOLO(model_path, task="predict", verbose=False)
+    results = model.predict(
+        source=str(images_path),
+        project=predictions_root,
+        name=results_name,
+        conf=conf_thres,
+        imgsz=img_size,
+        device=device,
+        augment=True,
+        save_conf=True,
+        save_txt=True
+    )
+    inferences_dir = predictions_root / results_name / "labels"
+    return inferences_dir
+
+
+def run_detections_yolov5(
     images_path: Path,
     dataset_version: str,
     model_path: Path,
@@ -188,7 +334,7 @@ def run_detections(
     return results_name
 
 
-def run_detection_return_inferences_root(
+def run_detection_return_inferences_root_yolov8(
     images_root: Path,
     results_folder_name: str,
     model_path: Path,
@@ -198,7 +344,7 @@ def run_detection_return_inferences_root(
     device: int = 1,
     img_size: Optional[int] = DETECT_IMAGE_SIZE,
 ):
-    detect_folder_name = run_detections(
+    detect_folder_name = run_detections_yolov8(
         images_path=images_root,
         dataset_version=results_folder_name,
         model_path=model_path,
@@ -215,7 +361,7 @@ def run_detection_return_inferences_root(
     return inferences_root
 
 
-def run_detections_using_cv_ensemble(
+def run_detections_using_cv_ensemble_yolov5(
     images_path: Path,
     detection_dataset_name: str,
     model_version: Optional[str],
@@ -284,11 +430,11 @@ def run_detections_using_cv_ensemble(
     return results_name
 
 
-def run_detections_using_cv_ensemble_given_paths(
+def run_detections_using_cv_ensemble_given_paths_yolov5(
     images_path: Path,
     detection_dataset_name: str,
     model_version: str,  # e.g. srd26.0
-    k_folds: int,  # How many folder were used when cv modeling for <model_version>?
+    n_ensemble: int,  # How many models to ensemble when making prediction
     python_path: Path,
     yolo_root: Path,
     conf_thres: float = 0.1,
@@ -317,7 +463,7 @@ def run_detections_using_cv_ensemble_given_paths(
         pass  # model_version must also be provided - used to label results folder.
     elif model_version is not None:
         model_paths = get_paths_to_weights(
-            yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+            yolo_root=yolo_root, n_ensemble=n_ensemble, model_version=model_version
         )
         explicit_model_paths = [str(model_path) for model_path in model_paths if Path(model_path).exists()]
     elif explicit_model_paths is None and model_version is None:
@@ -352,7 +498,7 @@ def run_detections_using_cv_ensemble_given_paths(
 
 
 def get_paths_to_weights(
-    yolo_root: Path, k_folds: int, model_version: str
+    yolo_root: Path, n_ensemble: int, model_version: str, yolo_version: str
 ) -> List[str]:
     """
     Intelligently infers whether this is truely a K-Folds CV model, or just  a
@@ -365,10 +511,15 @@ def get_paths_to_weights(
     found.
 
     """
-    models_root = yolo_root / "runs" / "train"
+    if yolo_version == YOLO_VERSION_5:
+        models_root = yolo_root / "runs" / "train"
+    elif yolo_version == YOLO_VERSION_8:
+        models_root = yolo_root / "runs" / ".train"
+    else:
+        raise NotImplementedError("Please choose from yolov5 and yolov8")
     model_paths = [
         models_root / f"{model_version}.{str(i + 1)}" / "weights" / "best.pt"
-        for i in range(k_folds)
+        for i in range(n_ensemble)
     ]
 
     model_paths = [str(model_path) for model_path in model_paths if model_path.exists()]
@@ -383,9 +534,9 @@ def get_paths_to_weights(
 
 def test_get_paths_to_weights():
     yolo_root = Path("/home/david/addn_repos/yolov5")
-    k_folds = 6
+    n_folds = 6
     model_version = "srd31.1"
     model_paths = get_paths_to_weights(
-        yolo_root=yolo_root, k_folds=k_folds, model_version=model_version
+        yolo_root=yolo_root, n_ensemble=n_folds, model_version=model_version
     )
     print(model_paths)

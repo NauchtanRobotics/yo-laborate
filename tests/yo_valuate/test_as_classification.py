@@ -6,11 +6,13 @@ import pandas
 import pytest
 
 from yo_ratchet.yo_valuate.as_classification import (
+    classification_metrics_for_cross_validation_set,
     get_groups_classification_metrics,
     _optimise_analyse_model_binary_metrics,
     update_performance_json,
     PERFORMANCE_FOLDER,
     F1_PERFORMANCE_JSON,
+    YOLO_VERSION_5
 )
 
 ROOT_TEST_DATA = Path(__file__).parent.parent / "test_data"
@@ -37,6 +39,42 @@ CLASSES_MAP = {
     19: "CD",
     20: "CE",
 }
+
+
+def test_classification_metrics_for_cross_validation_set_for_yolo_v5():
+    images_root = ROOT_TEST_DATA / "classification" / "images"
+    root_ground_truths = ROOT_TEST_DATA / "filter_yolo"
+    root_inferences = ROOT_TEST_DATA / "classification" / "labels"
+    optimised_thresholds = {
+        0: 0.35,
+        1: 0.2,
+        2: 0.25,
+        3: 0.45,
+        4: 0.5,
+        16: 0.2
+    }
+    base_dir = Path.home() / "production/sealed_roads_dataset"
+    df = classification_metrics_for_cross_validation_set(
+        base_dir=base_dir,
+        dataset_prefix="srd40.2",
+        print_table=False,
+        groupings={
+            "Risk Defects inc Sh": [3, 4, 17, 22],
+            "Potholes Big/Small": [3, 18],
+            "Simple Cracking": [0, 1],
+            "Any Cracking": [0, 1, 2, 11, 14, 16],
+            "Stripping": [12, 17, 18, 19, 20, 33],
+        },
+        n_folds=6,
+        conf=5,
+        yolo_version=YOLO_VERSION_5
+    )
+    assert isinstance(df, pandas.DataFrame)
+    assert "conf_max" in list(df)
+    assert "conf_min" in list(df)
+    assert "F1" in list(df)
+    assert "min" in list(df)
+    assert "max" in list(df)
 
 
 def test_analyse_model_binary_metrics_for_groups():
