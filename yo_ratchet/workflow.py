@@ -35,6 +35,9 @@ from yo_ratchet.yo_valuate.as_classification import (
     YOLO_VERSION_5,
 )
 
+BATCH_SIZE_640 = 62
+BATCH_SIZE_800 = 42
+
 K_FOLDS = 6
 
 YOLO_ROOT = Path()
@@ -200,11 +203,19 @@ def run_prepare_dataset_and_train_yolov5(
     train_size: int = 800,
     val_size: int = 1024,
     epochs: Optional[int] = 300,
+    batch_size: Optional[int] = None
 ):
     if every_n_th is None:
         every_n_th = EVERY_NTH_TO_VAL
     else:
         pass  # Use the new parameter
+
+    if batch_size is None and train_size == 640:
+        batch_size = BATCH_SIZE_640
+    elif batch_size is None and train_size == 800:
+        batch_size = BATCH_SIZE_800
+    elif batch_size is None:
+        batch_size = 24
     prepare_dataset_and_train_yolov5(
         classes_map=CLASSES_MAP,
         subsets_included=SUBSETS_INCLUDED,
@@ -218,6 +229,7 @@ def run_prepare_dataset_and_train_yolov5(
         cross_validation_index=cross_validation_index,
         fine_tune_patience=fine_tune_epochs,
         img_size=train_size,
+        batch_size=batch_size,
         epochs=epochs,
     )
 
