@@ -118,7 +118,7 @@ names: {class_names}"""
         # TODO: Remove this override
         weights_path = Path("/home/david/production/ultralytics/runs/detect/srd40.2.1_yolov8/weights/best.pt")
         model = YOLO(weights_path)
-        model.train(
+        model.train(dict(
             data=str(dst_dataset_path),
             epochs=epochs,
             warmup_epochs=0,
@@ -129,7 +129,7 @@ names: {class_names}"""
             imgsz=img_size,
             nbs=batch_size,  # 42 works on 800 x 800
             workers=6,
-            device="0,1"
+            device="0,1")
         )
 
     new_model_path = base_dir / train_dir_name / model_instance / "weights" / "best.pt"
