@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple, List
 
 from yo_ratchet.yo_wrangle.common import get_all_txt_recursive
 
@@ -44,20 +44,66 @@ def recode_using_class_mapping(
             f.writelines(new_lines)
 
 
-def test_recode_and_filter():
+def recode_to_severity(
+    annotations_dir: Path,
+    recode_map: Dict[int, Tuple[int, float]],
+    default_severity: float = 0,
+    only_retain_mapped_keys: bool = False,
+):
     """
-    Class 10 predictions are often 'Signs'. To process a dataset to filter and retain only
-    class 10 recoding to a value of 0 so that a single model class can be trained just to
-    detect 'Signs' as follows:
+    Recodes data in yolo.txt annotation files to classID, bounding box parameters, plus a fifth regression
+    output for risk-level/intensity/severity/depth or other value parameter.  recode_map is a required parameter
+    keyed by current classID to a tuple of the new designated classID, and the average 'severity' value for the
+    in-coming class contributions. Example recode_map showing aggregation into classes 3, 6 and 12:
+
+    recode_map={
+          34: (6, 4.5),
+          22: (6, 3.3),
+          6:  (6, 2.5),
+          17: (12, 4.0),
+          33: (12, 4.5),
+          20: (12, 3.0),
+          24: (12, 3.5),
+          18: (3, 2),
+          3: (3, 4)
+        }
+
+    A class can recode to the same class in order to provide a severity for contributions from that original
+    class.
+
+    All unmapped classes will be assigned a severity according to the default_severity parameter.
+
+    Any class_id not included in recode_map.keys() will be retained unchanged,
+    unless the only_retain_mapped_keys param is set to True in which case all other
+    class ids will be dropped.
+
+    FUTURE: Consider capability to recode to two classes (e.g. rutting cracks, PPF to rutting and stripping)
 
     """
-    anno_path = Path.home() / "traffic_signs_dataset/GTSDB_2013_JPG/YOLO_darknet"
-    assert anno_path.exists() and len(list(anno_path.iterdir())) > 0
-    recode_using_class_mapping(
-        annotations_dir=anno_path,
-        recode_map={
-            13:7,
-            14:8
-        },
-        only_retain_mapped_keys=False,
-    )
+    for annotations_file in get_all_txt_recursive(root_dir=annotations_dir):
+        with open(annotations_file, "r") as f:
+            lines = f.readlines()
+        new_lines = []
+        for line in lines:
+            line_list: List[str] = line.strip().split(" ")
+            class_id = int(line_list[0])
+            if class_id in list(recode_map.keys()):
+                new_class_id, severity = recode_map[class_id]
+                line_list[0] = str(new_class_id)
+                if len(line_list) == 5:
+                    line_list.append(str(severity))
+                else:
+                    line_list[5] = str(severity)
+            else:
+                if only_retain_mapped_keys:
+                    continue
+                if len(line_list) == 5:
+                    line_list.append(str(default_severity))
+                else:
+                    line_list[5] = str(default_severity)
+            new_line = " ".join(line_list[0:7])
+            new_line = new_line + "\n"
+            new_lines.append(new_line)
+        with open(annotations_file, "w") as f:
+            f.writelines(new_lines)
+
